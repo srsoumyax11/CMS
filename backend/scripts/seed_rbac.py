@@ -22,7 +22,7 @@ async def seed_data():
                 assets[name] = result.scalar_one()
 
             # 2. Upsert Actions
-            action_codes = ["view", "create", "edit", "delete", "approve", "reject"]
+            action_codes = ["view", "list", "create", "edit", "delete", "approve", "reject"]
             actions = {}
             for code in action_codes:
                 stmt = insert(Action).values(code=code)

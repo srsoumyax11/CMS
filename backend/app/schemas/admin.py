@@ -30,3 +30,9 @@ class FacultyItemResponse(BaseModel):
     email: str
     department: str
     designation: str
+
+class FacultyUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    department: Optional[str] = None
+    designation: Optional[str] = None
+    status: Optional[Literal["active", "inactive"]] = None

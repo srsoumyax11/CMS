@@ -46,7 +46,8 @@ This is the FastAPI backend skeleton for the campus management platform.
 ---
 
 ## Documentation
-- [Phase 1 Walkthrough](docs/phase1_walkthrough.md): Detailed summary of Authentication, Supabase Storage integration, Data Validation, and Environment configurations.
+- [Phase 1 Walkthrough](docs/phase1_walkthrough.md): Authentication, Supabase Storage, and Environment configurations.
+- [Phase 2 Walkthrough](docs/phase2_walkthrough.md): RBAC Architecture, Seed Scripts, Admin Routes, and Dependency Caching.
 
 ---
 

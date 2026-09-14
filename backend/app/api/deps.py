@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.security import decode_token
-from app.models.user import User
+from app.models.user import User, UserType
 from app.models.rbac import UserRole, Role, Permission, Asset, Action
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
@@ -60,7 +60,15 @@ def require_permission(permission_code: str) -> Callable:
         if permission_code not in user_permissions:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permission"
+                detail="Not authenticated / Unauthorized"
             )
         return current_user
     return dependency
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.user_type != UserType.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authenticated / Unauthorized"
+        )
+    return current_user

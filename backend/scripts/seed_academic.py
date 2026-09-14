@@ -1,32 +1,43 @@
 import asyncio
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.postgresql import insert
 from app.core.database import AsyncSessionLocal
 from app.models.academic import Course, Branch
 
 async def seed_data():
     async with AsyncSessionLocal() as session:
-        # Create B.Tech Course
-        btech = Course(name="B.Tech")
-        session.add(btech)
-        await session.flush()
-
-        # Create Branches for B.Tech
-        branches = ["CSE", "ECE", "ME", "CE", "EE", "IT"]
-        for branch_name in branches:
-            session.add(Branch(name=branch_name, course_id=btech.id))
-            
-        # Create M.Tech Course
-        mtech = Course(name="M.Tech")
-        session.add(mtech)
-        await session.flush()
+        courses_data = [
+            {"id": uuid.UUID('13408608-0072-4669-bc98-87013c5252b0'), "name": "B.Tech", "is_active": True},
+            {"id": uuid.UUID('95f0113c-cc83-4c91-9e8c-8be94f576eec'), "name": "M.Tech", "is_active": True},
+            {"id": uuid.UUID('677cd2f7-bc6d-495d-ab9a-36bdf483b2bb'), "name": "Ph.D", "is_active": True}
+        ]
         
-        # Create Branches for M.Tech
-        m_branches = ["Computer Science", "VLSI", "Thermal Engineering"]
-        for branch_name in m_branches:
-            session.add(Branch(name=branch_name, course_id=mtech.id))
+        for c in courses_data:
+            stmt = insert(Course).values(**c).on_conflict_do_nothing(index_elements=['name'])
+            await session.execute(stmt)
 
+        btech_id = uuid.UUID('13408608-0072-4669-bc98-87013c5252b0')
+        mtech_id = uuid.UUID('95f0113c-cc83-4c91-9e8c-8be94f576eec')
+
+        branches_data = [
+            {"name": "CSE", "course_id": btech_id},
+            {"name": "ECE", "course_id": btech_id},
+            {"name": "ME", "course_id": btech_id},
+            {"name": "CE", "course_id": btech_id},
+            {"name": "EE", "course_id": btech_id},
+            {"name": "IT", "course_id": btech_id},
+            {"name": "Computer Science", "course_id": mtech_id},
+            {"name": "VLSI", "course_id": mtech_id},
+            {"name": "Thermal Engineering", "course_id": mtech_id},
+        ]
+        
+        for b in branches_data:
+            stmt = insert(Branch).values(**b).on_conflict_do_nothing(index_elements=['name', 'course_id'])
+            await session.execute(stmt)
+            
         await session.commit()
-        print("Successfully seeded Course and Branch data!")
+        print("Academic base data seeded successfully.")
 
 if __name__ == "__main__":
     asyncio.run(seed_data())

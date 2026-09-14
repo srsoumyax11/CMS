@@ -15,7 +15,8 @@ from app.models.rbac import Role, UserRole
 from app.schemas.common import APIResponse
 from app.schemas.admin import (
     StudentApprovalRequest, StudentItemResponse, 
-    FacultyCreateRequest, FacultyItemResponse
+    FacultyCreateRequest, FacultyItemResponse,
+    FacultyUpdateRequest
 )
 
 router = APIRouter()
@@ -26,7 +27,7 @@ async def list_students(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: AsyncSession = Depends(get_db),
-    _ = Depends(require_permission(Perms.STUDENT_PROFILE_VIEW))
+    _ = Depends(require_permission(Perms.STUDENT_PROFILE_LIST))
 ):
     stmt = select(StudentProfile).options(
         selectinload(StudentProfile.user), 
@@ -59,7 +60,7 @@ async def list_students(
 async def get_student(
     id: UUID,
     db: AsyncSession = Depends(get_db),
-    _ = Depends(require_permission(Perms.STUDENT_PROFILE_VIEW))
+    _ = Depends(require_permission(Perms.STUDENT_PROFILE_LIST))
 ):
     stmt = select(StudentProfile).options(
         selectinload(StudentProfile.user), 
@@ -91,7 +92,7 @@ async def update_student_status(
     req: StudentApprovalRequest,
     db: AsyncSession = Depends(get_db),
     # Note: the permission check depends on the action they are taking. We will enforce approve/reject below.
-    current_user: User = Depends(require_permission(Perms.STUDENT_PROFILE_VIEW)) # Just a baseline check
+    current_user: User = Depends(require_permission(Perms.STUDENT_PROFILE_LIST)) # Baseline admin check
 ):
     # Enforce specific permission
     from app.api.deps import get_user_permissions
@@ -199,7 +200,7 @@ async def list_faculty(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: AsyncSession = Depends(get_db),
-    _ = Depends(require_permission(Perms.FACULTY_PROFILE_VIEW))
+    _ = Depends(require_permission(Perms.FACULTY_PROFILE_LIST))
 ):
     stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user)).offset(skip).limit(limit)
     result = await db.execute(stmt)
@@ -216,4 +217,40 @@ async def list_faculty(
             designation=p.designation
         ))
         
+    return APIResponse(success=True, data=data, error=None)
+
+@router.patch("/faculty/{id}", response_model=APIResponse[FacultyItemResponse])
+async def update_faculty(
+    id: UUID,
+    req: FacultyUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.FACULTY_PROFILE_EDIT))
+):
+    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user)).where(FacultyProfile.id == id)
+    result = await db.execute(stmt)
+    p = result.scalar_one_or_none()
+    
+    if not p:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+        
+    if req.name is not None:
+        p.name = req.name
+    if req.department is not None:
+        p.department = req.department
+    if req.designation is not None:
+        p.designation = req.designation
+    if req.status is not None:
+        p.status = req.status
+        
+    await db.commit()
+    await db.refresh(p)
+    
+    data = FacultyItemResponse(
+        id=p.id,
+        user_id=p.user_id,
+        name=p.name,
+        email=p.user.email if p.user else "",
+        department=p.department,
+        designation=p.designation
+    )
     return APIResponse(success=True, data=data, error=None)
