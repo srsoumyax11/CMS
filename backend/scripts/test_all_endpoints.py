@@ -226,6 +226,8 @@ def run_tests():
     fac_data["designation"] = "Assistant Professor"
     r = requests.post(f"{BASE_URL}/admin/faculty", headers=admin_headers, json=fac_data)
     assert r.status_code == 200
+    res_json = r.json()
+    fac_id = res_json["data"].get("user_id") or res_json["data"].get("id")
     print("✅ Faculty created successfully! It is active immediately.")
 
     # ---------------------------------------------------------
@@ -241,7 +243,157 @@ def run_tests():
     assert res_json["error"] == "Not authenticated / Unauthorized"
     print("✅ Clean 403 Forbidden returned in proper APIResponse shape! No stack trace.")
 
-    print_step("🎉 ALL TESTS PASSED SUCCESSFULLY 🎉")
+    # =========================================================================
+    # PHASE 3: COMPLAINTS WORKFLOW & RBAC
+    # =========================================================================
+    
+    print_step("11. Create Second Student for Privacy Testing")
+    student2_email = f"test_student2_{random_suffix}@example.com"
+    student2_password = "securepassword123"
+    register_s2_data = {
+        "email": student2_email,
+        "password": student2_password,
+        "name": "Test Student 2",
+        "course_id": course_id,
+        "branch_id": branch_id,
+        "year": 2024
+    }
+    r = requests.post(f"{BASE_URL}/auth/register", json=register_s2_data)
+    assert r.status_code == 200
+    s2_id = r.json()["data"]["user_id"]
+    
+    # Approve S2
+    r = requests.get(f"{BASE_URL}/admin/students?status=pending", headers=admin_headers)
+    students = r.json()["data"]
+    s2_profile = next((s for s in students if s["user_id"] == s2_id), None)
+    assert s2_profile is not None
+    s2_profile_id = s2_profile["id"]
+    
+    r = requests.patch(
+        f"{BASE_URL}/admin/students/{s2_profile_id}/status",
+        headers=admin_headers,
+        json={"status": "approved"}
+    )
+    assert r.status_code == 200
+    
+    r = requests.post(f"{BASE_URL}/auth/login", json={"email": student2_email, "password": student2_password})
+    assert r.status_code == 200
+    s2_token = r.json()["data"]["access_token"]
+    s2_headers = {"Authorization": f"Bearer {s2_token}"}
+    
+    print_step("12. POST /api/complaints (Student 1 - Public)")
+    c1_res = requests.post(
+        f"{BASE_URL}/complaints/",
+        headers=student_headers,
+        data={
+            "category": "electrical",
+            "location_hostel": "Hostel A",
+            "description": "Fan is making a weird noise.",
+            "visibility": "public"
+        }
+    )
+    assert c1_res.status_code == 200, c1_res.text
+    c1_id = c1_res.json()["data"]["id"]
+    print("✅ Public complaint created successfully.")
+    
+    print_step("13. POST /api/complaints (Student 1 - Private)")
+    c2_res = requests.post(
+        f"{BASE_URL}/complaints/",
+        headers=student_headers,
+        data={
+            "category": "security",
+            "location_hostel": "Hostel A",
+            "description": "Someone tried to open my door at 2am.",
+            "visibility": "private"
+        }
+    )
+    assert c2_res.status_code == 200, c2_res.text
+    c2_id = c2_res.json()["data"]["id"]
+    print("✅ Private complaint created successfully.")
+    
+    print_step("14. Rate Limiting Check on Complaints")
+    # Create 2 more to trigger rate limit (Student 1 already made 2)
+    requests.post(f"{BASE_URL}/complaints/", headers=student_headers, data={"category": "wifi", "location_hostel": "Hostel A", "description": "1", "visibility": "public"})
+    rl_res = requests.post(f"{BASE_URL}/complaints/", headers=student_headers, data={"category": "wifi", "location_hostel": "Hostel A", "description": "2", "visibility": "public"})
+    assert rl_res.status_code == 429
+    print("✅ Rate limit successfully caught 4th complaint within 1 hour.")
+    
+    print_step("15. GET /api/complaints/{id} (Privacy Enforcement)")
+    # Student 2 tries to view Student 1's Public Complaint -> OK
+    s2_view_c1 = requests.get(f"{BASE_URL}/complaints/{c1_id}", headers=s2_headers)
+    assert s2_view_c1.status_code == 200
+    
+    # Student 2 tries to view Student 1's Private Complaint -> 403
+    s2_view_c2 = requests.get(f"{BASE_URL}/complaints/{c2_id}", headers=s2_headers)
+    assert s2_view_c2.status_code == 403
+    
+    # Admin tries to view Student 1's Private Complaint -> OK
+    admin_view_c2 = requests.get(f"{BASE_URL}/complaints/{c2_id}", headers=admin_headers)
+    assert admin_view_c2.status_code == 200
+    print("✅ Visibility logic perfectly enforced (Owner / Public / Private).")
+    
+    print_step("16. PATCH /api/complaints/{id}/cancel (Self-Cancel)")
+    cancel_res = requests.patch(
+        f"{BASE_URL}/complaints/{c1_id}/cancel",
+        headers=student_headers
+    )
+    assert cancel_res.status_code == 200, cancel_res.text
+    assert cancel_res.json()["data"]["status"] == "cancelled"
+    print("✅ Self-cancellation of open complaint successful.")
+    
+    print_step("17. PATCH /api/admin/complaints/{id}/status (State Machine)")
+    # Try invalid transition: Cancelled -> Resolved
+    invalid_patch = requests.patch(
+        f"{BASE_URL}/admin/complaints/{c1_id}/status",
+        headers=admin_headers,
+        json={"status": "resolved"}
+    )
+    assert invalid_patch.status_code == 422
+    print("✅ State machine successfully blocked invalid transition (Cancelled -> Resolved).")
+    
+    # Valid transition: Open -> In Progress (on C2)
+    valid_patch = requests.patch(
+        f"{BASE_URL}/admin/complaints/{c2_id}/status",
+        headers=admin_headers,
+        json={"status": "in_progress", "note": "Investigating."}
+    )
+    assert valid_patch.status_code == 200
+    assert valid_patch.json()["data"]["status"] == "in_progress"
+    print("✅ Admin valid status transition successful.")
+    
+    print_step("18. PATCH /api/admin/complaints/{id}/assign (Role Validation)")
+    # Assign to Student -> Fail
+    invalid_assign = requests.patch(
+        f"{BASE_URL}/admin/complaints/{c2_id}/assign",
+        headers=admin_headers,
+        json={"assigned_to": s2_id}
+    )
+    assert invalid_assign.status_code == 422, invalid_assign.text
+    
+    # Assign to Faculty -> Success
+    valid_assign = requests.patch(
+        f"{BASE_URL}/admin/complaints/{c2_id}/assign",
+        headers=admin_headers,
+        json={"assigned_to": fac_id}
+    )
+    assert valid_assign.status_code == 200
+    print("✅ Assignee role validation successfully blocked Student and allowed Faculty.")
+    
+    print_step("19. GET /api/admin/complaints/analytics/recurring")
+    analytics_res = requests.get(
+        f"{BASE_URL}/admin/complaints/analytics/recurring",
+        headers=admin_headers
+    )
+    assert analytics_res.status_code == 200
+    items = analytics_res.json()["data"]
+    
+    if items:
+        # Check that sensitive fields are entirely absent from the response
+        assert "description" not in items[0]
+        assert "raised_by" not in items[0]
+        print("✅ Recurring analytics aggregate returned correctly without sensitive fields.")
+        
+    print_step("🎉 ALL PHASE 2 & 3 TESTS PASSED SUCCESSFULLY 🎉")
 
 if __name__ == "__main__":
     run_tests()

@@ -13,7 +13,7 @@ async def seed_data():
     async with AsyncSessionLocal() as session:
         async with session.begin():
             # 1. Upsert Assets
-            asset_names = ["student_profile", "faculty_profile", "role", "notice"]
+            asset_names = ["student_profile", "faculty_profile", "role", "notice", "complaint"]
             assets = {}
             for name in asset_names:
                 stmt = insert(Asset).values(name=name)
@@ -22,7 +22,7 @@ async def seed_data():
                 assets[name] = result.scalar_one()
 
             # 2. Upsert Actions
-            action_codes = ["view", "list", "create", "edit", "delete", "approve", "reject"]
+            action_codes = ["view", "list", "create", "edit", "delete", "approve", "reject", "resolve", "assign", "view_private"]
             actions = {}
             for code in action_codes:
                 stmt = insert(Action).values(code=code)
@@ -68,13 +68,33 @@ async def seed_data():
                 session.add(RolePermission(role_id=roles["SuperAdmin"].id, permission_id=perm.id))
                 
             # Student gets student_profile:view, student_profile:edit, notice:view
-            student_perms = ["student_profile:view", "student_profile:edit", "notice:view"]
+            student_perms = [
+                "student_profile:view",
+                "student_profile:edit",
+                "notice:view",
+                "notice:list",
+                "complaint:create",
+                "complaint:view"
+            ]
             for sp in student_perms:
                 if sp in permissions:
                     session.add(RolePermission(role_id=roles["Student"].id, permission_id=permissions[sp].id))
                     
             # Faculty gets student_profile:view, notice:view, notice:create
-            faculty_perms = ["student_profile:view", "notice:view", "notice:create"]
+            faculty_perms = [
+                "faculty_profile:view",
+                "faculty_profile:edit",
+                "student_profile:view",
+                "student_profile:list",
+                "notice:view",
+                "notice:list",
+                "notice:create",
+                "complaint:list",
+                "complaint:view",
+                "complaint:resolve",
+                "complaint:assign",
+                "complaint:view_private"
+            ]
             for fp in faculty_perms:
                 if fp in permissions:
                     session.add(RolePermission(role_id=roles["Faculty"].id, permission_id=permissions[fp].id))

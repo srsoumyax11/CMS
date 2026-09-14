@@ -34,3 +34,13 @@ class Perms:
     NOTICE_DELETE = "notice:delete"
     NOTICE_APPROVE = "notice:approve"
     NOTICE_REJECT = "notice:reject"
+
+    # Asset: complaint
+    COMPLAINT_VIEW = "complaint:view"
+    COMPLAINT_LIST = "complaint:list"
+    COMPLAINT_CREATE = "complaint:create"
+    COMPLAINT_EDIT = "complaint:edit"
+    COMPLAINT_DELETE = "complaint:delete"
+    COMPLAINT_RESOLVE = "complaint:resolve"
+    COMPLAINT_ASSIGN = "complaint:assign"
+    COMPLAINT_VIEW_PRIVATE = "complaint:view_private"

@@ -14,8 +14,14 @@ async def seed_data():
         ]
         
         for c in courses_data:
-            stmt = insert(Course).values(**c).on_conflict_do_nothing(index_elements=['name'])
-            await session.execute(stmt)
+            try:
+                stmt = insert(Course).values(**c)
+                await session.execute(stmt)
+                await session.flush()
+            except Exception:
+                await session.rollback()
+                # Continue if it already exists
+                pass
 
         btech_id = uuid.UUID('13408608-0072-4669-bc98-87013c5252b0')
         mtech_id = uuid.UUID('95f0113c-cc83-4c91-9e8c-8be94f576eec')
@@ -33,8 +39,13 @@ async def seed_data():
         ]
         
         for b in branches_data:
-            stmt = insert(Branch).values(**b).on_conflict_do_nothing(index_elements=['name', 'course_id'])
-            await session.execute(stmt)
+            try:
+                stmt = insert(Branch).values(**b)
+                await session.execute(stmt)
+                await session.flush()
+            except Exception:
+                await session.rollback()
+                pass
             
         await session.commit()
         print("Academic base data seeded successfully.")

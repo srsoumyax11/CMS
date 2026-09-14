@@ -9,6 +9,8 @@ from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.user import User, UserType
 from app.models.rbac import UserRole, Role, Permission, Asset, Action
+from app.models.complaint import Complaint, ComplaintVisibility
+from app.core.permissions import Perms
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
@@ -72,3 +74,21 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
             detail="Not authenticated / Unauthorized"
         )
     return current_user
+
+def can_view_complaint_detail(complaint: Complaint, current_user: User, user_permissions: Set[str]) -> bool:
+    """
+    Evaluates row-level ownership and visibility logic for a complaint.
+    - Owner can always see their own complaint.
+    - Public complaints can be seen by anyone with 'complaint:view'.
+    - Private complaints require 'complaint:view_private' (Admins/Faculty).
+    """
+    if current_user.id == complaint.raised_by:
+        return True
+    
+    if complaint.visibility == ComplaintVisibility.public:
+        return Perms.COMPLAINT_VIEW in user_permissions
+        
+    if complaint.visibility == ComplaintVisibility.private:
+        return Perms.COMPLAINT_VIEW_PRIVATE in user_permissions
+        
+    return False
