@@ -2,11 +2,12 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy.exc import IntegrityError
 import traceback
 
 from app.core.config import settings
-from app.api.routes import health, auth, users, metadata
+from app.api.routes import health, auth, users, metadata, admin, roles
 
 app = FastAPI(title="Campus Management System API", version="1.0.0")
 
@@ -24,6 +25,8 @@ app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(metadata.router, prefix="/api/metadata", tags=["Metadata"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
+app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(roles.router, prefix="/api/roles", tags=["Roles"])
 
 # Exception Handlers
 @app.exception_handler(RequestValidationError)
@@ -41,6 +44,13 @@ async def sqlalchemy_integrity_exception_handler(request: Request, exc: Integrit
     return JSONResponse(
         status_code=400,
         content={"success": False, "data": None, "error": "Database Integrity Error: Resource already exists or conflicts."}
+    )
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"success": False, "data": None, "error": exc.detail}
     )
 
 @app.exception_handler(Exception)

@@ -1,0 +1,219 @@
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from uuid import UUID
+from typing import List, Optional
+
+from app.core.database import get_db
+from app.api.deps import require_permission
+from app.core.permissions import Perms
+from app.core.security import hash_password
+from app.models.user import User, UserType
+from app.models.profiles import StudentProfile, FacultyProfile
+from app.models.rbac import Role, UserRole
+from app.schemas.common import APIResponse
+from app.schemas.admin import (
+    StudentApprovalRequest, StudentItemResponse, 
+    FacultyCreateRequest, FacultyItemResponse
+)
+
+router = APIRouter()
+
+@router.get("/students", response_model=APIResponse[List[StudentItemResponse]])
+async def list_students(
+    status_filter: Optional[str] = Query(None, alias="status", description="Filter by status (pending, approved, rejected)"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.STUDENT_PROFILE_VIEW))
+):
+    stmt = select(StudentProfile).options(
+        selectinload(StudentProfile.user), 
+        selectinload(StudentProfile.course), 
+        selectinload(StudentProfile.branch)
+    )
+    if status_filter:
+        stmt = stmt.where(StudentProfile.status == status_filter)
+    
+    stmt = stmt.offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    profiles = result.scalars().all()
+    
+    data = []
+    for p in profiles:
+        data.append(StudentItemResponse(
+            id=p.id,
+            user_id=p.user_id,
+            name=p.name,
+            email=p.user.email if p.user else "",
+            course_name=p.course.name if p.course else "",
+            branch_name=p.branch.name if p.branch else "",
+            year=p.year,
+            status=p.status.value
+        ))
+        
+    return APIResponse(success=True, data=data, error=None)
+
+@router.get("/students/{id}", response_model=APIResponse[StudentItemResponse])
+async def get_student(
+    id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.STUDENT_PROFILE_VIEW))
+):
+    stmt = select(StudentProfile).options(
+        selectinload(StudentProfile.user), 
+        selectinload(StudentProfile.course), 
+        selectinload(StudentProfile.branch)
+    ).where(StudentProfile.id == id)
+    
+    result = await db.execute(stmt)
+    p = result.scalar_one_or_none()
+    
+    if not p:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    data = StudentItemResponse(
+        id=p.id,
+        user_id=p.user_id,
+        name=p.name,
+        email=p.user.email if p.user else "",
+        course_name=p.course.name if p.course else "",
+        branch_name=p.branch.name if p.branch else "",
+        year=p.year,
+        status=p.status.value
+    )
+    return APIResponse(success=True, data=data, error=None)
+
+@router.patch("/students/{id}/status", response_model=APIResponse[StudentItemResponse])
+async def update_student_status(
+    id: UUID,
+    req: StudentApprovalRequest,
+    db: AsyncSession = Depends(get_db),
+    # Note: the permission check depends on the action they are taking. We will enforce approve/reject below.
+    current_user: User = Depends(require_permission(Perms.STUDENT_PROFILE_VIEW)) # Just a baseline check
+):
+    # Enforce specific permission
+    from app.api.deps import get_user_permissions
+    user_perms = await get_user_permissions(current_user)
+    
+    if req.status == "approved" and Perms.STUDENT_PROFILE_APPROVE not in user_perms:
+        raise HTTPException(status_code=403, detail="Insufficient permission")
+    if req.status == "rejected" and Perms.STUDENT_PROFILE_REJECT not in user_perms:
+        raise HTTPException(status_code=403, detail="Insufficient permission")
+
+    stmt = select(StudentProfile).options(
+        selectinload(StudentProfile.user), 
+        selectinload(StudentProfile.course), 
+        selectinload(StudentProfile.branch)
+    ).where(StudentProfile.id == id)
+    result = await db.execute(stmt)
+    p = result.scalar_one_or_none()
+    
+    if not p:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    p.status = req.status
+    if req.status == "rejected":
+        p.rejection_reason = req.rejection_reason
+    elif req.status == "approved":
+        # Assign 'Student' role
+        role_stmt = select(Role).where(Role.name == "Student")
+        role_res = await db.execute(role_stmt)
+        student_role = role_res.scalar_one_or_none()
+        if student_role:
+            # Check if user already has it
+            ur_stmt = select(UserRole).where(UserRole.user_id == p.user_id, UserRole.role_id == student_role.id)
+            ur_res = await db.execute(ur_stmt)
+            if not ur_res.scalar_one_or_none():
+                new_ur = UserRole(user_id=p.user_id, role_id=student_role.id)
+                db.add(new_ur)
+
+    await db.commit()
+    await db.refresh(p)
+    
+    data = StudentItemResponse(
+        id=p.id,
+        user_id=p.user_id,
+        name=p.name,
+        email=p.user.email if p.user else "",
+        course_name=p.course.name if p.course else "",
+        branch_name=p.branch.name if p.branch else "",
+        year=p.year,
+        status=p.status.value
+    )
+    return APIResponse(success=True, data=data, error=None)
+
+@router.post("/faculty", response_model=APIResponse[FacultyItemResponse])
+async def create_faculty(
+    req: FacultyCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.FACULTY_PROFILE_CREATE))
+):
+    # Check if email exists
+    existing = await db.execute(select(User).where(User.email == req.email))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    new_user = User(
+        email=req.email,
+        hashed_password=hash_password(req.password),
+        user_type=UserType.faculty,
+        is_active=True
+    )
+    db.add(new_user)
+    await db.flush() # get new_user.id
+    
+    new_profile = FacultyProfile(
+        user_id=new_user.id,
+        name=req.name,
+        department=req.department,
+        designation=req.designation,
+        status="active"
+    )
+    db.add(new_profile)
+    
+    # Assign 'Faculty' role
+    role_stmt = select(Role).where(Role.name == "Faculty")
+    role_res = await db.execute(role_stmt)
+    fac_role = role_res.scalar_one_or_none()
+    if fac_role:
+        new_ur = UserRole(user_id=new_user.id, role_id=fac_role.id)
+        db.add(new_ur)
+        
+    await db.commit()
+    await db.refresh(new_profile)
+    
+    data = FacultyItemResponse(
+        id=new_profile.id,
+        user_id=new_profile.user_id,
+        name=new_profile.name,
+        email=new_user.email,
+        department=new_profile.department,
+        designation=new_profile.designation
+    )
+    return APIResponse(success=True, data=data, error=None)
+
+@router.get("/faculty", response_model=APIResponse[List[FacultyItemResponse]])
+async def list_faculty(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.FACULTY_PROFILE_VIEW))
+):
+    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user)).offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    profiles = result.scalars().all()
+    
+    data = []
+    for p in profiles:
+        data.append(FacultyItemResponse(
+            id=p.id,
+            user_id=p.user_id,
+            name=p.name,
+            email=p.user.email if p.user else "",
+            department=p.department,
+            designation=p.designation
+        ))
+        
+    return APIResponse(success=True, data=data, error=None)

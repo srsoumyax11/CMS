@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from app.api.deps import get_current_user
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -16,7 +17,8 @@ from app.schemas.auth import (
     TokenResponse, 
     RefreshTokenRequest, 
     RefreshTokenResponse,
-    RegisterResponseData
+    RegisterResponseData,
+    UserResponse
 )
 from app.schemas.common import APIResponse
 
@@ -153,5 +155,22 @@ async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(ge
     return APIResponse(
         success=True, 
         data=RefreshTokenResponse(access_token=new_access_token), 
+        error=None
+    )
+
+@router.get("/me", response_model=APIResponse[UserResponse])
+async def get_me(current_user: User = Depends(get_current_user)):
+    """
+    Get current logged in user details. Doesn't require any RBAC permissions.
+    Allows users with "pending" profiles to check their status.
+    """
+    return APIResponse(
+        success=True,
+        data=UserResponse(
+            id=current_user.id,
+            email=current_user.email,
+            is_active=current_user.is_active,
+            user_type=current_user.user_type
+        ),
         error=None
     )

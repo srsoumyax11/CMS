@@ -21,20 +21,20 @@ This is the FastAPI backend skeleton for the campus management platform.
    ```
 
 3. **Environment Variables**
-   Copy `.env.example` to `.env` and fill in your actual Supabase PostgreSQL connection string and a secret key:
+   Copy `.env.example` to `.env` and fill in your actual Supabase PostgreSQL connection string, secret keys, and superadmin credentials:
    ```bash
    cp .env.example .env
    ```
+   **Important:** Set `SUPERADMIN_EMAIL` and `SUPERADMIN_PASSWORD` in your `.env`.
 
-4. **Database Migrations**
-   Make sure your database is running, then generate and apply the initial migration:
+4. **Database Setup (One-Click)**
+   Make sure your database (e.g. Supabase local instance) is running, then run the unified setup script. This script automatically applies all database migrations and seeds the required data (Courses, Branches, Roles, Permissions, and SuperAdmin):
    ```bash
-   # Generate migration script
-   alembic revision --autogenerate -m "Initial migration"
-   
-   # Apply migration to the database
-   alembic upgrade head
+   python scripts/setup.py
    ```
+   *Note: If you left the default credentials in `.env.example`, your SuperAdmin account will be seeded as:*
+   **Email:** `admin@example.com`
+   **Password:** `supersecret123`
 
 5. **Running the Server**
    Start the Uvicorn development server:
@@ -53,6 +53,7 @@ This is the FastAPI backend skeleton for the campus management platform.
 ## Testing the Endpoints (cURL)
 
 ### 1. Register a Student
+*Note: Fetch actual course_id and branch_id UUIDs from `GET /api/metadata/courses` first.*
 ```bash
 curl -X POST http://127.0.0.1:8000/api/auth/register \
      -H "Content-Type: application/json" \
@@ -60,8 +61,8 @@ curl -X POST http://127.0.0.1:8000/api/auth/register \
            "email": "student@example.com",
            "password": "securepassword123",
            "name": "John Doe",
-           "course": "B.Tech",
-           "branch": "CSE",
+           "course_id": "PUT_COURSE_UUID_HERE",
+           "branch_id": "PUT_BRANCH_UUID_HERE",
            "year": 2024
          }'
 ```
