@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 import traceback
 
 from app.core.config import settings
-from app.api.routes import health, auth, users
+from app.api.routes import health, auth, users, metadata
 
 app = FastAPI(title="Campus Management System API", version="1.0.0")
 
@@ -21,6 +21,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router, prefix="/api", tags=["health"])
+app.include_router(metadata.router, prefix="/api/metadata", tags=["Metadata"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 

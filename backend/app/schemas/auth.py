@@ -2,14 +2,14 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 import uuid
 from app.models.user import UserType
-from app.models.profiles import StudentStatus, CourseEnum, BranchEnum
+from app.models.profiles import StudentStatus
 
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     name: str
-    course: CourseEnum
-    branch: BranchEnum
+    course_id: uuid.UUID
+    branch_id: uuid.UUID
     year: int = Field(..., ge=1990, le=2100, description="Admission or current year depending on convention")
     photo_url: Optional[str] = None
 

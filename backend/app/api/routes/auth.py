@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
 from app.models.user import User, UserType
 from app.models.profiles import StudentProfile, StudentStatus
+from app.models.academic import Course, Branch
 from app.schemas.auth import (
     RegisterRequest, 
     LoginRequest, 
@@ -28,6 +29,18 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     if result.scalar_one_or_none():
         return APIResponse(success=False, data=None, error="Email already registered")
 
+    # Validate Course and Branch
+    branch_result = await db.execute(
+        select(Branch).where(
+            Branch.id == data.branch_id,
+            Branch.course_id == data.course_id,
+            Branch.is_active == True
+        )
+    )
+    branch = branch_result.scalar_one_or_none()
+    if not branch:
+        return APIResponse(success=False, data=None, error="Invalid or inactive course and branch combination")
+
     # Atomic transaction for User and Profile
     try:
         new_user = User(
@@ -41,8 +54,8 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
         student_profile = StudentProfile(
             user_id=new_user.id,
             name=data.name,
-            course=data.course,
-            branch=data.branch,
+            course_id=data.course_id,
+            branch_id=data.branch_id,
             year=data.year,
             photo_url=data.photo_url,
             status=StudentStatus.pending
