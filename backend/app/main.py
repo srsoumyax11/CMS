@@ -19,7 +19,9 @@ from app.api.routes import (
     outpasses,
     admin_outpasses,
     timetable,
-    attendance
+    attendance,
+    mess,
+    admin_mess
 )
 
 tags_metadata = [
@@ -54,6 +56,14 @@ tags_metadata = [
     {
         "name": "Admin",
         "description": "SuperAdmin routes for managing users, faculty, and system configuration.",
+    },
+    {
+        "name": "Mess (Student/Public)",
+        "description": "Endpoints for student mess feedback and opt-outs.",
+    },
+    {
+        "name": "Mess (Admin)",
+        "description": "Administrative endpoints for mess menu and analytics.",
     }
 ]
 
@@ -96,6 +106,8 @@ app.include_router(outpasses.router, prefix="/api/outpasses", tags=["Outpasses"]
 app.include_router(admin_outpasses.router, prefix="/api/admin/outpasses", tags=["Admin Outpasses"])
 app.include_router(timetable.router, prefix="/api/timetable", tags=["Timetable"])
 app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
+app.include_router(mess.router, prefix="/api/mess", tags=["Mess (Student/Public)"])
+app.include_router(admin_mess.router, prefix="/api/admin/mess", tags=["Mess (Admin)"])
 
 # Exception Handlers
 @app.exception_handler(RequestValidationError)

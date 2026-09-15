@@ -6,6 +6,7 @@ from app.models.rbac import Asset, Action, Permission, Role, RolePermission, Use
 from app.models.academic import Course, Branch, TimetableSlot, AttendanceRecord
 from app.models.notice import Notice
 from app.models.outpass import Outpass, OutpassStatusLog
+from app.models.mess import MessMenu, MessFeedback, MessOptOut
 
 __all__ = [
     "Base",
@@ -23,5 +24,8 @@ __all__ = [
     "TimetableSlot",
     "AttendanceRecord",
     "Outpass",
-    "OutpassStatusLog"
+    "OutpassStatusLog",
+    "MessMenu",
+    "MessFeedback",
+    "MessOptOut"
 ]

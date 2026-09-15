@@ -60,3 +60,8 @@ class Perms:
     # Asset: attendance
     ATTENDANCE_MARK = "attendance:mark"
     ATTENDANCE_VIEW = "attendance:view"
+
+    # Asset: mess
+    MESS_MANAGE = "mess:manage"
+    MESS_VIEW = "mess:view"
+    MESS_FEEDBACK = "mess:feedback"

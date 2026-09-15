@@ -13,7 +13,7 @@ async def seed_data():
     async with AsyncSessionLocal() as session:
         async with session.begin():
             # 1. Upsert Assets
-            asset_names = ["student_profile", "faculty_profile", "role", "notice", "complaint", "outpass", "timetable", "attendance"]
+            asset_names = ["student_profile", "faculty_profile", "role", "notice", "complaint", "outpass", "timetable", "attendance", "mess"]
             assets = {}
             for name in asset_names:
                 stmt = insert(Asset).values(name=name)
@@ -22,7 +22,7 @@ async def seed_data():
                 assets[name] = result.scalar_one()
 
             # 2. Upsert Actions
-            action_codes = ["view", "list", "create", "edit", "delete", "approve", "reject", "resolve", "assign", "view_private", "manage", "mark"]
+            action_codes = ["view", "list", "create", "edit", "delete", "approve", "reject", "resolve", "assign", "view_private", "manage", "mark", "feedback"]
             actions = {}
             for code in action_codes:
                 stmt = insert(Action).values(code=code)
@@ -79,7 +79,9 @@ async def seed_data():
                 "outpass:view",
                 "outpass:cancel",
                 "timetable:view",
-                "attendance:view"
+                "attendance:view",
+                "mess:view",
+                "mess:feedback"
             ]
             for sp in set(student_perms):
                 if sp in permissions:
@@ -104,7 +106,8 @@ async def seed_data():
                 "outpass:reject",
                 "timetable:view",
                 "attendance:view",
-                "attendance:mark"
+                "attendance:mark",
+                "mess:view"
             ]
             for fp in set(faculty_perms):
                 if fp in permissions:
