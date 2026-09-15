@@ -19,7 +19,12 @@ from app.schemas.roles import (
 
 router = APIRouter()
 
-@router.get("", response_model=APIResponse[List[RoleResponse]])
+@router.get(
+    "", 
+    summary="List All Roles", 
+    description="Returns all system roles and their assigned permissions. **Requires:** `role:list`",
+    response_model=APIResponse[List[RoleResponse]]
+)
 async def list_roles(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.ROLE_VIEW))
@@ -37,7 +42,12 @@ async def list_roles(
     
     return APIResponse(success=True, data=data, error=None)
 
-@router.get("/permission-matrix", response_model=APIResponse[PermissionMatrixResponse])
+@router.get(
+    "/permission-matrix", 
+    summary="Get Permission Matrix", 
+    description="Returns all available assets and actions to populate a UI permission matrix.",
+    response_model=APIResponse[PermissionMatrixResponse]
+)
 async def get_permission_matrix(
     role_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db),
@@ -85,7 +95,12 @@ async def get_permission_matrix(
     data = PermissionMatrixResponse(assets=matrix_assets)
     return APIResponse(success=True, data=data, error=None)
 
-@router.post("", response_model=APIResponse[RoleResponse])
+@router.post(
+    "", 
+    summary="Create Role", 
+    description="Creates a new custom role with specific permissions. **Requires:** `role:create`",
+    response_model=APIResponse[RoleResponse]
+)
 async def create_role(
     req: RoleCreateRequest,
     db: AsyncSession = Depends(get_db),
@@ -117,7 +132,12 @@ async def create_role(
 class UpdatePermissionsRequest(BaseModel):
     permission_ids: List[UUID]
 
-@router.patch("/{id}/permissions", response_model=APIResponse[bool])
+@router.patch(
+    "/{id}/permissions", 
+    summary="Update Role Permissions", 
+    description="Overwrites the existing permissions for a given role ID. **Requires:** `role:edit`",
+    response_model=APIResponse[bool]
+)
 async def update_role_permissions(
     id: UUID,
     req: UpdatePermissionsRequest,
@@ -148,7 +168,12 @@ class AssignRoleRequest(BaseModel):
     user_id: UUID
     scope_id: Optional[UUID] = None
 
-@router.post("/{id}/assign", response_model=APIResponse[bool])
+@router.post(
+    "/{id}/assign", 
+    summary="Assign Role to User", 
+    description="Assigns a specific role to a user. **Requires:** `role:assign`",
+    response_model=APIResponse[bool]
+)
 async def assign_role(
     id: UUID,
     req: AssignRoleRequest,

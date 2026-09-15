@@ -21,7 +21,12 @@ from app.schemas.admin import (
 
 router = APIRouter()
 
-@router.get("/students", response_model=APIResponse[List[StudentItemResponse]])
+@router.get(
+    "/students", 
+    summary="List Students", 
+    description="Fetches a list of all students, optionally filtered by status. **Requires:** `student_profile:list`",
+    response_model=APIResponse[List[StudentItemResponse]]
+)
 async def list_students(
     status_filter: Optional[str] = Query(None, alias="status", description="Filter by status (pending, approved, rejected)"),
     skip: int = Query(0, ge=0),
@@ -56,7 +61,12 @@ async def list_students(
         
     return APIResponse(success=True, data=data, error=None)
 
-@router.get("/students/{id}", response_model=APIResponse[StudentItemResponse])
+@router.get(
+    "/students/{id}", 
+    summary="Get Student Detail", 
+    description="Fetches the full profile details for a specific student. **Requires:** `student_profile:view`",
+    response_model=APIResponse[StudentItemResponse]
+)
 async def get_student(
     id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -86,7 +96,12 @@ async def get_student(
     )
     return APIResponse(success=True, data=data, error=None)
 
-@router.patch("/students/{id}/status", response_model=APIResponse[StudentItemResponse])
+@router.patch(
+    "/students/{id}/status", 
+    summary="Update Student Status", 
+    description="Approves or rejects a pending student account. **Requires:** `student_profile:edit`",
+    response_model=APIResponse[StudentItemResponse]
+)
 async def update_student_status(
     id: UUID,
     req: StudentApprovalRequest,
@@ -145,7 +160,12 @@ async def update_student_status(
     )
     return APIResponse(success=True, data=data, error=None)
 
-@router.post("/faculty", response_model=APIResponse[FacultyItemResponse])
+@router.post(
+    "/faculty", 
+    summary="Create Faculty", 
+    description="Creates a new faculty user and assigns the default 'Faculty' role. **Requires:** `faculty_profile:create`",
+    response_model=APIResponse[FacultyItemResponse]
+)
 async def create_faculty(
     req: FacultyCreateRequest,
     db: AsyncSession = Depends(get_db),
@@ -195,7 +215,12 @@ async def create_faculty(
     )
     return APIResponse(success=True, data=data, error=None)
 
-@router.get("/faculty", response_model=APIResponse[List[FacultyItemResponse]])
+@router.get(
+    "/faculty", 
+    summary="List Faculty", 
+    description="Fetches a list of all faculty members. **Requires:** `faculty_profile:list`",
+    response_model=APIResponse[List[FacultyItemResponse]]
+)
 async def list_faculty(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -219,7 +244,12 @@ async def list_faculty(
         
     return APIResponse(success=True, data=data, error=None)
 
-@router.patch("/faculty/{id}", response_model=APIResponse[FacultyItemResponse])
+@router.patch(
+    "/faculty/{id}", 
+    summary="Update Faculty", 
+    description="Updates faculty profile details (like department or designation). **Requires:** `faculty_profile:edit`",
+    response_model=APIResponse[FacultyItemResponse]
+)
 async def update_faculty(
     id: UUID,
     req: FacultyUpdateRequest,

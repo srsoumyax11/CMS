@@ -15,7 +15,12 @@ from app.core.permissions import Perms
 
 router = APIRouter(tags=["Outpasses"])
 
-@router.post("", response_model=APIResponse[OutpassResponse])
+@router.post(
+    "", 
+    summary="Request Outpass", 
+    description="Creates a new outpass request. Overlap validation prevents concurrent outpasses. **Requires:** `outpass:create`",
+    response_model=APIResponse[OutpassResponse]
+)
 async def create_outpass(
     request: OutpassCreateRequest,
     db: AsyncSession = Depends(get_db),
@@ -62,7 +67,12 @@ async def create_outpass(
     await db.refresh(new_outpass)
     return APIResponse(success=True, data=OutpassResponse.model_validate(new_outpass))
 
-@router.get("/mine", response_model=APIResponse[OutpassListResponse])
+@router.get(
+    "/mine", 
+    summary="List My Outpasses", 
+    description="Fetches all outpasses requested by the current student user. **Requires:** `outpass:view`",
+    response_model=APIResponse[OutpassListResponse]
+)
 async def list_my_outpasses(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -85,7 +95,12 @@ async def list_my_outpasses(
     )
     return APIResponse(success=True, data=response_data)
 
-@router.get("/{id}", response_model=APIResponse[OutpassResponse])
+@router.get(
+    "/{id}", 
+    summary="Get Outpass Detail", 
+    description="Fetches details for a specific outpass. Protected by explicit row-level IDOR checks. **Requires:** `outpass:view`",
+    response_model=APIResponse[OutpassResponse]
+)
 async def get_outpass(
     id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -105,7 +120,12 @@ async def get_outpass(
         
     return APIResponse(success=True, data=OutpassResponse.model_validate(outpass))
 
-@router.patch("/{id}/cancel", response_model=APIResponse[OutpassResponse])
+@router.patch(
+    "/{id}/cancel", 
+    summary="Cancel Outpass", 
+    description="Cancels an outpass request. Protected by explicit row-level IDOR checks. **Requires:** `outpass:cancel`",
+    response_model=APIResponse[OutpassResponse]
+)
 async def cancel_outpass(
     id: UUID,
     db: AsyncSession = Depends(get_db),

@@ -21,7 +21,12 @@ router = APIRouter()
 MAX_FILE_SIZE = 5 * 1024 * 1024 # 5 MB
 ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
-@router.post("", response_model=APIResponse[ComplaintResponse])
+@router.post(
+    "", 
+    summary="Create Complaint", 
+    description="Raises a new complaint. Can optionally include a photo upload. Rate-limited to 3 per hour. **Requires:** `complaint:create`",
+    response_model=APIResponse[ComplaintResponse]
+)
 async def create_complaint(
     category: ComplaintCategory = Form(...),
     location_hostel: str = Form(...),
@@ -93,7 +98,12 @@ async def create_complaint(
         
     return APIResponse(success=True, data=response_data)
 
-@router.get("/mine", response_model=APIResponse[ComplaintListResponse])
+@router.get(
+    "/mine", 
+    summary="List My Complaints", 
+    description="Fetches all complaints raised by the current user. **Requires:** `complaint:view`",
+    response_model=APIResponse[ComplaintListResponse]
+)
 async def get_my_complaints(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -116,7 +126,12 @@ async def get_my_complaints(
         
     return APIResponse(success=True, data=ComplaintListResponse(total=total, items=items))
 
-@router.get("/public", response_model=APIResponse[ComplaintListResponse])
+@router.get(
+    "/public", 
+    summary="List Public Complaints", 
+    description="Fetches all complaints marked as 'public' by their authors. **Requires:** `complaint:view`",
+    response_model=APIResponse[ComplaintListResponse]
+)
 async def get_public_complaints(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -139,7 +154,12 @@ async def get_public_complaints(
         
     return APIResponse(success=True, data=ComplaintListResponse(total=total, items=items))
 
-@router.get("/{id}", response_model=APIResponse[ComplaintResponse])
+@router.get(
+    "/{id}", 
+    summary="Get Complaint Detail", 
+    description="Fetches details for a specific complaint. Protected by IDOR checks (Owner or Public). **Requires:** `complaint:view`",
+    response_model=APIResponse[ComplaintResponse]
+)
 async def get_complaint(
     id: UUID,
     current_user: User = Depends(require_permission(Perms.COMPLAINT_VIEW)),
@@ -163,7 +183,12 @@ async def get_complaint(
         
     return APIResponse(success=True, data=response_data)
 
-@router.patch("/{id}/cancel", response_model=APIResponse[ComplaintResponse])
+@router.patch(
+    "/{id}/cancel", 
+    summary="Cancel Complaint", 
+    description="Allows the author to cancel their own complaint, triggering a status log. Protected by IDOR checks. **Requires:** `complaint:edit`",
+    response_model=APIResponse[ComplaintResponse]
+)
 async def cancel_complaint(
     id: UUID,
     current_user: User = Depends(get_current_user),

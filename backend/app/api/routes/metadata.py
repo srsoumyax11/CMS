@@ -9,7 +9,12 @@ from app.schemas.common import APIResponse
 
 router = APIRouter()
 
-@router.get("/courses", response_model=APIResponse)
+@router.get(
+    "/courses", 
+    summary="Get Courses Metadata", 
+    description="Returns a list of all courses and branches for UI dropdown populations.",
+    response_model=APIResponse
+)
 async def get_courses(db: AsyncSession = Depends(get_db)):
     """
     Returns a list of all active courses and their active branches.

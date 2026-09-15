@@ -32,7 +32,12 @@ VALID_TRANSITIONS = {
     ComplaintStatus.cancelled: [] # Terminal
 }
 
-@router.get("", response_model=APIResponse[ComplaintListResponse])
+@router.get(
+    "", 
+    summary="List All Complaints (Admin)", 
+    description="Fetches complaints across the system for admins/faculty. **Requires:** `complaint:list`",
+    response_model=APIResponse[ComplaintListResponse]
+)
 async def list_all_complaints(
     status_filter: Optional[ComplaintStatus] = Query(None, alias="status"),
     category: Optional[ComplaintCategory] = None,
@@ -100,7 +105,12 @@ async def list_all_complaints(
     return APIResponse(success=True, data=ComplaintListResponse(total=total, items=items))
 
 
-@router.patch("/{id}/status", response_model=APIResponse[ComplaintResponse])
+@router.patch(
+    "/{id}/status", 
+    summary="Update Complaint Status", 
+    description="Transitions a complaint to a new state (e.g. resolved, in_progress). Logs the transition transactionally. **Requires:** `complaint:resolve`",
+    response_model=APIResponse[ComplaintResponse]
+)
 async def update_complaint_status(
     id: UUID,
     req: ComplaintStatusUpdateRequest,
@@ -139,7 +149,12 @@ async def update_complaint_status(
     return APIResponse(success=True, data=response_data)
 
 
-@router.patch("/{id}/assign", response_model=APIResponse[ComplaintResponse])
+@router.patch(
+    "/{id}/assign", 
+    summary="Assign Complaint", 
+    description="Assigns a complaint to a specific faculty member. **Requires:** `complaint:assign`",
+    response_model=APIResponse[ComplaintResponse]
+)
 async def assign_complaint(
     id: UUID,
     req: ComplaintAssignRequest,
@@ -177,7 +192,12 @@ async def assign_complaint(
     return APIResponse(success=True, data=response_data)
 
 
-@router.get("/analytics/recurring", response_model=APIResponse[List[RecurringIssueResponse]])
+@router.get(
+    "/analytics/recurring", 
+    summary="Get Recurring Issue Analytics", 
+    description="Identifies hotspots (e.g., specific hostel rooms) with multiple unresolved complaints. **Requires:** `complaint:list`",
+    response_model=APIResponse[List[RecurringIssueResponse]]
+)
 async def get_recurring_analytics(
     days: int = Query(30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
@@ -207,7 +227,12 @@ async def get_recurring_analytics(
     return APIResponse(success=True, data=items)
 
 
-@router.get("/analytics/ageing", response_model=APIResponse[List[AgeingComplaintResponse]])
+@router.get(
+    "/analytics/ageing", 
+    summary="Get Ageing Complaint Analytics", 
+    description="Returns a list of complaints that have been open for an extended period. **Requires:** `complaint:list`",
+    response_model=APIResponse[List[AgeingComplaintResponse]]
+)
 async def get_ageing_analytics(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.COMPLAINT_LIST))

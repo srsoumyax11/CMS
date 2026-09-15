@@ -24,7 +24,12 @@ from app.schemas.common import APIResponse
 
 router = APIRouter()
 
-@router.post("/register", response_model=APIResponse[RegisterResponseData])
+@router.post(
+    "/register", 
+    summary="Register Student", 
+    description="Registers a new student user. Assigns the default 'Student' role and sets status to 'pending'.", 
+    response_model=APIResponse[RegisterResponseData]
+)
 async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     # Check if user already exists
     result = await db.execute(select(User).where(User.email == data.email))
@@ -76,7 +81,11 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.post("/token")
+@router.post(
+    "/token", 
+    summary="OAuth2 Token Login", 
+    description="Standard OAuth2 form data login endpoint for Swagger UI testing."
+)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     """
     Standard OAuth2 endpoint required by Swagger UI.
@@ -95,7 +104,12 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.post("/login", response_model=APIResponse[TokenResponse])
+@router.post(
+    "/login", 
+    summary="User Login", 
+    description="Authenticates a user with email and password, returning access and refresh JWTs.",
+    response_model=APIResponse[TokenResponse]
+)
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(User).options(
@@ -134,7 +148,12 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.post("/refresh", response_model=APIResponse[RefreshTokenResponse])
+@router.post(
+    "/refresh", 
+    summary="Refresh Token", 
+    description="Exchanges a valid refresh token for a new access token.",
+    response_model=APIResponse[RefreshTokenResponse]
+)
 async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
     payload = decode_token(data.refresh_token)
     if not payload or payload.get("type") != "refresh":
@@ -159,7 +178,12 @@ async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(ge
         error=None
     )
 
-@router.get("/me", response_model=APIResponse[UserResponse])
+@router.get(
+    "/me", 
+    summary="Get Current User", 
+    description="Fetches the profile and metadata for the currently authenticated user based on the JWT.",
+    response_model=APIResponse[UserResponse]
+)
 async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """
     Get current logged in user details. Doesn't require any RBAC permissions.

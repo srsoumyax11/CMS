@@ -19,7 +19,12 @@ router = APIRouter(tags=["Notices"])
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
-@router.post("", response_model=APIResponse[NoticeResponse])
+@router.post(
+    "", 
+    summary="Create Notice", 
+    description="Creates a new targeted announcement. Supports file attachments. **Requires:** `notice:create`",
+    response_model=APIResponse[NoticeResponse]
+)
 async def create_notice(
     title: str = Form(...),
     content: str = Form(...),
@@ -65,7 +70,12 @@ async def create_notice(
     return APIResponse(success=True, data=NoticeResponse.model_validate(notice))
 
 
-@router.get("", response_model=APIResponse[NoticeListResponse])
+@router.get(
+    "", 
+    summary="List Notices", 
+    description="Fetches a feed of notices dynamically filtered by the user's role and target bounds (course, year, hostel). **Requires:** `notice:list`",
+    response_model=APIResponse[NoticeListResponse]
+)
 async def list_notices(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
@@ -124,7 +134,12 @@ async def list_notices(
         )
     )
 
-@router.get("/{id}", response_model=APIResponse[NoticeResponse])
+@router.get(
+    "/{id}", 
+    summary="Get Notice Detail", 
+    description="Fetches a specific notice, enforcing targeting visibility logic. **Requires:** `notice:view`",
+    response_model=APIResponse[NoticeResponse]
+)
 async def get_notice(
     id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -176,7 +191,12 @@ async def get_notice(
     response_data.is_read = is_read
     return APIResponse(success=True, data=response_data)
 
-@router.post("/{id}/read", response_model=APIResponse[bool])
+@router.post(
+    "/{id}/read", 
+    summary="Mark Notice as Read", 
+    description="Records a read receipt for the current user to track unread notices. **Requires:** `notice:view`",
+    response_model=APIResponse[bool]
+)
 async def mark_notice_read(
     id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -202,7 +222,12 @@ async def mark_notice_read(
         
     return APIResponse(success=True, data=True)
 
-@router.delete("/{id}", response_model=APIResponse[NoticeResponse])
+@router.delete(
+    "/{id}", 
+    summary="Delete Notice", 
+    description="Deletes a notice. Users can delete their own notices; admins can delete any. **Requires:** Ownership OR `notice:delete`",
+    response_model=APIResponse[NoticeResponse]
+)
 async def delete_notice(
     id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -225,7 +250,12 @@ async def delete_notice(
     
     return APIResponse(success=True, data=NoticeResponse.model_validate(notice))
 
-@router.patch("/{id}", response_model=APIResponse[NoticeResponse])
+@router.patch(
+    "/{id}", 
+    summary="Update Notice", 
+    description="Updates the title or content of a notice. **Requires:** Ownership OR `notice:create`",
+    response_model=APIResponse[NoticeResponse]
+)
 async def update_notice(
     id: UUID,
     title: Optional[str] = Form(None),

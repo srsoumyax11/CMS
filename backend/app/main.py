@@ -9,7 +9,57 @@ import traceback
 from app.core.config import settings
 from app.api.routes import health, auth, users, metadata, admin, roles, complaints, admin_complaints, notices, outpasses, admin_outpasses
 
-app = FastAPI(title="Campus Management System API", version="1.0.0")
+tags_metadata = [
+    {
+        "name": "Auth",
+        "description": "Authentication endpoints for login, registration, and token validation.",
+    },
+    {
+        "name": "Users",
+        "description": "User profile management and metadata.",
+    },
+    {
+        "name": "Complaints (Student/Public)",
+        "description": "Endpoints for students to raise and track complaints.",
+    },
+    {
+        "name": "Complaints (Admin/Faculty)",
+        "description": "Administrative endpoints for resolving and assigning complaints.",
+    },
+    {
+        "name": "Outpasses",
+        "description": "Student endpoints for requesting and tracking gate passes.",
+    },
+    {
+        "name": "Admin Outpasses",
+        "description": "Administrative endpoints for approving, rejecting, and tracking outpasses.",
+    },
+    {
+        "name": "Notices",
+        "description": "Digital notice board for targeted announcements.",
+    },
+    {
+        "name": "Admin",
+        "description": "SuperAdmin routes for managing users, faculty, and system configuration.",
+    }
+]
+
+app = FastAPI(
+    title="Campus Management System API",
+    description="""
+A robust, asynchronous REST API powering the Campus Management System (CMS).
+
+## Security & RBAC
+This API uses a strict Role-Based Access Control (RBAC) engine. 
+Routes are heavily guarded by `require_permission` capabilities and explicit row-level IDOR checks.
+""",
+    version="1.0.0",
+    contact={
+        "name": "Backend Team",
+        "email": "admin@cms.com",
+    },
+    openapi_tags=tags_metadata
+)
 
 # Setup CORS
 app.add_middleware(
@@ -21,9 +71,9 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(health.router, prefix="/api", tags=["health"])
+app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(metadata.router, prefix="/api/metadata", tags=["Metadata"])
-app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(roles.router, prefix="/api/roles", tags=["Roles & Permissions"])

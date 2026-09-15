@@ -15,7 +15,12 @@ from app.core.permissions import Perms
 
 router = APIRouter(tags=["Admin Outpasses"])
 
-@router.get("", response_model=APIResponse[OutpassListResponse])
+@router.get(
+    "", 
+    summary="List All Outpasses (Admin)", 
+    description="Fetches outpasses across the system. Supports filtering by status and dynamic overdue status. **Requires:** `outpass:list`",
+    response_model=APIResponse[OutpassListResponse]
+)
 async def list_outpasses(
     status: Optional[OutpassStatus] = None,
     is_overdue: Optional[bool] = None,
@@ -62,7 +67,12 @@ async def list_outpasses(
     )
     return APIResponse(success=True, data=response_data)
 
-@router.get("/{id}", response_model=APIResponse[OutpassResponse])
+@router.get(
+    "/{id}", 
+    summary="Get Outpass Detail (Admin)", 
+    description="Fetches detailed view of a student's outpass for administrators. **Requires:** `outpass:list`",
+    response_model=APIResponse[OutpassResponse]
+)
 async def get_outpass(
     id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -82,7 +92,12 @@ async def get_outpass(
         
     return APIResponse(success=True, data=OutpassResponse.model_validate(outpass))
 
-@router.patch("/{id}/approve", response_model=OutpassApprovalActionResponse)
+@router.patch(
+    "/{id}/approve", 
+    summary="Approve Outpass", 
+    description="Transitions a pending outpass to approved status. Logs the transition transactionally. **Requires:** `outpass:approve`",
+    response_model=OutpassApprovalActionResponse
+)
 async def approve_outpass(
     id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -114,7 +129,12 @@ async def approve_outpass(
     await db.refresh(outpass)
     return OutpassApprovalActionResponse(success=True, data=OutpassResponse.model_validate(outpass))
 
-@router.patch("/{id}/reject", response_model=OutpassApprovalActionResponse)
+@router.patch(
+    "/{id}/reject", 
+    summary="Reject Outpass", 
+    description="Rejects an outpass. Includes an optional rejection note. Logs the transition transactionally. **Requires:** `outpass:approve`",
+    response_model=OutpassApprovalActionResponse
+)
 async def reject_outpass(
     id: UUID,
     request: OutpassRejectRequest,
@@ -146,7 +166,12 @@ async def reject_outpass(
     await db.refresh(outpass)
     return OutpassApprovalActionResponse(success=True, data=OutpassResponse.model_validate(outpass))
 
-@router.patch("/{id}/depart", response_model=OutpassApprovalActionResponse)
+@router.patch(
+    "/{id}/depart", 
+    summary="Mark Outpass Departed", 
+    description="Transitions an approved outpass to active status when the student leaves the gate. **Requires:** `outpass:approve`",
+    response_model=OutpassApprovalActionResponse
+)
 async def depart_outpass(
     id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -177,7 +202,12 @@ async def depart_outpass(
     await db.refresh(outpass)
     return OutpassApprovalActionResponse(success=True, data=OutpassResponse.model_validate(outpass))
 
-@router.patch("/{id}/return", response_model=OutpassApprovalActionResponse)
+@router.patch(
+    "/{id}/return", 
+    summary="Mark Outpass Returned", 
+    description="Transitions an active outpass to completed status when the student returns. Updates actual_return_time. **Requires:** `outpass:approve`",
+    response_model=OutpassApprovalActionResponse
+)
 async def return_outpass(
     id: UUID,
     db: AsyncSession = Depends(get_db),

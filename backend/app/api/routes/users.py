@@ -8,7 +8,12 @@ from app.schemas.common import APIResponse
 
 router = APIRouter()
 
-@router.post("/me/photo", response_model=APIResponse[dict])
+@router.post(
+    "/me/photo", 
+    summary="Upload Avatar", 
+    description="Uploads a user avatar to Supabase and updates the profile URL.",
+    response_model=APIResponse[dict]
+)
 async def upload_profile_photo(
     photo: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
