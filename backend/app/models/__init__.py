@@ -4,6 +4,8 @@ from app.models.profiles import StudentProfile, FacultyProfile
 from app.models.complaint import Complaint, ComplaintStatusLog
 from app.models.rbac import Asset, Action, Permission, Role, RolePermission, UserRole
 from app.models.academic import Course, Branch
+from app.models.notice import Notice
+from app.models.outpass import Outpass, OutpassStatusLog
 
 __all__ = [
     "Base",
@@ -17,5 +19,7 @@ __all__ = [
     "RolePermission",
     "UserRole",
     "Course",
-    "Branch"
+    "Branch",
+    "Outpass",
+    "OutpassStatusLog"
 ]

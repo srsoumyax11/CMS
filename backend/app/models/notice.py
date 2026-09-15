@@ -1,0 +1,35 @@
+from sqlalchemy import Column, String, Text, ForeignKey, Integer, DateTime
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+import uuid
+from datetime import datetime
+from app.models.base import Base, TimestampMixin
+
+class NoticeRead(Base, TimestampMixin):
+    __tablename__ = "notice_reads"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    notice_id = Column(UUID(as_uuid=True), ForeignKey("notices.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    read_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+class Notice(Base, TimestampMixin):
+    __tablename__ = "notices"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String, nullable=False)
+    content = Column(Text, nullable=False)
+    
+    author_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    attachment_url = Column(String, nullable=True)
+    
+    target_course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=True)
+    target_branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="CASCADE"), nullable=True)
+    target_year = Column(Integer, nullable=True)
+    target_hostel = Column(String(255), nullable=True)
+    target_user_types = Column(String(255), nullable=True)
+
+    # Relationships
+    author = relationship("User", foreign_keys=[author_id])
+    target_course = relationship("Course", foreign_keys=[target_course_id])
+    target_branch = relationship("Branch", foreign_keys=[target_branch_id])
+    reads = relationship("NoticeRead", cascade="all, delete-orphan")

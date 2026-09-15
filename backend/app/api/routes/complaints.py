@@ -21,7 +21,7 @@ router = APIRouter()
 MAX_FILE_SIZE = 5 * 1024 * 1024 # 5 MB
 ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
-@router.post("/", response_model=APIResponse[ComplaintResponse])
+@router.post("", response_model=APIResponse[ComplaintResponse])
 async def create_complaint(
     category: ComplaintCategory = Form(...),
     location_hostel: str = Form(...),
@@ -88,8 +88,8 @@ async def create_complaint(
         
     # Re-fetch for response mapping if needed, or construct response
     response_data = ComplaintResponse.model_validate(complaint)
-    if complaint.photo_url:
-        response_data.photo_url = get_signed_url("complaint-attachments", complaint.photo_url)
+    if response_data.photo_url:
+        response_data.photo_url = get_signed_url("complaint-attachments", response_data.photo_url)
         
     return APIResponse(success=True, data=response_data)
 

@@ -32,7 +32,7 @@ VALID_TRANSITIONS = {
     ComplaintStatus.cancelled: [] # Terminal
 }
 
-@router.get("/", response_model=APIResponse[ComplaintListResponse])
+@router.get("", response_model=APIResponse[ComplaintListResponse])
 async def list_all_complaints(
     status_filter: Optional[ComplaintStatus] = Query(None, alias="status"),
     category: Optional[ComplaintCategory] = None,

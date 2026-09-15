@@ -3,11 +3,12 @@ from alembic.config import Config
 from alembic import command
 import sys
 import os
+
+# Ensure the app root is in the path BEFORE importing app modules
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from app.core.database import AsyncSessionLocal
 from sqlalchemy import text
-
-# Ensure the app root is in the path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scripts.seed_academic import seed_data as seed_academic
 from scripts.seed_rbac import seed_data as seed_rbac
@@ -28,6 +29,12 @@ async def run_seeds():
         await session.execute(text('''
             INSERT INTO storage.buckets (id, name, public) 
             VALUES ('complaint-attachments', 'complaint-attachments', false)
+            ON CONFLICT (id) DO NOTHING;
+        '''))
+        
+        await session.execute(text('''
+            INSERT INTO storage.buckets (id, name, public) 
+            VALUES ('notice-attachments', 'notice-attachments', true)
             ON CONFLICT (id) DO NOTHING;
         '''))
         await session.commit()

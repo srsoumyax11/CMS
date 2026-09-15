@@ -11,6 +11,7 @@ class RegisterRequest(BaseModel):
     course_id: uuid.UUID
     branch_id: uuid.UUID
     year: int = Field(..., ge=1990, le=2100, description="Admission or current year depending on convention")
+    hostel: str
     photo_url: Optional[str] = None
 
 class LoginRequest(BaseModel):
@@ -40,3 +41,5 @@ class UserResponse(BaseModel):
     email: EmailStr
     is_active: bool
     user_type: UserType
+    name: Optional[str] = None
+    photo_url: Optional[str] = None

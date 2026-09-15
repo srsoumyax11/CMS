@@ -59,6 +59,7 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
             course_id=data.course_id,
             branch_id=data.branch_id,
             year=data.year,
+            hostel=data.hostel.strip().lower() if data.hostel else None,
             photo_url=data.photo_url,
             status=StudentStatus.pending
         )
@@ -159,18 +160,40 @@ async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(ge
     )
 
 @router.get("/me", response_model=APIResponse[UserResponse])
-async def get_me(current_user: User = Depends(get_current_user)):
+async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """
     Get current logged in user details. Doesn't require any RBAC permissions.
     Allows users with "pending" profiles to check their status.
     """
+    name = None
+    photo_url = None
+    
+    if current_user.user_type == UserType.student:
+        from app.models.profiles import StudentProfile
+        stmt = select(StudentProfile).where(StudentProfile.user_id == current_user.id)
+        res = await db.execute(stmt)
+        prof = res.scalar_one_or_none()
+        if prof:
+            name = prof.name
+            photo_url = prof.photo_url
+    elif current_user.user_type == UserType.faculty:
+        from app.models.profiles import FacultyProfile
+        stmt = select(FacultyProfile).where(FacultyProfile.user_id == current_user.id)
+        res = await db.execute(stmt)
+        prof = res.scalar_one_or_none()
+        if prof:
+            name = prof.name
+            photo_url = prof.photo_url
+            
     return APIResponse(
         success=True,
         data=UserResponse(
             id=current_user.id,
             email=current_user.email,
             is_active=current_user.is_active,
-            user_type=current_user.user_type
+            user_type=current_user.user_type,
+            name=name,
+            photo_url=photo_url
         ),
         error=None
     )

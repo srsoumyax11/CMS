@@ -10,6 +10,7 @@ from app.core.security import decode_token
 from app.models.user import User, UserType
 from app.models.rbac import UserRole, Role, Permission, Asset, Action
 from app.models.complaint import Complaint, ComplaintVisibility
+from app.models.outpass import Outpass
 from app.core.permissions import Perms
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
@@ -90,5 +91,20 @@ def can_view_complaint_detail(complaint: Complaint, current_user: User, user_per
         
     if complaint.visibility == ComplaintVisibility.private:
         return Perms.COMPLAINT_VIEW_PRIVATE in user_permissions
+        
+    return False
+
+def can_view_outpass(outpass: Outpass, current_user: User, user_permissions: Set[str]) -> bool:
+    """
+    Evaluates row-level ownership and visibility logic for an outpass.
+    - Owner can always view their own outpass.
+    - Admins/Faculty with collection access (outpass:list) can view any individual outpass.
+    - This must be called explicitly in the handler body of GET /{id} routes to prevent IDOR.
+    """
+    if current_user.id == outpass.student_id:
+        return True
+    
+    if Perms.OUTPASS_LIST in user_permissions:
+        return True
         
     return False

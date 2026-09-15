@@ -22,6 +22,7 @@ class StudentProfile(Base, UUIDMixin, TimestampMixin):
     course_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False)
     branch_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="RESTRICT"), nullable=False)
     year: Mapped[int] = mapped_column(nullable=False)
+    hostel: Mapped[str | None] = mapped_column(String(255), nullable=True)
     photo_url: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[StudentStatus] = mapped_column(Enum(StudentStatus, name="student_status_enum"), default=StudentStatus.pending, nullable=False)
     rejection_reason: Mapped[str | None] = mapped_column(String, nullable=True)

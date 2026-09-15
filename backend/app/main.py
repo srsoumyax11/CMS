@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 import traceback
 
 from app.core.config import settings
-from app.api.routes import health, auth, users, metadata, admin, roles, complaints, admin_complaints
+from app.api.routes import health, auth, users, metadata, admin, roles, complaints, admin_complaints, notices, outpasses, admin_outpasses
 
 app = FastAPI(title="Campus Management System API", version="1.0.0")
 
@@ -29,6 +29,9 @@ app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(roles.router, prefix="/api/roles", tags=["Roles & Permissions"])
 app.include_router(complaints.router, prefix="/api/complaints", tags=["Complaints (Student/Public)"])
 app.include_router(admin_complaints.router, prefix="/api/admin/complaints", tags=["Complaints (Admin/Faculty)"])
+app.include_router(notices.router, prefix="/api/notices", tags=["Notices"])
+app.include_router(outpasses.router, prefix="/api/outpasses", tags=["Outpasses"])
+app.include_router(admin_outpasses.router, prefix="/api/admin/outpasses", tags=["Admin Outpasses"])
 
 # Exception Handlers
 @app.exception_handler(RequestValidationError)

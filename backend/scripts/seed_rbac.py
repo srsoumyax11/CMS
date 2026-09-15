@@ -13,7 +13,7 @@ async def seed_data():
     async with AsyncSessionLocal() as session:
         async with session.begin():
             # 1. Upsert Assets
-            asset_names = ["student_profile", "faculty_profile", "role", "notice", "complaint"]
+            asset_names = ["student_profile", "faculty_profile", "role", "notice", "complaint", "outpass"]
             assets = {}
             for name in asset_names:
                 stmt = insert(Asset).values(name=name)
@@ -74,7 +74,10 @@ async def seed_data():
                 "notice:view",
                 "notice:list",
                 "complaint:create",
-                "complaint:view"
+                "complaint:view",
+                "outpass:create",
+                "outpass:view",
+                "outpass:cancel"
             ]
             for sp in student_perms:
                 if sp in permissions:
@@ -93,7 +96,10 @@ async def seed_data():
                 "complaint:view",
                 "complaint:resolve",
                 "complaint:assign",
-                "complaint:view_private"
+                "complaint:view_private",
+                "outpass:list",
+                "outpass:approve",
+                "outpass:reject"
             ]
             for fp in faculty_perms:
                 if fp in permissions:

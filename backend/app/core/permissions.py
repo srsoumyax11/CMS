@@ -44,3 +44,11 @@ class Perms:
     COMPLAINT_RESOLVE = "complaint:resolve"
     COMPLAINT_ASSIGN = "complaint:assign"
     COMPLAINT_VIEW_PRIVATE = "complaint:view_private"
+
+    # Asset: outpass
+    OUTPASS_CREATE = "outpass:create"
+    OUTPASS_VIEW = "outpass:view"
+    OUTPASS_CANCEL = "outpass:cancel"
+    OUTPASS_LIST = "outpass:list"
+    OUTPASS_APPROVE = "outpass:approve"
+    OUTPASS_REJECT = "outpass:reject"

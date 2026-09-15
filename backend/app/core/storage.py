@@ -1,3 +1,4 @@
+import os
 import uuid
 import mimetypes
 from fastapi import UploadFile
@@ -57,6 +58,44 @@ def get_signed_url(bucket_name: str, file_path: str, expires_in: int = 900) -> s
         
     try:
         response = supabase.storage.from_(bucket_name).create_signed_url(file_path, expires_in)
+        if isinstance(response, dict) and "signedURL" in response:
+            return response["signedURL"]
         return response.get("signedURL")
     except Exception:
         return None
+
+async def upload_notice_attachment(file_content: bytes, filename: str, content_type: str) -> str:
+    """
+    Uploads a notice attachment to the public 'notice-attachments' bucket.
+    Renames the file to a random UUID to prevent enumeration.
+    Returns the public URL of the uploaded file.
+    """
+    # Create a random UUID filename but preserve extension
+    ext = os.path.splitext(filename)[1].lower()
+    if not ext:
+        # Fallback if no extension
+        if "pdf" in content_type:
+            ext = ".pdf"
+        elif "png" in content_type:
+            ext = ".png"
+        elif "jpeg" in content_type or "jpg" in content_type:
+            ext = ".jpg"
+        else:
+            ext = ".bin"
+            
+    safe_filename = f"{uuid.uuid4()}{ext}"
+    bucket_name = "notice-attachments"
+    
+    try:
+        supabase.storage.from_(bucket_name).upload(
+            file=file_content,
+            path=safe_filename,
+            file_options={"content-type": content_type}
+        )
+    except Exception as e:
+        # Supabase raises a generic exception on failure, sometimes containing JSON
+        raise Exception(f"Storage upload error: {str(e)}")
+        
+    # Generate the public URL
+    res = supabase.storage.from_(bucket_name).get_public_url(safe_filename)
+    return res
