@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -84,7 +84,8 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
 @router.post(
     "/token", 
     summary="OAuth2 Token Login", 
-    description="Standard OAuth2 form data login endpoint for Swagger UI testing."
+    description="Standard OAuth2 form data login endpoint for Swagger UI testing.",
+    dependencies=[Depends(RateLimiter(times=5, minutes=1))]
 )
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     """
@@ -108,7 +109,8 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     "/login", 
     summary="User Login", 
     description="Authenticates a user with email and password, returning access and refresh JWTs.",
-    response_model=APIResponse[TokenResponse]
+    response_model=APIResponse[TokenResponse],
+    dependencies=[Depends(RateLimiter(times=5, minutes=1))]
 )
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(

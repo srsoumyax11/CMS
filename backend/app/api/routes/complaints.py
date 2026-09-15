@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.api.deps import require_permission, get_user_permissions, can_view_complaint_detail
+from app.api.deps import require_permission, get_user_permissions, can_view_complaint_detail, RateLimiter
 from app.core.permissions import Perms
 from app.core.storage import upload_complaint_photo, get_signed_url
 from app.models.user import User
@@ -25,7 +25,8 @@ ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"]
     "", 
     summary="Create Complaint", 
     description="Raises a new complaint. Can optionally include a photo upload. Rate-limited to 3 per hour. **Requires:** `complaint:create`",
-    response_model=APIResponse[ComplaintResponse]
+    response_model=APIResponse[ComplaintResponse],
+    dependencies=[Depends(RateLimiter(times=3, hours=1))]
 )
 async def create_complaint(
     category: ComplaintCategory = Form(...),

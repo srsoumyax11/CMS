@@ -1,6 +1,7 @@
-from typing import Generator, Callable, Set
+from typing import Generator, Callable, Set, Dict, Tuple
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
+import time
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -15,6 +16,34 @@ from app.models.academic import TimetableSlot
 from app.core.permissions import Perms
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
+
+class RateLimiter:
+    """
+    A simple in-memory rate limiter for hackathon purposes.
+    Tracks requests by client IP in a dictionary.
+    """
+    def __init__(self, times: int, hours: int = 0, minutes: int = 0, seconds: int = 0):
+        self.times = times
+        self.window = hours * 3600 + minutes * 60 + seconds
+        self.requests: Dict[str, Tuple[float, int]] = {}
+
+    def __call__(self, request: Request):
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.time()
+        
+        if client_ip in self.requests:
+            start_time, count = self.requests[client_ip]
+            if now - start_time < self.window:
+                if count >= self.times:
+                    raise HTTPException(
+                        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                        detail="Too many requests"
+                    )
+                self.requests[client_ip] = (start_time, count + 1)
+            else:
+                self.requests[client_ip] = (now, 1)
+        else:
+            self.requests[client_ip] = (now, 1)
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
     credentials_exception = HTTPException(
