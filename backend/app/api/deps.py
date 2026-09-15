@@ -11,6 +11,7 @@ from app.models.user import User, UserType
 from app.models.rbac import UserRole, Role, Permission, Asset, Action
 from app.models.complaint import Complaint, ComplaintVisibility
 from app.models.outpass import Outpass
+from app.models.academic import TimetableSlot
 from app.core.permissions import Perms
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
@@ -105,6 +106,20 @@ def can_view_outpass(outpass: Outpass, current_user: User, user_permissions: Set
         return True
     
     if Perms.OUTPASS_LIST in user_permissions:
+        return True
+        
+    return False
+
+def can_mark_attendance(slot: TimetableSlot, current_user: User, user_permissions: Set[str]) -> bool:
+    """
+    Evaluates row-level ownership logic for attendance marking.
+    - Owner (assigned faculty) can always mark attendance for their slot.
+    - SuperAdmins (with timetable:manage) can mark anything.
+    """
+    if current_user.id == slot.faculty_id:
+        return True
+    
+    if Perms.TIMETABLE_MANAGE in user_permissions:
         return True
         
     return False

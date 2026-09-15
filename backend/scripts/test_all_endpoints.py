@@ -640,5 +640,138 @@ def run_tests():
     
     print("\n[========== 🎉 ALL PHASE 4B TESTS PASSED SUCCESSFULLY 🎉 ==========]")
 
+    # =========================================================================
+    # PHASE 4C: TIMETABLE & ATTENDANCE
+    # =========================================================================
+    print_step("30. POST /api/timetable (Admin creates Timetable Slot)")
+    # Faculty ID is `fac_id`, Course ID is `course_id`, Branch ID is `branch_id`.
+    slot_data = {
+        "course_id": course_id,
+        "branch_id": branch_id,
+        "year": 2024,
+        "subject_name": "Database Systems",
+        "faculty_id": fac_id,
+        "day_of_week": now.strftime("%A").lower(), # Current day to test today's attendance easily
+        "start_time": "10:00:00",
+        "end_time": "11:00:00",
+        "room": "Room 101"
+    }
+
+    # Negative: Student tries to create slot
+    ts_stud = requests.post(f"{BASE_URL}/timetable", headers=student_headers, json=slot_data)
+    assert ts_stud.status_code == 403
+    print("✅ Unauthorized CRUD: Student blocked from creating timetable.")
+
+    # Positive: Admin creates slot
+    ts_res = requests.post(f"{BASE_URL}/timetable", headers=admin_headers, json=slot_data)
+    assert ts_res.status_code == 200, ts_res.text
+    slot_id = ts_res.json()["data"]["id"]
+    print("✅ Admin created timetable slot successfully.")
+
+    print_step("31. POST /api/timetable (Double Booking Validation)")
+    overlap_slot_data = slot_data.copy()
+    overlap_slot_data["start_time"] = "10:30:00"
+    overlap_slot_data["end_time"] = "11:30:00"
+    
+    overlap_res = requests.post(f"{BASE_URL}/timetable", headers=admin_headers, json=overlap_slot_data)
+    assert overlap_res.status_code == 400
+    print("✅ Double-booking bug successfully caught.")
+
+    print_step("32. GET /api/attendance/roster/{slot_id}")
+    # Negative: Cross-tenant marking (Different faculty attempts to view roster)
+    # Student 1 is not a faculty member, so they lack attendance:mark completely.
+    rost_s1 = requests.get(f"{BASE_URL}/attendance/roster/{slot_id}", headers=student_headers)
+    assert rost_s1.status_code == 403
+    print("✅ Student blocked from fetching roster.")
+
+    # Positive: Faculty A (owner) fetches roster
+    rost_fac = requests.get(f"{BASE_URL}/attendance/roster/{slot_id}", headers=faculty_headers)
+    assert rost_fac.status_code == 200, rost_fac.text
+    roster_data = rost_fac.json()["data"]
+    
+    # Roster should contain Student 1 and Student 2 (both are Course 1, Branch 1, 2024)
+    found_s1 = False
+    for st in roster_data:
+        if st["student_id"] == student_id:
+            found_s1 = True
+    assert found_s1, "Student 1 not found in roster"
+    print("✅ Roster fetched correctly for authorized faculty.")
+
+    print_step("33. POST /api/attendance/batch (Validations & Upsert)")
+    attendance_date = now.strftime("%Y-%m-%d")
+    
+    # Negative: Time-Traveler bug (future date)
+    future_date = (now + timedelta(days=7)).strftime("%Y-%m-%d")
+    batch_data_future = {
+        "slot_id": slot_id,
+        "date": future_date,
+        "records": [{"student_id": student_id, "status": "present"}]
+    }
+    att_future = requests.post(f"{BASE_URL}/attendance/batch", headers=faculty_headers, json=batch_data_future)
+    assert att_future.status_code == 422
+    print("✅ Time-Traveler bug blocked (future date rejected).")
+
+    # Negative: Day-Mismatch Bug
+    # Create a slot for tomorrow to ensure a mismatch
+    tomorrow_day = (now + timedelta(days=1)).strftime("%A").lower()
+    slot_tmrw_data = slot_data.copy()
+    slot_tmrw_data["day_of_week"] = tomorrow_day
+    slot_tmrw_data["start_time"] = "14:00:00"
+    slot_tmrw_data["end_time"] = "15:00:00"
+    ts_tmrw = requests.post(f"{BASE_URL}/timetable", headers=admin_headers, json=slot_tmrw_data)
+    slot_tmrw_id = ts_tmrw.json()["data"]["id"]
+
+    batch_mismatch = {
+        "slot_id": slot_tmrw_id,
+        "date": attendance_date, # today's date
+        "records": []
+    }
+    att_mismatch = requests.post(f"{BASE_URL}/attendance/batch", headers=faculty_headers, json=batch_mismatch)
+    assert att_mismatch.status_code == 400
+    print("✅ Day-Mismatch bug blocked.")
+
+    # Negative: Ghost Student Exploit
+    fake_student_id = "00000000-0000-0000-0000-000000000000"
+    batch_ghost = {
+        "slot_id": slot_id,
+        "date": attendance_date,
+        "records": [{"student_id": fake_student_id, "status": "present"}]
+    }
+    att_ghost = requests.post(f"{BASE_URL}/attendance/batch", headers=faculty_headers, json=batch_ghost)
+    assert att_ghost.status_code == 400
+    print("✅ Ghost Student Exploit blocked.")
+
+    # Positive: Valid Upsert 1 (absent)
+    batch_valid = {
+        "slot_id": slot_id,
+        "date": attendance_date,
+        "records": [
+            {"student_id": student_id, "status": "absent"},
+            {"student_id": s2_id, "status": "absent"}
+        ]
+    }
+    att_ok1 = requests.post(f"{BASE_URL}/attendance/batch", headers=faculty_headers, json=batch_valid)
+    assert att_ok1.status_code == 200, att_ok1.text
+
+    # Positive: Valid Upsert 2 (present) - Should overwrite without crashing
+    batch_valid["records"][0]["status"] = "present"
+    att_ok2 = requests.post(f"{BASE_URL}/attendance/batch", headers=faculty_headers, json=batch_valid)
+    assert att_ok2.status_code == 200, att_ok2.text
+    print("✅ PostgreSQL Bulk Upsert completed successfully without constraint crashing.")
+
+    # Verify student stats
+    print_step("34. GET /api/attendance/mine/stats")
+    stats_s1 = requests.get(f"{BASE_URL}/attendance/mine/stats", headers=student_headers)
+    assert stats_s1.status_code == 200
+    stat_data = stats_s1.json()["data"]
+    assert len(stat_data) == 1
+    assert stat_data[0]["subject_name"] == "Database Systems"
+    assert stat_data[0]["present"] == 1
+    assert stat_data[0]["absent"] == 0
+    print("✅ Attendance stats computed successfully.")
+
+    print("\n[========== 🎉 ALL PHASE 4C TESTS PASSED SUCCESSFULLY 🎉 ==========]")
+
+
 if __name__ == "__main__":
     run_tests()

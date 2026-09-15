@@ -13,7 +13,7 @@ async def seed_data():
     async with AsyncSessionLocal() as session:
         async with session.begin():
             # 1. Upsert Assets
-            asset_names = ["student_profile", "faculty_profile", "role", "notice", "complaint", "outpass"]
+            asset_names = ["student_profile", "faculty_profile", "role", "notice", "complaint", "outpass", "timetable", "attendance"]
             assets = {}
             for name in asset_names:
                 stmt = insert(Asset).values(name=name)
@@ -22,7 +22,7 @@ async def seed_data():
                 assets[name] = result.scalar_one()
 
             # 2. Upsert Actions
-            action_codes = ["view", "list", "create", "edit", "delete", "approve", "reject", "resolve", "assign", "view_private"]
+            action_codes = ["view", "list", "create", "edit", "delete", "approve", "reject", "resolve", "assign", "view_private", "manage", "mark"]
             actions = {}
             for code in action_codes:
                 stmt = insert(Action).values(code=code)
@@ -77,9 +77,11 @@ async def seed_data():
                 "complaint:view",
                 "outpass:create",
                 "outpass:view",
-                "outpass:cancel"
+                "outpass:cancel",
+                "timetable:view",
+                "attendance:view"
             ]
-            for sp in student_perms:
+            for sp in set(student_perms):
                 if sp in permissions:
                     session.add(RolePermission(role_id=roles["Student"].id, permission_id=permissions[sp].id))
                     
@@ -99,9 +101,12 @@ async def seed_data():
                 "complaint:view_private",
                 "outpass:list",
                 "outpass:approve",
-                "outpass:reject"
+                "outpass:reject",
+                "timetable:view",
+                "attendance:view",
+                "attendance:mark"
             ]
-            for fp in faculty_perms:
+            for fp in set(faculty_perms):
                 if fp in permissions:
                     session.add(RolePermission(role_id=roles["Faculty"].id, permission_id=permissions[fp].id))
 

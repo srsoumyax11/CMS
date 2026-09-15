@@ -52,3 +52,11 @@ class Perms:
     OUTPASS_LIST = "outpass:list"
     OUTPASS_APPROVE = "outpass:approve"
     OUTPASS_REJECT = "outpass:reject"
+
+    # Asset: timetable
+    TIMETABLE_MANAGE = "timetable:manage"
+    TIMETABLE_VIEW = "timetable:view"
+
+    # Asset: attendance
+    ATTENDANCE_MARK = "attendance:mark"
+    ATTENDANCE_VIEW = "attendance:view"

@@ -7,7 +7,20 @@ from sqlalchemy.exc import IntegrityError
 import traceback
 
 from app.core.config import settings
-from app.api.routes import health, auth, users, metadata, admin, roles, complaints, admin_complaints, notices, outpasses, admin_outpasses
+from app.api.routes import (
+    auth,
+    metadata,
+    users,
+    admin,
+    roles,
+    notices,
+    complaints,
+    admin_complaints,
+    outpasses,
+    admin_outpasses,
+    timetable,
+    attendance
+)
 
 tags_metadata = [
     {
@@ -71,10 +84,9 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(metadata.router, prefix="/api/metadata", tags=["Metadata"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
-app.include_router(users.router, prefix="/api/users", tags=["Users"])
+app.include_router(users.router, prefix="/api/profiles", tags=["Users"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(roles.router, prefix="/api/roles", tags=["Roles & Permissions"])
 app.include_router(complaints.router, prefix="/api/complaints", tags=["Complaints (Student/Public)"])
@@ -82,6 +94,8 @@ app.include_router(admin_complaints.router, prefix="/api/admin/complaints", tags
 app.include_router(notices.router, prefix="/api/notices", tags=["Notices"])
 app.include_router(outpasses.router, prefix="/api/outpasses", tags=["Outpasses"])
 app.include_router(admin_outpasses.router, prefix="/api/admin/outpasses", tags=["Admin Outpasses"])
+app.include_router(timetable.router, prefix="/api/timetable", tags=["Timetable"])
+app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
 
 # Exception Handlers
 @app.exception_handler(RequestValidationError)
