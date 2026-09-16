@@ -53,14 +53,14 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
         new_user = User(
             email=data.email,
             hashed_password=hash_password(data.password),
-            user_type=UserType.student
+            user_type=UserType.student,
+            name=data.name
         )
         db.add(new_user)
         await db.flush()  # to get new_user.id
         
         student_profile = StudentProfile(
             user_id=new_user.id,
-            name=data.name,
             course_id=data.course_id,
             branch_id=data.branch_id,
             year=data.year,
@@ -191,8 +191,9 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
     Get current logged in user details. Doesn't require any RBAC permissions.
     Allows users with "pending" profiles to check their status.
     """
-    name = None
-    photo_url = None
+    name = current_user.name
+    photo_url = current_user.photo_url
+    profile_status = None
     
     if current_user.user_type == UserType.student:
         from app.models.profiles import StudentProfile
@@ -200,16 +201,14 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
         res = await db.execute(stmt)
         prof = res.scalar_one_or_none()
         if prof:
-            name = prof.name
-            photo_url = prof.photo_url
+            profile_status = prof.status.value
     elif current_user.user_type == UserType.faculty:
         from app.models.profiles import FacultyProfile
         stmt = select(FacultyProfile).where(FacultyProfile.user_id == current_user.id)
         res = await db.execute(stmt)
         prof = res.scalar_one_or_none()
         if prof:
-            name = prof.name
-            photo_url = prof.photo_url
+            profile_status = prof.status.value
             
     return APIResponse(
         success=True,
@@ -218,6 +217,7 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
             email=current_user.email,
             is_active=current_user.is_active,
             user_type=current_user.user_type,
+            status=profile_status,
             name=name,
             photo_url=photo_url
         ),

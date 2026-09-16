@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from uuid import UUID
 from typing import List, Optional
@@ -199,6 +199,65 @@ async def assign_role(
         
     new_ur = UserRole(user_id=req.user_id, role_id=id, scope_id=req.scope_id)
     db.add(new_ur)
+    await db.commit()
+    
+    return APIResponse(success=True, data=True, error=None)
+
+@router.get(
+    "/{id}/assignments/count",
+    summary="Get Role Assignment Count",
+    description="Returns the number of users currently assigned to this role.",
+    response_model=APIResponse[int]
+)
+async def get_assignment_count(
+    id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.ROLE_VIEW))
+):
+    stmt = select(func.count(UserRole.id)).where(UserRole.role_id == id)
+    count = (await db.execute(stmt)).scalar() or 0
+    return APIResponse(success=True, data=count, error=None)
+
+@router.delete(
+    "/{id}",
+    summary="Delete Role",
+    description="Deletes a custom role. Fails if assigned to users unless force=true. **Requires:** `role:delete`",
+    response_model=APIResponse[bool]
+)
+async def delete_role(
+    id: UUID,
+    force: bool = Query(False),
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.ROLE_DELETE))
+):
+    role = await db.get(Role, id)
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+        
+    if role.is_system_role:
+        raise HTTPException(status_code=400, detail="Cannot delete system roles")
+        
+    if not force:
+        # Check if assigned to any users
+        ur_stmt = select(UserRole).where(UserRole.role_id == id).limit(1)
+        if (await db.execute(ur_stmt)).scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Cannot delete role: It is currently assigned to one or more users")
+            
+    if force:
+        # Delete user assignments
+        del_ur_stmt = select(UserRole).where(UserRole.role_id == id)
+        user_roles = (await db.execute(del_ur_stmt)).scalars().all()
+        for ur in user_roles:
+            await db.delete(ur)
+            
+    # Delete permissions first (if not cascade)
+    rp_stmt = select(RolePermission).where(RolePermission.role_id == id)
+    role_perms = (await db.execute(rp_stmt)).scalars().all()
+    for rp in role_perms:
+        await db.delete(rp)
+        
+    # Delete role
+    await db.delete(role)
     await db.commit()
     
     return APIResponse(success=True, data=True, error=None)

@@ -41,5 +41,14 @@ class UserResponse(BaseModel):
     email: EmailStr
     is_active: bool
     user_type: UserType
+    # Status will be None for admin, or pending/approved/rejected for students/faculty
+    status: Optional[str] = None
     name: Optional[str] = None
     photo_url: Optional[str] = None
+
+class NameUpdateRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=8)

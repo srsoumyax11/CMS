@@ -1,0 +1,451 @@
+// ── Enums / Union Types ──────────────────────────────────────────────
+
+export type UserRole = 'student' | 'faculty' | 'admin';
+export type UserStatus = 'pending' | 'active' | 'inactive' | 'suspended';
+export type UserType = 'student' | 'faculty' | 'admin';
+
+export type ComplaintCategory =
+  | 'electrical'
+  | 'plumbing'
+  | 'wifi'
+  | 'cleanliness'
+  | 'furniture'
+  | 'security'
+  | 'other';
+
+export type ComplaintStatus =
+  | 'open'
+  | 'in_progress'
+  | 'resolved'
+  | 'closed'
+  | 'cancelled';
+
+export type ComplaintVisibility = 'public' | 'private';
+
+export type OutpassStatus =
+  | 'pending'
+  | 'approved'
+  | 'active'
+  | 'completed'
+  | 'rejected'
+  | 'cancelled';
+
+export type DayOfWeek =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday';
+
+export type MealType = 'breakfast' | 'lunch' | 'snacks' | 'dinner';
+
+export type ScopeType = 'college' | 'hostel' | 'department' | 'self';
+
+// ── Auth ─────────────────────────────────────────────────────────────
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user_type: UserType;
+  status: string;
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
+export interface RefreshTokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  name: string;
+  course_id: string;
+  branch_id: string;
+  year: number;
+  hostel: string;
+  photo_url?: string | null;
+}
+
+export interface RegisterResponseData {
+  user_id: string;
+  status: string;
+}
+
+export interface UserResponse {
+  id: string;
+  email: string;
+  is_active: boolean;
+  user_type: UserType;
+  status?: string | null;
+  name?: string | null;
+  photo_url?: string | null;
+}
+
+export interface NameUpdateRequest {
+  name: string;
+}
+
+export interface PasswordChangeRequest {
+  current_password: string;
+  new_password: string;
+}
+
+// ── Generic API Response ─────────────────────────────────────────────
+
+export interface APIResponse<T> {
+  success: boolean;
+  data: T | null;
+  error?: string | null;
+}
+
+// ── Metadata ─────────────────────────────────────────────────────────
+
+export interface Course {
+  id: string;
+  name: string;
+  branches: Branch[];
+}
+
+export interface Branch {
+  id: string;
+  name: string;
+}
+
+// ── Complaints ───────────────────────────────────────────────────────
+
+export interface ComplaintResponse {
+  id: string;
+  raised_by: string;
+  category: ComplaintCategory;
+  location_hostel: string;
+  location_room: string | null;
+  description: string;
+  photo_url: string | null;
+  visibility: ComplaintVisibility;
+  status: ComplaintStatus;
+  assigned_to: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ComplaintListResponse {
+  total: number;
+  items: ComplaintResponse[];
+}
+
+export interface ComplaintCreateRequest {
+  category: ComplaintCategory;
+  location_hostel: string;
+  location_room?: string | null;
+  description: string;
+  visibility?: ComplaintVisibility;
+  photo?: File | null;
+}
+
+export interface ComplaintStatusUpdateRequest {
+  status: ComplaintStatus;
+  note?: string | null;
+}
+
+export interface ComplaintAssignRequest {
+  assigned_to: string;
+}
+
+export interface RecurringIssueResponse {
+  category: ComplaintCategory;
+  location_hostel: string;
+  count: number;
+  window_days: number;
+}
+
+export interface AgeingComplaintResponse {
+  id: string;
+  category: ComplaintCategory;
+  location_hostel: string;
+  location_room: string | null;
+  status: ComplaintStatus;
+  created_at: string;
+  age_days: number;
+}
+
+// ── Notices ──────────────────────────────────────────────────────────
+
+export interface NoticeResponse {
+  id: string;
+  title: string;
+  content: string;
+  author_id: string;
+  attachment_url: string | null;
+  target_course_id: string | null;
+  target_branch_id: string | null;
+  target_year: number | null;
+  target_hostel: string | null;
+  target_user_types: string | null;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoticeListResponse {
+  total: number;
+  items: NoticeResponse[];
+}
+
+export interface NoticeCreateRequest {
+  title: string;
+  content: string;
+  target_course_id?: string | null;
+  target_branch_id?: string | null;
+  target_year?: number | null;
+  target_hostel?: string | null;
+  target_user_types?: string | null;
+  file?: File | null;
+}
+
+export interface NoticeUpdateRequest {
+  title?: string | null;
+  content?: string | null;
+}
+
+// ── Outpasses ────────────────────────────────────────────────────────
+
+export interface OutpassResponse {
+  id: string;
+  student_id: string;
+  destination: string;
+  reason: string;
+  departure_time: string;
+  expected_return_time: string;
+  actual_return_time: string | null;
+  status: OutpassStatus;
+  approved_by: string | null;
+  created_at: string;
+  updated_at: string | null;
+  is_overdue: boolean;
+  overdue_hours: number;
+}
+
+export interface OutpassListResponse {
+  total: number;
+  items: OutpassResponse[];
+}
+
+export interface OutpassCreateRequest {
+  destination: string;
+  reason: string;
+  departure_time: string;
+  expected_return_time: string;
+}
+
+export interface OutpassRejectRequest {
+  note?: string | null;
+}
+
+export interface OutpassApprovalActionResponse {
+  success: boolean;
+  data: OutpassResponse | null;
+  error?: string | null;
+}
+
+// ── Timetable ────────────────────────────────────────────────────────
+
+export interface TimetableSlot {
+  id: string;
+  course_id: string;
+  branch_id: string;
+  year: number;
+  subject_name: string;
+  faculty_id: string;
+  day_of_week: DayOfWeek;
+  start_time: string;
+  end_time: string;
+  room: string | null;
+}
+
+export interface TimetableSlotCreate {
+  course_id: string;
+  branch_id: string;
+  year: number;
+  subject_name: string;
+  faculty_id: string;
+  day_of_week: DayOfWeek;
+  start_time: string;
+  end_time: string;
+  room?: string | null;
+}
+
+export interface TimetableSlotUpdate {
+  course_id?: string | null;
+  branch_id?: string | null;
+  year?: number | null;
+  subject_name?: string | null;
+  faculty_id?: string | null;
+  day_of_week?: DayOfWeek | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  room?: string | null;
+}
+
+// ── Attendance ──────────────────────────────────────────────────────
+
+export interface AttendanceRosterItem {
+  student_id: string;
+  status: string;
+}
+
+export interface AttendanceBatchRequest {
+  slot_id: string;
+  date: string;
+  records: AttendanceRosterItem[];
+}
+
+export interface AttendanceStat {
+  subject_name: string;
+  total_classes: number;
+  attended: number;
+  percentage: number;
+}
+
+// ── Mess ─────────────────────────────────────────────────────────────
+
+export interface MessMenu {
+  day_of_week: DayOfWeek;
+  meal_type: MealType;
+  items: string;
+}
+
+export interface MessMenuCreate {
+  day_of_week: DayOfWeek;
+  meal_type: MealType;
+  items: string;
+}
+
+export interface MessFeedbackCreate {
+  date: string;
+  meal_type: MealType;
+  rating: number;
+  comments?: string | null;
+}
+
+export interface MessOptOutCreate {
+  date: string;
+  meal_type: MealType;
+}
+
+// ── Admin: Students ──────────────────────────────────────────────────
+
+export interface StudentItemResponse {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  course_name: string;
+  branch_name: string;
+  year: number;
+  status: string;
+}
+
+export interface StudentApprovalRequest {
+  status: 'approved' | 'rejected';
+  rejection_reason?: string | null;
+}
+
+// ── Admin: Faculty ───────────────────────────────────────────────────
+
+export interface FacultyItemResponse {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  department: string;
+  designation: string;
+}
+
+export interface FacultyCreateRequest {
+  email: string;
+  password: string;
+  name: string;
+  department: string;
+  designation: string;
+}
+
+export interface FacultyUpdateRequest {
+  name?: string | null;
+  department?: string | null;
+  designation?: string | null;
+  status?: 'active' | 'inactive' | null;
+}
+
+// ── Roles & Permissions ─────────────────────────────────────────────
+
+export interface RoleResponse {
+  id: string;
+  name: string;
+  scope_type: ScopeType;
+  is_system_role: boolean;
+}
+
+export interface RoleCreateRequest {
+  name: string;
+  scope_type: ScopeType;
+  permission_ids: string[];
+}
+
+export interface UpdatePermissionsRequest {
+  permission_ids: string[];
+}
+
+export interface AssignRoleRequest {
+  user_id: string;
+  scope_id?: string | null;
+}
+
+export interface ActionMatrixItem {
+  id: string;
+  code: string;
+  granted: boolean;
+}
+
+export interface AssetMatrixItem {
+  id: string;
+  name: string;
+  actions: ActionMatrixItem[];
+}
+
+export interface PermissionMatrixResponse {
+  assets: AssetMatrixItem[];
+}
+
+// ── Query Params ────────────────────────────────────────────────────
+
+export interface PaginationParams {
+  skip?: number;
+  limit?: number;
+}
+
+export interface ComplaintListParams extends PaginationParams {
+  status?: ComplaintStatus | null;
+  category?: ComplaintCategory | null;
+  hostel?: string | null;
+}
+
+export interface OutpassListParams extends PaginationParams {
+  status?: OutpassStatus | null;
+  is_overdue?: boolean | null;
+}
+
+export interface StudentListParams extends PaginationParams {
+  status?: string | null;
+}

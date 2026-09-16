@@ -22,7 +22,7 @@ async def seed_data():
                 assets[name] = result.scalar_one()
 
             # 2. Upsert Actions
-            action_codes = ["view", "list", "create", "edit", "delete", "approve", "reject", "resolve", "assign", "view_private", "manage", "mark", "feedback"]
+            action_codes = ["view", "list", "create", "edit", "delete", "approve", "reject", "resolve", "assign", "view_private", "manage", "mark", "feedback", "cancel"]
             actions = {}
             for code in action_codes:
                 stmt = insert(Action).values(code=code)
@@ -30,10 +30,28 @@ async def seed_data():
                 result = await session.execute(stmt.returning(Action))
                 actions[code] = result.scalar_one()
 
-            # 3. Upsert Permissions (Cross-Product)
+            # 3. Upsert Permissions (Explicit mapping instead of Cartesian product)
+            VALID_PERMISSIONS = {
+                "student_profile": ["view", "list", "create", "edit", "delete", "approve", "reject"],
+                "faculty_profile": ["view", "list", "create", "edit", "delete", "approve", "reject"],
+                "role": ["view", "list", "create", "edit", "delete", "approve", "reject"],
+                "notice": ["view", "list", "create", "edit", "delete", "approve", "reject"],
+                "complaint": ["view", "list", "create", "edit", "delete", "resolve", "assign", "view_private"],
+                "outpass": ["create", "view", "cancel", "list", "approve", "reject"],
+                "timetable": ["manage", "view"],
+                "attendance": ["mark", "view"],
+                "mess": ["manage", "view", "feedback"]
+            }
+
             permissions = {}
-            for asset_name, asset in assets.items():
-                for action_code, action in actions.items():
+            for asset_name, valid_action_codes in VALID_PERMISSIONS.items():
+                if asset_name not in assets:
+                    continue
+                asset = assets[asset_name]
+                for action_code in valid_action_codes:
+                    if action_code not in actions:
+                        continue
+                    action = actions[action_code]
                     stmt = insert(Permission).values(asset_id=asset.id, action_id=action.id)
                     # Unique constraint is on (asset_id, action_id)
                     stmt = stmt.on_conflict_do_nothing().returning(Permission)

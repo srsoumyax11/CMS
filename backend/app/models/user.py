@@ -16,6 +16,8 @@ class User(Base, UUIDMixin, TimestampMixin):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     user_type: Mapped[UserType] = mapped_column(Enum(UserType, name="user_type_enum"), nullable=False)
+    name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    photo_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     student_profile: Mapped[Optional["StudentProfile"]] = relationship("StudentProfile", back_populates="user", cascade="all, delete-orphan", uselist=False)
     faculty_profile: Mapped[Optional["FacultyProfile"]] = relationship("FacultyProfile", back_populates="user", cascade="all, delete-orphan", uselist=False)
