@@ -5,10 +5,12 @@ export const API_ROUTES = {
   ME: '/api/auth/me',
   REGISTER: '/api/auth/register',
   TOKEN: '/api/auth/token',
+  CHECK_USERNAME: '/api/auth/check-username',
 
   // Profile
   UPLOAD_PHOTO: '/api/profiles/me/photo',
   UPDATE_NAME: '/api/profiles/me/name',
+  UPDATE_USER_ID: '/api/profiles/me/user-id',
   CHANGE_PASSWORD: '/api/profiles/me/password',
 
   // Metadata
@@ -79,6 +81,7 @@ export const API_ROUTES = {
 
   // Roles & Permissions
   ROLES: '/api/roles',
+  ROLE_TEMPLATES: '/api/roles/templates',
   PERMISSION_MATRIX: '/api/roles/permission-matrix',
   ROLE_PERMISSIONS: (id: string) => `/api/roles/${id}/permissions`,
   ROLE_ASSIGN: (id: string) => `/api/roles/${id}/assign`,
@@ -136,6 +139,7 @@ export const QUERY_KEYS = {
   STUDENT: 'student',
   FACULTY: 'faculty',
   ROLES: 'roles',
+  ROLE_TEMPLATES: 'role-templates',
   PERMISSION_MATRIX: 'permission-matrix',
 } as const;
 

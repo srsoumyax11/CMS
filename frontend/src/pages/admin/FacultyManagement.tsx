@@ -28,6 +28,7 @@ export function FacultyManagement() {
     email: '',
     password: '',
     name: '',
+    user_id: '',
     department: '',
     designation: '',
   });
@@ -50,7 +51,7 @@ export function FacultyManagement() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FACULTY] });
       toast.success('Faculty member created');
       setShowCreate(false);
-      setForm({ email: '', password: '', name: '', department: '', designation: '' });
+      setForm({ email: '', password: '', name: '', user_id: '', department: '', designation: '' });
     },
     onError: () => toast.error('Failed to create faculty member'),
   });
@@ -159,6 +160,16 @@ export function FacultyManagement() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="f-user-id">User ID / Employee ID</Label>
+              <Input
+                id="f-user-id"
+                value={form.user_id}
+                onChange={(e) => setForm({ ...form, user_id: e.target.value })}
+                required
+                placeholder="e.g. EMP123"
               />
             </div>
             <div className="space-y-2">

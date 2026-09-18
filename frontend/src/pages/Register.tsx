@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { authApi } from '@/api/authApi';
@@ -15,12 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { GraduationCap, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { GraduationCap, Loader2, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import type { Course } from '@/types/api';
 
 export function Register() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [courseId, setCourseId] = useState('');
@@ -28,6 +29,36 @@ export function Register() {
   const [year, setYear] = useState('');
   const [hostel, setHostel] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const [userIdError, setUserIdError] = useState<string | null>(null);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!userId) {
+      setUserIdError(null);
+      setIsUsernameAvailable(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsCheckingUsername(true);
+      try {
+        const res = await authApi.checkUsername(userId);
+        if (res.data.data) {
+          setUserIdError(null);
+          setIsUsernameAvailable(true);
+        } else {
+          setUserIdError('User ID is already taken');
+          setIsUsernameAvailable(false);
+        }
+      } catch (err) {
+        // ignore network error for live validation
+      } finally {
+        setIsCheckingUsername(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [userId]);
 
   const coursesQuery = useQuery({
     queryKey: [QUERY_KEYS.COURSES],
@@ -44,6 +75,7 @@ export function Register() {
         email,
         password,
         name,
+        user_id: userId,
         course_id: courseId,
         branch_id: branchId,
         year: parseInt(year, 10),
@@ -73,6 +105,10 @@ export function Register() {
     setError(null);
     if (!courseId || !branchId) {
       setError('Please select a course and branch.');
+      return;
+    }
+    if (userIdError) {
+      setError('Please choose an available User ID.');
       return;
     }
     registerMutation.mutate();
@@ -107,6 +143,26 @@ export function Register() {
                   required
                   placeholder="Your full name"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="userId">User ID / Registration No.</Label>
+                  {isCheckingUsername && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                  {!isCheckingUsername && isUsernameAvailable && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
+                </div>
+                <Input
+                  id="userId"
+                  type="text"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  required
+                  placeholder="e.g. STU12345"
+                  className={userIdError ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {userIdError && (
+                  <p className="text-xs text-destructive">{userIdError}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -213,7 +269,7 @@ export function Register() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={registerMutation.isPending || !email || !password || !name || !courseId || !branchId || !year || !hostel}
+                disabled={registerMutation.isPending || !email || !userId || !password || !name || !courseId || !branchId || !year || !hostel}
               >
                 {registerMutation.isPending ? (
                   <>

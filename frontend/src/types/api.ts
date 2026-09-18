@@ -41,7 +41,6 @@ export type DayOfWeek =
 
 export type MealType = 'breakfast' | 'lunch' | 'snacks' | 'dinner';
 
-export type ScopeType = 'college' | 'hostel' | 'department' | 'self';
 
 // ── Auth ─────────────────────────────────────────────────────────────
 
@@ -71,6 +70,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   name: string;
+  user_id: string;
   course_id: string;
   branch_id: string;
   year: number;
@@ -86,6 +86,7 @@ export interface RegisterResponseData {
 export interface UserResponse {
   id: string;
   email: string;
+  user_id?: string | null;
   is_active: boolean;
   user_type: UserType;
   status?: string | null;
@@ -95,6 +96,10 @@ export interface UserResponse {
 
 export interface NameUpdateRequest {
   name: string;
+}
+
+export interface UserIdUpdateRequest {
+  user_id: string;
 }
 
 export interface PasswordChangeRequest {
@@ -349,6 +354,7 @@ export interface MessOptOutCreate {
 export interface StudentItemResponse {
   id: string;
   user_id: string;
+  user_uuid: string;
   name: string;
   email: string;
   course_name: string;
@@ -367,6 +373,7 @@ export interface StudentApprovalRequest {
 export interface FacultyItemResponse {
   id: string;
   user_id: string;
+  user_uuid: string;
   name: string;
   email: string;
   department: string;
@@ -377,6 +384,7 @@ export interface FacultyCreateRequest {
   email: string;
   password: string;
   name: string;
+  user_id: string;
   department: string;
   designation: string;
 }
@@ -393,13 +401,13 @@ export interface FacultyUpdateRequest {
 export interface RoleResponse {
   id: string;
   name: string;
-  scope_type: ScopeType;
+  description?: string | null;
   is_system_role: boolean;
 }
 
 export interface RoleCreateRequest {
   name: string;
-  scope_type: ScopeType;
+  description?: string | null;
   permission_ids: string[];
 }
 
@@ -409,7 +417,6 @@ export interface UpdatePermissionsRequest {
 
 export interface AssignRoleRequest {
   user_id: string;
-  scope_id?: string | null;
 }
 
 export interface ActionMatrixItem {
@@ -427,6 +434,8 @@ export interface AssetMatrixItem {
 export interface PermissionMatrixResponse {
   assets: AssetMatrixItem[];
 }
+
+export type RoleTemplatesResponse = Record<string, string[]>;
 
 // ── Query Params ────────────────────────────────────────────────────
 

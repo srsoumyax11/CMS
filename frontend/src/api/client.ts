@@ -61,7 +61,8 @@ client.interceptors.response.use(
     };
 
     if (error.response?.status !== 401 || originalRequest._retry) {
-      return Promise.reject(error);
+      const serverError = error.response?.data?.error || error.message || 'An error occurred';
+      return Promise.reject(new Error(serverError));
     }
 
     if (originalRequest.url === API_ROUTES.REFRESH) {

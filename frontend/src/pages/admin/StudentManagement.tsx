@@ -54,6 +54,13 @@ export function StudentManagement() {
       ),
     },
     {
+      key: 'user_id',
+      header: 'ID',
+      render: (row: StudentItemResponse) => (
+        <span className="text-sm font-medium">{row.user_id || 'N/A'}</span>
+      ),
+    },
+    {
       key: 'email',
       header: 'Email',
       render: (row: StudentItemResponse) => (

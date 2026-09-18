@@ -11,6 +11,7 @@ import type {
   RegisterResponseData,
   NameUpdateRequest,
   PasswordChangeRequest,
+  UserIdUpdateRequest,
 } from '@/types/api';
 
 export const authApi = {
@@ -38,6 +39,12 @@ export const authApi = {
   updateName: (data: NameUpdateRequest) =>
     client.patch<APIResponse<{ name: string }>>(API_ROUTES.UPDATE_NAME, data),
 
+  updateUserId: (data: UserIdUpdateRequest) =>
+    client.patch<APIResponse<{ user_id: string }>>(API_ROUTES.UPDATE_USER_ID, data),
+
   changePassword: (data: PasswordChangeRequest) =>
     client.post<APIResponse<{ message: string }>>(API_ROUTES.CHANGE_PASSWORD, data),
+
+  checkUsername: (userId: string) =>
+    client.get<APIResponse<boolean>>(`${API_ROUTES.CHECK_USERNAME}?user_id=${encodeURIComponent(userId)}`),
 };

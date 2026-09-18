@@ -46,7 +46,7 @@ def upgrade() -> None:
     )
     op.create_table('roles',
     sa.Column('name', sa.String(length=255), nullable=False),
-    sa.Column('scope_type', sa.Enum('college', 'hostel', 'department', 'self', name='scope_type_enum'), nullable=False),
+    sa.Column('is_system_role', sa.Boolean(), nullable=False, server_default='false'),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -100,7 +100,6 @@ def upgrade() -> None:
     op.create_table('user_roles',
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('role_id', sa.UUID(), nullable=False),
-    sa.Column('scope_id', sa.UUID(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ondelete='CASCADE'),

@@ -50,8 +50,9 @@ async def list_students(
     for p in profiles:
         data.append(StudentItemResponse(
             id=p.id,
-            user_id=p.user_id,
-            name=p.name,
+            user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
+            user_uuid=p.user_id,
+            name=p.user.name if p.user else "",
             email=p.user.email if p.user else "",
             course_name=p.course.name if p.course else "",
             branch_name=p.branch.name if p.branch else "",
@@ -86,8 +87,9 @@ async def get_student(
         
     data = StudentItemResponse(
         id=p.id,
-        user_id=p.user_id,
-        name=p.name,
+        user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
+        user_uuid=p.user_id,
+        name=p.user.name if p.user else "",
         email=p.user.email if p.user else "",
         course_name=p.course.name if p.course else "",
         branch_name=p.branch.name if p.branch else "",
@@ -150,8 +152,9 @@ async def update_student_status(
     
     data = StudentItemResponse(
         id=p.id,
-        user_id=p.user_id,
-        name=p.name,
+        user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
+        user_uuid=p.user_id,
+        name=p.user.name if p.user else "",
         email=p.user.email if p.user else "",
         course_name=p.course.name if p.course else "",
         branch_name=p.branch.name if p.branch else "",
@@ -180,14 +183,13 @@ async def create_faculty(
         email=req.email,
         hashed_password=hash_password(req.password),
         user_type=UserType.faculty,
-        is_active=True
+        name=req.name
     )
     db.add(new_user)
-    await db.flush() # get new_user.id
+    await db.flush()
     
     new_profile = FacultyProfile(
         user_id=new_user.id,
-        name=req.name,
         department=req.department,
         designation=req.designation,
         status="active"
@@ -207,8 +209,9 @@ async def create_faculty(
     
     data = FacultyItemResponse(
         id=new_profile.id,
-        user_id=new_profile.user_id,
-        name=new_profile.name,
+        user_id=new_user.user_id if new_user.user_id else str(new_profile.user_id),
+        user_uuid=new_profile.user_id,
+        name=new_user.name,
         email=new_user.email,
         department=new_profile.department,
         designation=new_profile.designation
@@ -235,8 +238,9 @@ async def list_faculty(
     for p in profiles:
         data.append(FacultyItemResponse(
             id=p.id,
-            user_id=p.user_id,
-            name=p.name,
+            user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
+            user_uuid=p.user_id,
+            name=p.user.name if p.user else "",
             email=p.user.email if p.user else "",
             department=p.department,
             designation=p.designation

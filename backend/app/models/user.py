@@ -16,6 +16,7 @@ class User(Base, UUIDMixin, TimestampMixin):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     user_type: Mapped[UserType] = mapped_column(Enum(UserType, name="user_type_enum"), nullable=False)
+    user_id: Mapped[Optional[str]] = mapped_column(String(50), unique=True, index=True, nullable=True)
     name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     photo_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 

@@ -26,6 +26,7 @@ async def create_and_approve_student(client: httpx.AsyncClient, email: str, name
         "email": email,
         "password": "SecurePassword123!",
         "name": name,
+        "user_id": f"STU_{uuid.uuid4().hex[:8].upper()}",
         "phone": "1234567890",
         "course_id": course_id,
         "branch_id": branch_id,

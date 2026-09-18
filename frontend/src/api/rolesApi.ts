@@ -7,6 +7,7 @@ import type {
   UpdatePermissionsRequest,
   AssignRoleRequest,
   PermissionMatrixResponse,
+  RoleTemplatesResponse,
 } from '@/types/api';
 
 export const rolesApi = {
@@ -15,6 +16,9 @@ export const rolesApi = {
 
   create: (data: RoleCreateRequest) =>
     client.post<APIResponse<RoleResponse>>(API_ROUTES.ROLES, data),
+
+  getTemplates: () =>
+    client.get<APIResponse<RoleTemplatesResponse>>(API_ROUTES.ROLE_TEMPLATES),
 
   getPermissionMatrix: (roleId?: string) =>
     client.get<APIResponse<PermissionMatrixResponse>>(API_ROUTES.PERMISSION_MATRIX, {

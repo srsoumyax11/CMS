@@ -1,16 +1,10 @@
 import enum
 import uuid
-from sqlalchemy import String, Boolean, Enum, ForeignKey, UniqueConstraint
+from sqlalchemy import String, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Optional
 from app.models.base import Base, TimestampMixin, UUIDMixin
-
-class ScopeType(str, enum.Enum):
-    college = "college"
-    hostel = "hostel"
-    department = "department"
-    self = "self"
 
 class Asset(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "assets"
@@ -35,7 +29,7 @@ class Permission(Base, UUIDMixin, TimestampMixin):
 class Role(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "roles"
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    scope_type: Mapped[ScopeType] = mapped_column(Enum(ScopeType, name="scope_type_enum"), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     is_system_role: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     permissions: Mapped[List["Permission"]] = relationship("Permission", secondary="role_permissions")
@@ -49,6 +43,5 @@ class UserRole(Base, TimestampMixin):
     __tablename__ = "user_roles"
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     role_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
-    scope_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
 
     role: Mapped["Role"] = relationship("Role")

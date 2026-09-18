@@ -1,17 +1,16 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from uuid import UUID
-from app.models.rbac import ScopeType
 
 class RoleCreateRequest(BaseModel):
     name: str
-    scope_type: ScopeType
+    description: Optional[str] = None
     permission_ids: List[UUID]
 
 class RoleResponse(BaseModel):
     id: UUID
     name: str
-    scope_type: ScopeType
+    description: Optional[str] = None
     is_system_role: bool
 
 class ActionMatrixItem(BaseModel):

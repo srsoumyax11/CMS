@@ -148,12 +148,15 @@ export function DashboardLayout() {
               <div>
                 <h4 className="font-semibold">Account Pending Approval</h4>
                 <p className="text-sm">
-                  Your account is pending administrator approval. You can explore the dashboard, but you won't be able to fetch or modify data until approved.
+                  Your account is currently pending administrator approval. You will not be able to access the dashboard or its features until your account has been approved.
                 </p>
               </div>
             </div>
           )}
-          <Outlet />
+          
+          {user.status !== 'pending' || location.pathname.endsWith('/profile') ? (
+            <Outlet />
+          ) : null}
         </main>
       </div>
     </div>

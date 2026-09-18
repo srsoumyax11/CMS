@@ -8,7 +8,8 @@ class StudentApprovalRequest(BaseModel):
 
 class StudentItemResponse(BaseModel):
     id: UUID
-    user_id: UUID
+    user_id: str
+    user_uuid: UUID
     name: str
     email: str
     course_name: str
@@ -20,12 +21,14 @@ class FacultyCreateRequest(BaseModel):
     email: EmailStr
     password: str
     name: str
+    user_id: str
     department: str
     designation: str
 
 class FacultyItemResponse(BaseModel):
     id: UUID
-    user_id: UUID
+    user_id: str
+    user_uuid: UUID
     name: str
     email: str
     department: str

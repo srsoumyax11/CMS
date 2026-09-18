@@ -24,6 +24,17 @@ from app.schemas.common import APIResponse
 
 router = APIRouter()
 
+@router.get(
+    "/check-username",
+    summary="Check Username Availability",
+    description="Checks if a user_id is available for registration.",
+    response_model=APIResponse[bool]
+)
+async def check_username(user_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.user_id == user_id))
+    user = result.scalar_one_or_none()
+    return APIResponse(success=True, data=(user is None), error=None)
+
 @router.post(
     "/register", 
     summary="Register Student", 
@@ -34,7 +45,7 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     # Check if user already exists
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
-        return APIResponse(success=False, data=None, error="Email already registered")
+        raise HTTPException(status_code=400, detail="Email already registered")
 
     # Validate Course and Branch
     branch_result = await db.execute(
@@ -46,7 +57,7 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     )
     branch = branch_result.scalar_one_or_none()
     if not branch:
-        return APIResponse(success=False, data=None, error="Invalid or inactive course and branch combination")
+        raise HTTPException(status_code=400, detail="Invalid or inactive course and branch combination")
 
     # Atomic transaction for User and Profile
     try:
@@ -54,7 +65,9 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
             email=data.email,
             hashed_password=hash_password(data.password),
             user_type=UserType.student,
-            name=data.name
+            name=data.name,
+            user_id=data.user_id,
+            photo_url=data.photo_url
         )
         db.add(new_user)
         await db.flush()  # to get new_user.id
@@ -65,14 +78,18 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
             branch_id=data.branch_id,
             year=data.year,
             hostel=data.hostel.strip().lower() if data.hostel else None,
-            photo_url=data.photo_url,
             status=StudentStatus.pending
         )
         db.add(student_profile)
         await db.commit()
-    except IntegrityError:
+    except IntegrityError as e:
         await db.rollback()
-        return APIResponse(success=False, data=None, error="Database Integrity Error")
+        error_msg = str(e.orig).lower() if e.orig else ""
+        if "users_email_key" in error_msg or "email" in error_msg:
+            raise HTTPException(status_code=400, detail="Email is already registered")
+        elif "users_user_id_key" in error_msg or "user_id" in error_msg:
+            raise HTTPException(status_code=400, detail="User ID is already taken")
+        raise HTTPException(status_code=400, detail="Database Integrity Error")
 
     return APIResponse(
         success=True, 
@@ -110,7 +127,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     summary="User Login", 
     description="Authenticates a user with email and password, returning access and refresh JWTs.",
     response_model=APIResponse[TokenResponse],
-    dependencies=[Depends(RateLimiter(times=5, minutes=1))]
+    dependencies=[Depends(RateLimiter(times=100, minutes=1))]
 )
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
@@ -122,10 +139,10 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = result.scalar_one_or_none()
     
     if not user or not verify_password(data.password, user.hashed_password):
-        return APIResponse(success=False, data=None, error="Invalid email or password")
+        raise HTTPException(status_code=400, detail="Invalid email or password")
         
     if not user.is_active:
-        return APIResponse(success=False, data=None, error="User account is deactivated")
+        raise HTTPException(status_code=400, detail="User account is deactivated")
         
     # Get status from profile
     profile_status = "unknown"
@@ -159,18 +176,18 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
 async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
     payload = decode_token(data.refresh_token)
     if not payload or payload.get("type") != "refresh":
-        return APIResponse(success=False, data=None, error="Invalid or expired refresh token")
+        raise HTTPException(status_code=400, detail="Invalid or expired refresh token")
         
     user_id = payload.get("sub")
     if not user_id:
-        return APIResponse(success=False, data=None, error="Invalid token subject")
+        raise HTTPException(status_code=400, detail="Invalid token subject")
         
     # Ensure user still exists and is active
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     
     if not user or not user.is_active:
-        return APIResponse(success=False, data=None, error="User no longer valid or deactivated")
+        raise HTTPException(status_code=400, detail="User no longer valid or deactivated")
         
     new_access_token = create_access_token(subject=str(user.id))
     
@@ -216,6 +233,7 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
             id=current_user.id,
             email=current_user.email,
             is_active=current_user.is_active,
+            user_id=current_user.user_id,
             user_type=current_user.user_type,
             status=profile_status,
             name=name,

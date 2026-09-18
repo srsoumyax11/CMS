@@ -8,6 +8,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     name: str
+    user_id: str
     course_id: uuid.UUID
     branch_id: uuid.UUID
     year: int = Field(..., ge=1990, le=2100, description="Admission or current year depending on convention")
@@ -39,6 +40,7 @@ class RegisterResponseData(BaseModel):
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: EmailStr
+    user_id: Optional[str] = None
     is_active: bool
     user_type: UserType
     # Status will be None for admin, or pending/approved/rejected for students/faculty
@@ -48,6 +50,9 @@ class UserResponse(BaseModel):
 
 class NameUpdateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
+
+class UserIdUpdateRequest(BaseModel):
+    user_id: str
 
 class PasswordChangeRequest(BaseModel):
     current_password: str

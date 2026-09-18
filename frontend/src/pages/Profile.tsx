@@ -22,6 +22,12 @@ export function Profile() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
+  
+  const [isEditingUserId, setIsEditingUserId] = useState(false);
+  const [editUserIdValue, setEditUserIdValue] = useState('');
+  const [isSavingUserId, setIsSavingUserId] = useState(false);
+  const [userIdError, setUserIdError] = useState<string | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Security Tab State
@@ -75,6 +81,30 @@ export function Profile() {
       toast.error('Failed to update name');
     } finally {
       setIsSavingName(false);
+    }
+  };
+
+  const handleUpdateUserId = async () => {
+    if (!editUserIdValue.trim() || editUserIdValue === user.user_id) {
+      setIsEditingUserId(false);
+      setUserIdError(null);
+      return;
+    }
+    setIsSavingUserId(true);
+    setUserIdError(null);
+    try {
+      await authApi.updateUserId({ user_id: editUserIdValue });
+      await refreshUser();
+      toast.success('User ID updated successfully');
+      setIsEditingUserId(false);
+    } catch (err: any) {
+      if (err.response?.data?.error === "User ID is already taken") {
+        setUserIdError("User ID is already taken");
+      } else {
+        toast.error('Failed to update User ID');
+      }
+    } finally {
+      setIsSavingUserId(false);
     }
   };
 
@@ -201,8 +231,49 @@ export function Profile() {
                       </button>
                     </div>
                   )}
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                    <p className="text-sm">{user.email}</p>
+                  <div className="flex flex-col items-center justify-center gap-1 mt-2 w-full">
+                    <p className="text-sm font-medium text-muted-foreground">{user.email}</p>
+                    {isEditingUserId ? (
+                      <div className="flex flex-col items-center w-full">
+                        <div className="flex items-center gap-2 mb-1 justify-center mt-1">
+                          <Input 
+                            value={editUserIdValue} 
+                            onChange={(e) => {
+                              setEditUserIdValue(e.target.value);
+                              setUserIdError(null);
+                            }} 
+                            className={`h-7 text-center text-xs font-semibold max-w-[150px] ${userIdError ? 'border-destructive' : ''}`}
+                            placeholder="Enter User ID"
+                            disabled={isSavingUserId}
+                          />
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600" onClick={handleUpdateUserId} disabled={isSavingUserId}>
+                            {isSavingUserId ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-red-600" onClick={() => {
+                            setIsEditingUserId(false);
+                            setUserIdError(null);
+                          }} disabled={isSavingUserId}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        {userIdError && <p className="text-[10px] text-destructive">{userIdError}</p>}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2 mt-1">
+                        <p className="text-xs bg-muted px-2 py-0.5 rounded-md text-muted-foreground border">
+                          ID: {user.user_id || 'Not Set'}
+                        </p>
+                        <button 
+                          onClick={() => {
+                            setEditUserIdValue(user.user_id || '');
+                            setIsEditingUserId(true);
+                          }}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 

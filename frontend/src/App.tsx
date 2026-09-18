@@ -9,6 +9,7 @@ import { StudentDashboard } from '@/pages/StudentDashboard';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { Unauthorized } from '@/pages/Unauthorized';
 import { Profile } from '@/pages/Profile';
+import { Landing } from '@/pages/Landing';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { ROLE_ROUTES } from '@/lib/navigation';
 import { Toaster } from 'sonner';
@@ -116,13 +117,14 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
-          <Route path="/" element={<RoleRedirect />} />
+          <Route path="/dashboard" element={<RoleRedirect />} />
 
           <Route element={<ProtectedRoute allowedRoles={['student']} />}>
             <Route path="/student/*" element={<StudentRoutes />} />

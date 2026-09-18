@@ -22,11 +22,11 @@ async def upload_profile_photo(
     try:
         # Check file size (1MB limit)
         if photo.size and photo.size > 1024 * 1024:
-            return APIResponse(success=False, data=None, error="File size must be under 1MB")
+            raise HTTPException(status_code=400, detail="File size must be under 1MB")
             
         photo_url = await upload_avatar(photo, str(current_user.id))
     except Exception as e:
-        return APIResponse(success=False, data=None, error=f"Failed to upload photo: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to upload photo: {str(e)}")
         
     try:
         # Update the user profile in the database
@@ -35,10 +35,36 @@ async def upload_profile_photo(
         await db.commit()
     except Exception as e:
         await db.rollback()
-        return APIResponse(success=False, data=None, error="Database Error")
+        raise HTTPException(status_code=400, detail="Database Error")
         
     return APIResponse(success=True, data={"photo_url": photo_url}, error=None)
-from app.schemas.auth import NameUpdateRequest, PasswordChangeRequest
+from app.schemas.auth import NameUpdateRequest, PasswordChangeRequest, UserIdUpdateRequest
+from sqlalchemy.exc import IntegrityError
+
+@router.patch(
+    "/me/user-id",
+    summary="Update User ID",
+    description="Updates the user's User ID (username/roll number).",
+    response_model=APIResponse[dict]
+)
+async def update_user_id(
+    data: UserIdUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        current_user.user_id = data.user_id
+        await db.commit()
+        return APIResponse(success=True, data={"user_id": current_user.user_id}, error=None)
+    except IntegrityError as e:
+        await db.rollback()
+        error_msg = str(e.orig).lower() if e.orig else ""
+        if "users_user_id_key" in error_msg or "user_id" in error_msg:
+            raise HTTPException(status_code=400, detail="User ID is already taken")
+        raise HTTPException(status_code=400, detail="Database Integrity Error")
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Database Error")
 
 @router.patch(
     "/me/name",
@@ -58,7 +84,7 @@ async def update_profile_name(
     except Exception as e:
         await db.rollback()
         await db.rollback()
-        return APIResponse(success=False, data=None, error="Database Error")
+        raise HTTPException(status_code=400, detail="Database Error")
 
 @router.post(
     "/me/password",
@@ -72,7 +98,7 @@ async def change_password(
     db: AsyncSession = Depends(get_db)
 ):
     if not verify_password(data.current_password, current_user.hashed_password):
-        return APIResponse(success=False, data=None, error="Incorrect current password")
+        raise HTTPException(status_code=400, detail="Incorrect current password")
     
     try:
         current_user.hashed_password = hash_password(data.new_password)
@@ -80,4 +106,4 @@ async def change_password(
         return APIResponse(success=True, data={"message": "Password updated successfully"}, error=None)
     except Exception as e:
         await db.rollback()
-        return APIResponse(success=False, data=None, error="Database Error")
+        raise HTTPException(status_code=400, detail="Database Error")

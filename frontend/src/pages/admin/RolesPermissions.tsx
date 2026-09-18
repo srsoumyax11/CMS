@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rolesApi } from '@/api/rolesApi';
 import { QUERY_KEYS } from '@/lib/constants';
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+
 import {
   Dialog,
   DialogContent,
@@ -41,23 +42,15 @@ import {
   Loader2,
   Lock,
   Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type {
   RoleResponse,
-  ScopeType,
   PermissionMatrixResponse,
   AssetMatrixItem,
 } from '@/types/api';
 
-const scopeLabels: Record<ScopeType, string> = {
-  college: 'College',
-  hostel: 'Hostel',
-  department: 'Department',
-  self: 'Self',
-};
-
-const scopeOptions: ScopeType[] = ['college', 'hostel', 'department', 'self'];
 
 const ACTION_DESCRIPTIONS: Record<string, string> = {
   view: 'Can view details and records',
@@ -86,10 +79,12 @@ export function RolesPermissions() {
   const [isCheckingCount, setIsCheckingCount] = useState<string | null>(null);
   const [assignUserId, setAssignUserId] = useState('');
   const [draftPermissions, setDraftPermissions] = useState<Set<string> | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('none');
+  const [showSaveWarning, setShowSaveWarning] = useState(false);
 
   const [newRole, setNewRole] = useState({
     name: '',
-    scope_type: 'college' as ScopeType,
+    description: '',
     permission_ids: [] as string[],
   });
 
@@ -104,16 +99,31 @@ export function RolesPermissions() {
     enabled: !!selectedRoleId,
   });
 
-  const roles: RoleResponse[] = rolesQuery.data?.data?.data ?? [];
+  const templatesQuery = useQuery({
+    queryKey: [QUERY_KEYS.ROLE_TEMPLATES],
+    queryFn: () => rolesApi.getTemplates(),
+  });
+
+  const roles: RoleResponse[] = useMemo(() => {
+    const raw = rolesQuery.data?.data?.data ?? [];
+    return [...raw].sort((a, b) => {
+      if (a.is_system_role !== b.is_system_role) {
+        return a.is_system_role ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [rolesQuery.data?.data?.data]);
   const matrix: PermissionMatrixResponse | null = matrixQuery.data?.data?.data ?? null;
+  const templates = templatesQuery.data?.data?.data ?? {};
 
   const createMutation = useMutation({
     mutationFn: () => rolesApi.create(newRole),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ROLES] });
-      toast.success('Role created');
       setShowCreate(false);
-      setNewRole({ name: '', scope_type: 'college', permission_ids: [] });
+      setNewRole({ name: '', description: '', permission_ids: [] });
+      setSelectedTemplate('none');
+      toast.success('Role created successfully');
     },
     onError: () => toast.error('Failed to create role'),
   });
@@ -164,7 +174,7 @@ export function RolesPermissions() {
     setIsCheckingCount(role.id);
     try {
       const res = await rolesApi.getAssignmentCount(role.id);
-      setRoleToDeleteCount(res.data.data);
+      setRoleToDeleteCount(res.data.data ?? 0);
       setShowDelete(role);
     } catch {
       toast.error('Failed to check role assignments');
@@ -173,7 +183,45 @@ export function RolesPermissions() {
     }
   };
 
+  const selectedRoleData = roles.find((r) => r.id === selectedRoleId) ?? null;
+  const selectedRoleName = selectedRoleData?.name;
+
+  const currentPermissions = new Set(
+    matrix?.assets.flatMap((a) => a.actions.filter((ac) => ac.granted).map((ac) => ac.id)) || []
+  );
+
+  const activePermissions = draftPermissions !== null ? draftPermissions : currentPermissions;
+  const templateKey = selectedRoleName
+    ? Object.keys(templates).find((k) => k.toLowerCase() === selectedRoleName.toLowerCase())
+    : undefined;
+  const isTemplateRole = !!templateKey;
+
+  let isDeviating = false;
+  let recommendedPermissions: string[] = [];
+
+  if (isTemplateRole && templateKey) {
+    recommendedPermissions = templates[templateKey] || [];
+    if (activePermissions.size !== recommendedPermissions.length) {
+      isDeviating = true;
+    } else {
+      for (const id of recommendedPermissions) {
+        if (!activePermissions.has(id)) {
+          isDeviating = true;
+          break;
+        }
+      }
+    }
+  }
+
+  const handleResetToRecommended = () => {
+    if (recommendedPermissions.length > 0) {
+      setDraftPermissions(new Set(recommendedPermissions));
+      toast.info('Permissions reset to recommended defaults. Click Save Changes to apply.');
+    }
+  };
+
   const togglePermission = (actionId: string, currentlyGranted: boolean) => {
+    if (selectedRoleData?.is_system_role) return;
     if (!matrix) return;
     
     // If we don't have a draft yet, initialize it with all currently granted permissions
@@ -215,12 +263,21 @@ export function RolesPermissions() {
     }
   };
 
-  const handleSavePermissions = () => {
+  const executeSave = () => {
     if (selectedRoleId && draftPermissions !== null) {
       savePermissionsMutation.mutate({
         roleId: selectedRoleId,
         permissionIds: Array.from(draftPermissions),
       });
+      setShowSaveWarning(false);
+    }
+  };
+
+  const handleSavePermissions = () => {
+    if (isTemplateRole && isDeviating) {
+      setShowSaveWarning(true);
+    } else {
+      executeSave();
     }
   };
 
@@ -230,9 +287,10 @@ export function RolesPermissions() {
 
   const hasPendingChanges = draftPermissions !== null;
 
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-[calc(100vh-7rem)] md:h-[calc(100vh-8rem)] overflow-hidden -m-1 p-1">
+      <div className="flex shrink-0 items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-bold text-foreground">Roles & Permissions</h2>
           <p className="text-sm text-muted-foreground">
@@ -245,7 +303,7 @@ export function RolesPermissions() {
         </Button>
       </div>
 
-      <div className="grid h-[calc(100vh-10rem)] gap-6 lg:grid-cols-3">
+      <div className="grid flex-1 min-h-0 gap-6 lg:grid-cols-3">
         <div className="flex flex-col space-y-3 overflow-hidden">
           <h3 className="text-sm font-semibold text-foreground shrink-0">Roles</h3>
           <ScrollArea className="flex-1">
@@ -269,18 +327,22 @@ export function RolesPermissions() {
                 }}
               >
                 <CardContent className="p-0">
-                  <div className="p-4 flex items-start justify-between">
-                    <div>
+                  <div className="p-4 flex flex-col gap-2">
+                    <div className="flex items-start justify-between">
                       <p className="text-sm font-semibold text-foreground">{role.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {scopeLabels[role.scope_type]} scope
-                      </p>
+                      {role.is_system_role && (
+                        <Badge variant="secondary" className="text-xs shrink-0 ml-2">
+                          <Lock className="mr-1 h-3 w-3" />
+                          System
+                        </Badge>
+                      )}
                     </div>
-                    {role.is_system_role && (
-                      <Badge variant="secondary" className="text-xs">
-                        <Lock className="mr-1 h-3 w-3" />
-                        System
-                      </Badge>
+                    {role.description && (
+                      <div className="overflow-hidden whitespace-nowrap mt-1 group">
+                        <p className="inline-block animate-marquee group-hover:[animation-play-state:paused] text-xs text-muted-foreground leading-relaxed pr-8">
+                          {role.description}
+                        </p>
+                      </div>
                     )}
                   </div>
                   {!role.is_system_role && (
@@ -343,26 +405,65 @@ export function RolesPermissions() {
                 <h3 className="text-sm font-semibold text-foreground">
                   Permission Matrix
                 </h3>
-                {hasPendingChanges && (
+                <div className="flex items-center gap-3">
                   <Button
+                    variant="outline"
                     size="sm"
-                    onClick={handleSavePermissions}
-                    disabled={savePermissionsMutation.isPending}
+                    onClick={() => setDraftPermissions(null)}
+                    disabled={draftPermissions === null}
                   >
-                    {savePermissionsMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Changes'
-                    )}
+                    Discard
                   </Button>
-                )}
+                  {selectedRoleData?.is_system_role ? (
+                    <Button size="sm" disabled>
+                      System Role Locked
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={handleSavePermissions}
+                      disabled={savePermissionsMutation.isPending || !hasPendingChanges}
+                    >
+                      {savePermissionsMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Changes'
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <ScrollArea className="flex-1 pr-4">
                 <div className="space-y-4 pb-4">
+                  {isTemplateRole && isDeviating && (
+                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20 p-4">
+                      <div className="flex gap-3">
+                        <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                            Deviation from Recommended Template
+                          </h4>
+                          <p className="text-sm text-amber-800/90 dark:text-amber-300/90">
+                            You have modified permissions for a core role ({selectedRoleName}). This may cause unexpected behavior for users.
+                          </p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="shrink-0 bg-white dark:bg-black hover:bg-amber-100 hover:text-amber-900 dark:hover:bg-amber-900/40"
+                        onClick={handleResetToRecommended}
+                        disabled={selectedRoleData?.is_system_role}
+                      >
+                        Reset to Recommended
+                      </Button>
+                    </div>
+                  )}
+
                   {matrix.assets.map((asset: AssetMatrixItem) => {
                     if (asset.actions.length === 0) return null;
 
@@ -386,6 +487,7 @@ export function RolesPermissions() {
                                   id={action.id}
                                   checked={isChecked}
                                   onCheckedChange={() => togglePermission(action.id, action.granted)}
+                                  disabled={selectedRoleData?.is_system_role}
                                   className="mt-0.5 h-4 w-4"
                                 />
                                 <div className="space-y-1">
@@ -426,6 +528,33 @@ export function RolesPermissions() {
             className="space-y-4"
           >
             <div className="space-y-2">
+              <Label htmlFor="role-template">Role Template (Optional)</Label>
+              <Select
+                value={selectedTemplate}
+                onValueChange={(val) => {
+                  setSelectedTemplate(val);
+                  if (val !== 'none') {
+                    setNewRole({ name: val, description: '', permission_ids: templates[val] || [] });
+                  } else {
+                    setNewRole({ name: '', description: '', permission_ids: [] });
+                  }
+                }}
+              >
+                <SelectTrigger id="role-template">
+                  <SelectValue placeholder="Select a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None (Blank Role)</SelectItem>
+                  {Object.keys(templates).map((tmpl) => (
+                    <SelectItem key={tmpl} value={tmpl}>
+                      {tmpl}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
               <Label htmlFor="role-name">Role Name</Label>
               <Input
                 id="role-name"
@@ -434,23 +563,15 @@ export function RolesPermissions() {
                 required
               />
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="role-scope">Scope Type</Label>
-              <Select
-                value={newRole.scope_type}
-                onValueChange={(v) => setNewRole({ ...newRole, scope_type: v as ScopeType })}
-              >
-                <SelectTrigger id="role-scope">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {scopeOptions.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {scopeLabels[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="role-description">Description (Optional)</Label>
+              <Input
+                id="role-description"
+                value={newRole.description}
+                onChange={(e) => setNewRole({ ...newRole, description: e.target.value })}
+                placeholder="Brief description of this role"
+              />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
@@ -566,6 +687,45 @@ export function RolesPermissions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog open={showSaveWarning} onOpenChange={setShowSaveWarning}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+              <AlertTriangle className="h-5 w-5" />
+              Deviation Warning
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-3">
+            <p className="text-sm text-foreground">
+              You are about to save permissions that deviate from the recommended <strong>{selectedRoleName}</strong> template.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              This may cause unexpected behavior for users assigned to this role, as they might have access to things they shouldn't, or lose access to essential features.
+            </p>
+            <p className="text-sm font-medium">Are you sure you want to proceed?</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveWarning(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              disabled={savePermissionsMutation.isPending}
+              onClick={executeSave}
+            >
+              {savePermissionsMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Proceed Anyway'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

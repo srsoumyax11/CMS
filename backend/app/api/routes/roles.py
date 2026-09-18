@@ -36,7 +36,7 @@ async def list_roles(
     data = [RoleResponse(
         id=r.id,
         name=r.name,
-        scope_type=r.scope_type,
+        description=r.description,
         is_system_role=r.is_system_role
     ) for r in roles]
     
@@ -95,6 +95,53 @@ async def get_permission_matrix(
     data = PermissionMatrixResponse(assets=matrix_assets)
     return APIResponse(success=True, data=data, error=None)
 
+ROLE_TEMPLATES = {
+    "Student": [
+        'student_profile:view', 'timetable:view', 'attendance:view', 
+        'complaint:create', 'complaint:view', 'outpass:create', 
+        'outpass:view', 'mess:view', 'notice:view'
+    ],
+    "Faculty": [
+        'faculty_profile:view', 'faculty_profile:edit', 'timetable:view', 
+        'attendance:mark', 'attendance:view', 'complaint:resolve', 
+        'complaint:view', 'outpass:approve', 'outpass:view', 
+        'notice:create', 'notice:view'
+    ]
+}
+
+@router.get(
+    "/templates",
+    summary="Get Role Templates",
+    description="Returns pre-configured role templates with their corresponding permission UUIDs.",
+    response_model=APIResponse[dict]
+)
+async def get_role_templates(
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.ROLE_VIEW))
+):
+    # Fetch all permissions with assets and actions
+    perm_stmt = select(Permission).options(
+        selectinload(Permission.action),
+        selectinload(Permission.asset)
+    )
+    all_perms = (await db.execute(perm_stmt)).scalars().all()
+    
+    # Map 'asset:action' -> permission_id
+    perm_map = {
+        f"{p.asset.name}:{p.action.code}": p.id
+        for p in all_perms
+    }
+    
+    result = {}
+    for template_name, perm_strings in ROLE_TEMPLATES.items():
+        uuids = []
+        for perm_str in perm_strings:
+            if perm_str in perm_map:
+                uuids.append(perm_map[perm_str])
+        result[template_name] = uuids
+        
+    return APIResponse(success=True, data=result, error=None)
+
 @router.post(
     "", 
     summary="Create Role", 
@@ -108,7 +155,7 @@ async def create_role(
 ):
     new_role = Role(
         name=req.name,
-        scope_type=req.scope_type,
+        description=req.description,
         is_system_role=False
     )
     db.add(new_role)
@@ -124,7 +171,7 @@ async def create_role(
     data = RoleResponse(
         id=new_role.id,
         name=new_role.name,
-        scope_type=new_role.scope_type,
+        description=new_role.description,
         is_system_role=new_role.is_system_role
     )
     return APIResponse(success=True, data=data, error=None)
@@ -166,7 +213,6 @@ async def update_role_permissions(
 
 class AssignRoleRequest(BaseModel):
     user_id: UUID
-    scope_id: Optional[UUID] = None
 
 @router.post(
     "/{id}/assign", 
@@ -192,12 +238,11 @@ async def assign_role(
     ur_stmt = select(UserRole).where(
         UserRole.user_id == req.user_id,
         UserRole.role_id == id,
-        UserRole.scope_id == req.scope_id
     )
     if (await db.execute(ur_stmt)).scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Role already assigned to user with this scope")
+        raise HTTPException(status_code=400, detail="Role already assigned to user")
         
-    new_ur = UserRole(user_id=req.user_id, role_id=id, scope_id=req.scope_id)
+    new_ur = UserRole(user_id=req.user_id, role_id=id)
     db.add(new_ur)
     await db.commit()
     
@@ -214,7 +259,7 @@ async def get_assignment_count(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.ROLE_VIEW))
 ):
-    stmt = select(func.count(UserRole.id)).where(UserRole.role_id == id)
+    stmt = select(func.count(UserRole.user_id)).where(UserRole.role_id == id)
     count = (await db.execute(stmt)).scalar() or 0
     return APIResponse(success=True, data=count, error=None)
 
