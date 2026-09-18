@@ -179,11 +179,25 @@ async def create_faculty(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    import random
+    
+    # Generate unique user_id
+    base_id = "".join([c for c in req.name.lower() if c.isalnum()])
+    if not base_id:
+        base_id = "fac"
+    
+    while True:
+        candidate_id = f"{base_id}-{random.randint(1000, 9999)}"
+        existing_id = await db.execute(select(User).where(User.user_id == candidate_id))
+        if not existing_id.scalar_one_or_none():
+            break
+
     new_user = User(
         email=req.email,
         hashed_password=hash_password(req.password),
         user_type=UserType.faculty,
-        name=req.name
+        name=req.name,
+        user_id=candidate_id
     )
     db.add(new_user)
     await db.flush()
@@ -214,7 +228,8 @@ async def create_faculty(
         name=new_user.name,
         email=new_user.email,
         department=new_profile.department,
-        designation=new_profile.designation
+        designation=new_profile.designation,
+        is_active=new_user.is_active
     )
     return APIResponse(success=True, data=data, error=None)
 
@@ -243,7 +258,8 @@ async def list_faculty(
             name=p.user.name if p.user else "",
             email=p.user.email if p.user else "",
             department=p.department,
-            designation=p.designation
+            designation=p.designation,
+            is_active=p.user.is_active if p.user else True
         ))
         
     return APIResponse(success=True, data=data, error=None)

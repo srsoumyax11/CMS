@@ -21,7 +21,6 @@ class FacultyCreateRequest(BaseModel):
     email: EmailStr
     password: str
     name: str
-    user_id: str
     department: str
     designation: str
 
@@ -33,6 +32,7 @@ class FacultyItemResponse(BaseModel):
     email: str
     department: str
     designation: str
+    is_active: bool
 
 class FacultyUpdateRequest(BaseModel):
     name: Optional[str] = None

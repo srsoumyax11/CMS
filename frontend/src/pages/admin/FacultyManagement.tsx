@@ -23,12 +23,12 @@ export function FacultyManagement() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState<FacultyItemResponse | null>(null);
+  const [showDetails, setShowDetails] = useState<FacultyItemResponse | null>(null);
 
-  const [form, setForm] = useState<FacultyCreateRequest>({
+  const [form, setForm] = useState<Omit<FacultyCreateRequest, 'user_id'>>({
     email: '',
     password: '',
     name: '',
-    user_id: '',
     department: '',
     designation: '',
   });
@@ -51,7 +51,7 @@ export function FacultyManagement() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FACULTY] });
       toast.success('Faculty member created');
       setShowCreate(false);
-      setForm({ email: '', password: '', name: '', user_id: '', department: '', designation: '' });
+      setForm({ email: '', password: '', name: '', department: '', designation: '' });
     },
     onError: () => toast.error('Failed to create faculty member'),
   });
@@ -136,6 +136,7 @@ export function FacultyManagement() {
         data={faculty}
         isLoading={isLoading}
         rowKey={(row) => row.id}
+        onRowClick={(row) => setShowDetails(row)}
         emptyTitle="No faculty members"
         emptyDescription="There are no faculty accounts yet."
         emptyIcon={<Users className="h-6 w-6" />}
@@ -162,16 +163,7 @@ export function FacultyManagement() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="f-user-id">User ID / Employee ID</Label>
-              <Input
-                id="f-user-id"
-                value={form.user_id}
-                onChange={(e) => setForm({ ...form, user_id: e.target.value })}
-                required
-                placeholder="e.g. EMP123"
-              />
-            </div>
+
             <div className="space-y-2">
               <Label htmlFor="f-email">Email</Label>
               <Input
@@ -285,6 +277,57 @@ export function FacultyManagement() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!showDetails} onOpenChange={(open) => !open && setShowDetails(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Faculty Details</DialogTitle>
+          </DialogHeader>
+          {showDetails && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 border-b pb-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
+                  {showDetails.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">{showDetails.name}</h3>
+                  <p className="text-sm text-muted-foreground">{showDetails.designation}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Department</p>
+                  <p className="font-medium text-foreground">{showDetails.department}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Email Address</p>
+                  <p className="font-medium text-foreground truncate" title={showDetails.email}>
+                    {showDetails.email}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">User ID</p>
+                  <p className="font-medium text-foreground">{showDetails.user_id}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Status</p>
+                  <div className="flex items-center">
+                    <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2" />
+                    <span className="font-medium text-foreground capitalize">
+                      {showDetails.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetails(null)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

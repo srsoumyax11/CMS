@@ -378,13 +378,13 @@ export interface FacultyItemResponse {
   email: string;
   department: string;
   designation: string;
+  is_active: boolean;
 }
 
 export interface FacultyCreateRequest {
   email: string;
   password: string;
   name: string;
-  user_id: string;
   department: string;
   designation: string;
 }
