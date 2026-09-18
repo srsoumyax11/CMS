@@ -9,12 +9,12 @@ from app.core.database import get_db
 from app.api.deps import require_permission
 from app.core.permissions import Perms
 from app.core.security import hash_password
-from app.models.user import User, UserType
+from app.models.user import User, UserType, AccountStatus
 from app.models.profiles import StudentProfile, FacultyProfile
 from app.models.rbac import Role, UserRole
 from app.schemas.common import APIResponse
 from app.schemas.admin import (
-    StudentApprovalRequest, StudentItemResponse, 
+    StudentStatusUpdateRequest, StudentItemResponse, 
     FacultyCreateRequest, FacultyItemResponse,
     FacultyUpdateRequest
 )
@@ -28,7 +28,7 @@ router = APIRouter()
     response_model=APIResponse[List[StudentItemResponse]]
 )
 async def list_students(
-    status_filter: Optional[str] = Query(None, alias="status", description="Filter by status (pending, approved, rejected)"),
+    status_filter: Optional[str] = Query(None, alias="status", description="Filter by account status (pending, active, rejected)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: AsyncSession = Depends(get_db),
@@ -40,7 +40,7 @@ async def list_students(
         selectinload(StudentProfile.branch)
     )
     if status_filter:
-        stmt = stmt.where(StudentProfile.status == status_filter)
+        stmt = stmt.join(User, StudentProfile.user_id == User.id).where(User.account_status == status_filter)
     
     stmt = stmt.offset(skip).limit(limit)
     result = await db.execute(stmt)
@@ -57,7 +57,9 @@ async def list_students(
             course_name=p.course.name if p.course else "",
             branch_name=p.branch.name if p.branch else "",
             year=p.year,
-            status=p.status.value
+            account_status=p.user.account_status if p.user else AccountStatus.pending,
+            academic_status=p.academic_status,
+            status_note=p.user.status_note if p.user else None
         ))
         
     return APIResponse(success=True, data=data, error=None)
@@ -94,31 +96,34 @@ async def get_student(
         course_name=p.course.name if p.course else "",
         branch_name=p.branch.name if p.branch else "",
         year=p.year,
-        status=p.status.value
+        account_status=p.user.account_status if p.user else AccountStatus.pending,
+        academic_status=p.academic_status,
+        status_note=p.user.status_note if p.user else None
     )
     return APIResponse(success=True, data=data, error=None)
 
 @router.patch(
     "/students/{id}/status", 
     summary="Update Student Status", 
-    description="Approves or rejects a pending student account. **Requires:** `student_profile:edit`",
+    description="Updates a student's account status or academic status. **Requires:** `student_profile:edit`",
     response_model=APIResponse[StudentItemResponse]
 )
 async def update_student_status(
     id: UUID,
-    req: StudentApprovalRequest,
+    req: StudentStatusUpdateRequest,
     db: AsyncSession = Depends(get_db),
-    # Note: the permission check depends on the action they are taking. We will enforce approve/reject below.
     current_user: User = Depends(require_permission(Perms.STUDENT_PROFILE_LIST)) # Baseline admin check
 ):
-    # Enforce specific permission
     from app.api.deps import get_user_permissions
     user_perms = await get_user_permissions(current_user)
     
-    if req.status == "approved" and Perms.STUDENT_PROFILE_APPROVE not in user_perms:
-        raise HTTPException(status_code=403, detail="Insufficient permission")
-    if req.status == "rejected" and Perms.STUDENT_PROFILE_REJECT not in user_perms:
-        raise HTTPException(status_code=403, detail="Insufficient permission")
+    if req.account_status == AccountStatus.active and Perms.STUDENT_PROFILE_APPROVE not in user_perms:
+        raise HTTPException(status_code=403, detail="Insufficient permission to approve")
+    if req.account_status == AccountStatus.rejected and Perms.STUDENT_PROFILE_REJECT not in user_perms:
+        raise HTTPException(status_code=403, detail="Insufficient permission to reject")
+    if (req.account_status and req.account_status not in [AccountStatus.active, AccountStatus.rejected]) or req.academic_status:
+        if Perms.STUDENT_PROFILE_EDIT not in user_perms:
+            raise HTTPException(status_code=403, detail="Insufficient permission to edit statuses")
 
     stmt = select(StudentProfile).options(
         selectinload(StudentProfile.user), 
@@ -131,24 +136,31 @@ async def update_student_status(
     if not p:
         raise HTTPException(status_code=404, detail="Student not found")
         
-    p.status = req.status
-    if req.status == "rejected":
-        p.rejection_reason = req.rejection_reason
-    elif req.status == "approved":
-        # Assign 'Student' role
-        role_stmt = select(Role).where(Role.name == "Student")
-        role_res = await db.execute(role_stmt)
-        student_role = role_res.scalar_one_or_none()
-        if student_role:
-            # Check if user already has it
-            ur_stmt = select(UserRole).where(UserRole.user_id == p.user_id, UserRole.role_id == student_role.id)
-            ur_res = await db.execute(ur_stmt)
-            if not ur_res.scalar_one_or_none():
-                new_ur = UserRole(user_id=p.user_id, role_id=student_role.id)
-                db.add(new_ur)
+    if req.academic_status:
+        p.academic_status = req.academic_status
+
+    if p.user:
+        if req.account_status:
+            p.user.account_status = req.account_status
+            if req.account_status == AccountStatus.active:
+                # Assign 'Student' role
+                role_stmt = select(Role).where(Role.name == "Student")
+                role_res = await db.execute(role_stmt)
+                student_role = role_res.scalar_one_or_none()
+                if student_role:
+                    ur_stmt = select(UserRole).where(UserRole.user_id == p.user_id, UserRole.role_id == student_role.id)
+                    ur_res = await db.execute(ur_stmt)
+                    if not ur_res.scalar_one_or_none():
+                        new_ur = UserRole(user_id=p.user_id, role_id=student_role.id)
+                        db.add(new_ur)
+
+        if req.status_note is not None:
+            p.user.status_note = req.status_note
 
     await db.commit()
     await db.refresh(p)
+    if p.user:
+        await db.refresh(p.user)
     
     data = StudentItemResponse(
         id=p.id,
@@ -159,7 +171,9 @@ async def update_student_status(
         course_name=p.course.name if p.course else "",
         branch_name=p.branch.name if p.branch else "",
         year=p.year,
-        status=p.status.value
+        account_status=p.user.account_status if p.user else AccountStatus.pending,
+        academic_status=p.academic_status,
+        status_note=p.user.status_note if p.user else None
     )
     return APIResponse(success=True, data=data, error=None)
 
@@ -181,13 +195,9 @@ async def create_faculty(
 
     import random
     
-    # Generate unique user_id
-    base_id = "".join([c for c in req.name.lower() if c.isalnum()])
-    if not base_id:
-        base_id = "fac"
-    
+    # Generate unique numeric user_id for faculty (e.g., 6 digits)
     while True:
-        candidate_id = f"{base_id}-{random.randint(1000, 9999)}"
+        candidate_id = str(random.randint(100000, 999999))
         existing_id = await db.execute(select(User).where(User.user_id == candidate_id))
         if not existing_id.scalar_one_or_none():
             break
@@ -197,16 +207,18 @@ async def create_faculty(
         hashed_password=hash_password(req.password),
         user_type=UserType.faculty,
         name=req.name,
-        user_id=candidate_id
+        user_id=candidate_id,
+        account_status=AccountStatus.active
     )
     db.add(new_user)
     await db.flush()
     
+    from app.models.profiles import EmploymentStatus
     new_profile = FacultyProfile(
         user_id=new_user.id,
         department=req.department,
         designation=req.designation,
-        status="active"
+        employment_status=EmploymentStatus.active
     )
     db.add(new_profile)
     
@@ -229,7 +241,9 @@ async def create_faculty(
         email=new_user.email,
         department=new_profile.department,
         designation=new_profile.designation,
-        is_active=new_user.is_active
+        account_status=new_user.account_status,
+        employment_status=new_profile.employment_status,
+        status_note=new_user.status_note
     )
     return APIResponse(success=True, data=data, error=None)
 
@@ -259,7 +273,9 @@ async def list_faculty(
             email=p.user.email if p.user else "",
             department=p.department,
             designation=p.designation,
-            is_active=p.user.is_active if p.user else True
+            account_status=p.user.account_status if p.user else AccountStatus.pending,
+            employment_status=p.employment_status,
+            status_note=p.user.status_note if p.user else None
         ))
         
     return APIResponse(success=True, data=data, error=None)
@@ -283,24 +299,35 @@ async def update_faculty(
     if not p:
         raise HTTPException(status_code=404, detail="Faculty profile not found")
         
-    if req.name is not None:
-        p.name = req.name
+    if req.name is not None and p.user:
+        p.user.name = req.name
+    if req.email is not None and p.user:
+        p.user.email = req.email
     if req.department is not None:
         p.department = req.department
     if req.designation is not None:
         p.designation = req.designation
-    if req.status is not None:
-        p.status = req.status
+    if req.employment_status is not None:
+        p.employment_status = req.employment_status
+        
+    if req.account_status is not None and p.user:
+        p.user.account_status = req.account_status
         
     await db.commit()
     await db.refresh(p)
+    if p.user:
+        await db.refresh(p.user)
     
     data = FacultyItemResponse(
         id=p.id,
-        user_id=p.user_id,
-        name=p.name,
+        user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
+        user_uuid=p.user_id,
+        name=p.user.name if p.user else "",
         email=p.user.email if p.user else "",
         department=p.department,
-        designation=p.designation
+        designation=p.designation,
+        account_status=p.user.account_status if p.user else AccountStatus.pending,
+        employment_status=p.employment_status,
+        status_note=p.user.status_note if p.user else None
     )
     return APIResponse(success=True, data=data, error=None)

@@ -3,7 +3,7 @@ import { API_ROUTES } from '@/lib/constants';
 import type {
   APIResponse,
   StudentItemResponse,
-  StudentApprovalRequest,
+  StudentStatusUpdateRequest,
   FacultyItemResponse,
   FacultyCreateRequest,
   FacultyUpdateRequest,
@@ -19,7 +19,7 @@ export const adminApi = {
   getStudent: (id: string) =>
     client.get<APIResponse<StudentItemResponse>>(API_ROUTES.ADMIN_STUDENT_DETAIL(id)),
 
-  updateStudentStatus: (id: string, data: StudentApprovalRequest) =>
+  updateStudentStatus: (id: string, data: StudentStatusUpdateRequest) =>
     client.patch<APIResponse<StudentItemResponse>>(API_ROUTES.ADMIN_STUDENT_STATUS(id), data),
 
   // Faculty

@@ -1,8 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 import uuid
-from app.models.user import UserType
-from app.models.profiles import StudentStatus
+from app.models.user import UserType, AccountStatus
+from app.models.profiles import AcademicStatus, EmploymentStatus
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -24,7 +24,9 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     user_type: UserType
-    status: str
+    account_status: AccountStatus
+    academic_status: Optional[AcademicStatus] = None
+    employment_status: Optional[EmploymentStatus] = None
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
@@ -35,16 +37,17 @@ class RefreshTokenResponse(BaseModel):
 
 class RegisterResponseData(BaseModel):
     user_id: uuid.UUID
-    status: str
+    account_status: AccountStatus
+    academic_status: Optional[AcademicStatus] = None
 
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: EmailStr
     user_id: Optional[str] = None
-    is_active: bool
+    account_status: AccountStatus
     user_type: UserType
-    # Status will be None for admin, or pending/approved/rejected for students/faculty
-    status: Optional[str] = None
+    academic_status: Optional[AcademicStatus] = None
+    employment_status: Optional[EmploymentStatus] = None
     name: Optional[str] = None
     photo_url: Optional[str] = None
 

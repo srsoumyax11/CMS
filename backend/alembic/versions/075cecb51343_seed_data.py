@@ -1,8 +1,8 @@
-"""seed_reference_data
+"""seed_data
 
-Revision ID: f8b91939f1e5
-Revises: 921af6e0c249
-Create Date: 2026-09-17 20:26:25.280146
+Revision ID: 075cecb51343
+Revises: 976e3731a37c
+Create Date: 2026-09-18 22:25:43.632684
 
 """
 from typing import Sequence, Union
@@ -13,8 +13,8 @@ from sqlalchemy.sql import text
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'f8b91939f1e5'
-down_revision: Union[str, Sequence[str], None] = '921af6e0c249'
+revision: str = '075cecb51343'
+down_revision: Union[str, Sequence[str], None] = '976e3731a37c'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -129,8 +129,8 @@ def upgrade() -> None:
 
     # Seed SuperAdmin User
     conn.execute(text("""
-        INSERT INTO users (id, email, hashed_password, is_active, user_type, name)
-        VALUES (gen_random_uuid(), 'admin@example.com', '$2b$12$OnqaMxmsJiy1UhLbAenxjO8dj/etxgUjWWaSq/oih3boMH91YJjkq', true, 'admin', 'Super Admin')
+        INSERT INTO users (id, email, hashed_password, account_status, user_type, name)
+        VALUES (gen_random_uuid(), 'admin@example.com', '$2b$12$OnqaMxmsJiy1UhLbAenxjO8dj/etxgUjWWaSq/oih3boMH91YJjkq', 'active', 'admin', 'Super Admin')
         ON CONFLICT (email) DO NOTHING;
     """))
     

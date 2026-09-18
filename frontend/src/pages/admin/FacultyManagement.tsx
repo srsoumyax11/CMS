@@ -7,7 +7,14 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +24,23 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Users, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import type { FacultyItemResponse, FacultyCreateRequest } from '@/types/api';
+import type { FacultyItemResponse, FacultyCreateRequest, AccountStatus, EmploymentStatus } from '@/types/api';
+
+const accountStatusConfig: Record<string, { label: string; className: string }> = {
+  pending: { label: 'Pending', className: 'bg-amber-100 text-amber-700 border-amber-200' },
+  revision: { label: 'Revision', className: 'bg-purple-100 text-purple-700 border-purple-200' },
+  active: { label: 'Active', className: 'bg-green-100 text-green-700 border-green-200' },
+  suspended: { label: 'Suspended', className: 'bg-orange-100 text-orange-700 border-orange-200' },
+  rejected: { label: 'Rejected', className: 'bg-red-100 text-red-700 border-red-200' },
+};
+
+const employmentStatusConfig: Record<string, { label: string; className: string }> = {
+  active: { label: 'Active', className: 'bg-green-100 text-green-700 border-green-200' },
+  on_leave: { label: 'On Leave', className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  resigned: { label: 'Resigned', className: 'bg-gray-100 text-gray-700 border-gray-200' },
+  retired: { label: 'Retired', className: 'bg-purple-100 text-purple-700 border-purple-200' },
+  terminated: { label: 'Terminated', className: 'bg-red-100 text-red-700 border-red-200' },
+};
 
 export function FacultyManagement() {
   const queryClient = useQueryClient();
@@ -32,10 +55,19 @@ export function FacultyManagement() {
     department: '',
     designation: '',
   });
-  const [editForm, setEditForm] = useState({
+  
+  const [editForm, setEditForm] = useState<{
+    name: string;
+    department: string;
+    designation: string;
+    account_status: AccountStatus;
+    employment_status: EmploymentStatus;
+  }>({
     name: '',
     department: '',
     designation: '',
+    account_status: 'active',
+    employment_status: 'active',
   });
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -93,6 +125,36 @@ export function FacultyManagement() {
       render: (row: FacultyItemResponse) => row.designation,
     },
     {
+      key: 'account_status',
+      header: 'Account',
+      render: (row: FacultyItemResponse) => {
+        const config = accountStatusConfig[row.account_status] ?? {
+          label: row.account_status,
+          className: 'bg-gray-100 text-gray-600 border-gray-200',
+        };
+        return (
+          <Badge variant="outline" className={config.className}>
+            {config.label}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'employment_status',
+      header: 'Employment',
+      render: (row: FacultyItemResponse) => {
+        const config = employmentStatusConfig[row.employment_status] ?? {
+          label: row.employment_status,
+          className: 'bg-gray-100 text-gray-600 border-gray-200',
+        };
+        return (
+          <Badge variant="outline" className={config.className}>
+            {config.label}
+          </Badge>
+        );
+      },
+    },
+    {
       key: 'actions',
       header: '',
       render: (row: FacultyItemResponse) => (
@@ -102,7 +164,13 @@ export function FacultyManagement() {
           className="h-8 w-8"
           onClick={(e) => {
             e.stopPropagation();
-            setEditForm({ name: row.name, department: row.department, designation: row.designation });
+            setEditForm({ 
+              name: row.name, 
+              department: row.department, 
+              designation: row.designation, 
+              account_status: row.account_status,
+              employment_status: row.employment_status
+            });
             setShowEdit(row);
           }}
         >
@@ -261,6 +329,44 @@ export function FacultyManagement() {
                 />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Account Status</Label>
+                <Select
+                  value={editForm.account_status}
+                  onValueChange={(value) => setEditForm({ ...editForm, account_status: value as AccountStatus })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="revision">Revision</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Employment Status</Label>
+                <Select
+                  value={editForm.employment_status}
+                  onValueChange={(value) => setEditForm({ ...editForm, employment_status: value as EmploymentStatus })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="on_leave">On Leave</SelectItem>
+                    <SelectItem value="resigned">Resigned</SelectItem>
+                    <SelectItem value="retired">Retired</SelectItem>
+                    <SelectItem value="terminated">Terminated</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowEdit(null)}>
                 Cancel
@@ -311,13 +417,21 @@ export function FacultyManagement() {
                   <p className="text-muted-foreground">User ID</p>
                   <p className="font-medium text-foreground">{showDetails.user_id}</p>
                 </div>
+                <div className="space-y-1"></div>
                 <div className="space-y-1">
-                  <p className="text-muted-foreground">Status</p>
-                  <div className="flex items-center">
-                    <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2" />
-                    <span className="font-medium text-foreground capitalize">
-                      {showDetails.is_active ? 'Active' : 'Inactive'}
-                    </span>
+                  <p className="text-muted-foreground">Account Status</p>
+                  <div className="mt-1">
+                    <Badge variant="outline" className={accountStatusConfig[showDetails.account_status]?.className}>
+                      {accountStatusConfig[showDetails.account_status]?.label || showDetails.account_status}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Employment Status</p>
+                  <div className="mt-1">
+                    <Badge variant="outline" className={employmentStatusConfig[showDetails.employment_status]?.className}>
+                      {employmentStatusConfig[showDetails.employment_status]?.label || showDetails.employment_status}
+                    </Badge>
                   </div>
                 </div>
               </div>

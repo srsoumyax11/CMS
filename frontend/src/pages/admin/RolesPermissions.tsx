@@ -79,8 +79,6 @@ export function RolesPermissions() {
   const [isCheckingCount, setIsCheckingCount] = useState<string | null>(null);
   const [assignUserId, setAssignUserId] = useState('');
   const [draftPermissions, setDraftPermissions] = useState<Set<string> | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('none');
-  const [showSaveWarning, setShowSaveWarning] = useState(false);
 
   const [newRole, setNewRole] = useState({
     name: '',
@@ -99,10 +97,6 @@ export function RolesPermissions() {
     enabled: !!selectedRoleId,
   });
 
-  const templatesQuery = useQuery({
-    queryKey: [QUERY_KEYS.ROLE_TEMPLATES],
-    queryFn: () => rolesApi.getTemplates(),
-  });
 
   const roles: RoleResponse[] = useMemo(() => {
     const raw = rolesQuery.data?.data?.data ?? [];
@@ -114,7 +108,6 @@ export function RolesPermissions() {
     });
   }, [rolesQuery.data?.data?.data]);
   const matrix: PermissionMatrixResponse | null = matrixQuery.data?.data?.data ?? null;
-  const templates = templatesQuery.data?.data?.data ?? {};
 
   const createMutation = useMutation({
     mutationFn: () => rolesApi.create(newRole),
@@ -122,7 +115,6 @@ export function RolesPermissions() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ROLES] });
       setShowCreate(false);
       setNewRole({ name: '', description: '', permission_ids: [] });
-      setSelectedTemplate('none');
       toast.success('Role created successfully');
     },
     onError: () => toast.error('Failed to create role'),
@@ -191,34 +183,6 @@ export function RolesPermissions() {
   );
 
   const activePermissions = draftPermissions !== null ? draftPermissions : currentPermissions;
-  const templateKey = selectedRoleName
-    ? Object.keys(templates).find((k) => k.toLowerCase() === selectedRoleName.toLowerCase())
-    : undefined;
-  const isTemplateRole = !!templateKey;
-
-  let isDeviating = false;
-  let recommendedPermissions: string[] = [];
-
-  if (isTemplateRole && templateKey) {
-    recommendedPermissions = templates[templateKey] || [];
-    if (activePermissions.size !== recommendedPermissions.length) {
-      isDeviating = true;
-    } else {
-      for (const id of recommendedPermissions) {
-        if (!activePermissions.has(id)) {
-          isDeviating = true;
-          break;
-        }
-      }
-    }
-  }
-
-  const handleResetToRecommended = () => {
-    if (recommendedPermissions.length > 0) {
-      setDraftPermissions(new Set(recommendedPermissions));
-      toast.info('Permissions reset to recommended defaults. Click Save Changes to apply.');
-    }
-  };
 
   const togglePermission = (actionId: string, currentlyGranted: boolean) => {
     if (selectedRoleData?.is_system_role) return;
@@ -263,21 +227,12 @@ export function RolesPermissions() {
     }
   };
 
-  const executeSave = () => {
+  const handleSavePermissions = () => {
     if (selectedRoleId && draftPermissions !== null) {
       savePermissionsMutation.mutate({
         roleId: selectedRoleId,
         permissionIds: Array.from(draftPermissions),
       });
-      setShowSaveWarning(false);
-    }
-  };
-
-  const handleSavePermissions = () => {
-    if (isTemplateRole && isDeviating) {
-      setShowSaveWarning(true);
-    } else {
-      executeSave();
     }
   };
 
@@ -439,30 +394,7 @@ export function RolesPermissions() {
 
               <ScrollArea className="flex-1 pr-4">
                 <div className="space-y-4 pb-4">
-                  {isTemplateRole && isDeviating && (
-                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20 p-4">
-                      <div className="flex gap-3">
-                        <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
-                        <div>
-                          <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-                            Deviation from Recommended Template
-                          </h4>
-                          <p className="text-sm text-amber-800/90 dark:text-amber-300/90">
-                            You have modified permissions for a core role ({selectedRoleName}). This may cause unexpected behavior for users.
-                          </p>
-                        </div>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="shrink-0 bg-white dark:bg-black hover:bg-amber-100 hover:text-amber-900 dark:hover:bg-amber-900/40"
-                        onClick={handleResetToRecommended}
-                        disabled={selectedRoleData?.is_system_role}
-                      >
-                        Reset to Recommended
-                      </Button>
-                    </div>
-                  )}
+
 
                   {matrix.assets.map((asset: AssetMatrixItem) => {
                     if (asset.actions.length === 0) return null;
@@ -527,32 +459,7 @@ export function RolesPermissions() {
             }}
             className="space-y-4"
           >
-            <div className="space-y-2">
-              <Label htmlFor="role-template">Role Template (Optional)</Label>
-              <Select
-                value={selectedTemplate}
-                onValueChange={(val) => {
-                  setSelectedTemplate(val);
-                  if (val !== 'none') {
-                    setNewRole({ name: val, description: '', permission_ids: templates[val] || [] });
-                  } else {
-                    setNewRole({ name: '', description: '', permission_ids: [] });
-                  }
-                }}
-              >
-                <SelectTrigger id="role-template">
-                  <SelectValue placeholder="Select a template" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None (Blank Role)</SelectItem>
-                  {Object.keys(templates).map((tmpl) => (
-                    <SelectItem key={tmpl} value={tmpl}>
-                      {tmpl}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
             
             <div className="space-y-2">
               <Label htmlFor="role-name">Role Name</Label>
@@ -687,45 +594,6 @@ export function RolesPermissions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Dialog open={showSaveWarning} onOpenChange={setShowSaveWarning}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
-              <AlertTriangle className="h-5 w-5" />
-              Deviation Warning
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-3">
-            <p className="text-sm text-foreground">
-              You are about to save permissions that deviate from the recommended <strong>{selectedRoleName}</strong> template.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              This may cause unexpected behavior for users assigned to this role, as they might have access to things they shouldn't, or lose access to essential features.
-            </p>
-            <p className="text-sm font-medium">Are you sure you want to proceed?</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSaveWarning(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="default"
-              className="bg-amber-600 hover:bg-amber-700 text-white"
-              disabled={savePermissionsMutation.isPending}
-              onClick={executeSave}
-            >
-              {savePermissionsMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Proceed Anyway'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

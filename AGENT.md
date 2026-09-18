@@ -1,0 +1,2 @@
+- Always use venv for backend execution
+- Dont create messy migratgion file, Insted update the early fle so it look professioanal from starting

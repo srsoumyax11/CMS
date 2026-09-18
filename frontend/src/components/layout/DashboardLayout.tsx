@@ -142,7 +142,7 @@ export function DashboardLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {user.status === 'pending' && (
+          {user.account_status === 'pending' && (
             <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
               <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
               <div>
@@ -154,7 +154,7 @@ export function DashboardLayout() {
             </div>
           )}
           
-          {user.status !== 'pending' || location.pathname.endsWith('/profile') ? (
+          {user.account_status !== 'pending' || location.pathname.endsWith('/profile') ? (
             <Outlet />
           ) : null}
         </main>

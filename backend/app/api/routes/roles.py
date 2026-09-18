@@ -95,52 +95,7 @@ async def get_permission_matrix(
     data = PermissionMatrixResponse(assets=matrix_assets)
     return APIResponse(success=True, data=data, error=None)
 
-ROLE_TEMPLATES = {
-    "Student": [
-        'student_profile:view', 'timetable:view', 'attendance:view', 
-        'complaint:create', 'complaint:view', 'outpass:create', 
-        'outpass:view', 'mess:view', 'notice:view'
-    ],
-    "Faculty": [
-        'faculty_profile:view', 'faculty_profile:edit', 'timetable:view', 
-        'attendance:mark', 'attendance:view', 'complaint:resolve', 
-        'complaint:view', 'outpass:approve', 'outpass:view', 
-        'notice:create', 'notice:view'
-    ]
-}
 
-@router.get(
-    "/templates",
-    summary="Get Role Templates",
-    description="Returns pre-configured role templates with their corresponding permission UUIDs.",
-    response_model=APIResponse[dict]
-)
-async def get_role_templates(
-    db: AsyncSession = Depends(get_db),
-    _ = Depends(require_permission(Perms.ROLE_VIEW))
-):
-    # Fetch all permissions with assets and actions
-    perm_stmt = select(Permission).options(
-        selectinload(Permission.action),
-        selectinload(Permission.asset)
-    )
-    all_perms = (await db.execute(perm_stmt)).scalars().all()
-    
-    # Map 'asset:action' -> permission_id
-    perm_map = {
-        f"{p.asset.name}:{p.action.code}": p.id
-        for p in all_perms
-    }
-    
-    result = {}
-    for template_name, perm_strings in ROLE_TEMPLATES.items():
-        uuids = []
-        for perm_str in perm_strings:
-            if perm_str in perm_map:
-                uuids.append(perm_map[perm_str])
-        result[template_name] = uuids
-        
-    return APIResponse(success=True, data=result, error=None)
 
 @router.post(
     "", 

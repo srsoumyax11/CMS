@@ -147,7 +147,7 @@ export function Register() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="userId">User ID / Registration No.</Label>
+                  <Label htmlFor="userId">Registration No.</Label>
                   {isCheckingUsername && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
                   {!isCheckingUsername && isUsernameAvailable && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
                 </div>
@@ -157,7 +157,7 @@ export function Register() {
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
                   required
-                  placeholder="e.g. STU12345"
+                  placeholder="e.g. 2301230114"
                   className={userIdError ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
                 {userIdError && (

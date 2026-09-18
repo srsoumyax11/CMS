@@ -1,8 +1,11 @@
 // ── Enums / Union Types ──────────────────────────────────────────────
 
 export type UserRole = 'student' | 'faculty' | 'admin';
-export type UserStatus = 'pending' | 'active' | 'inactive' | 'suspended';
+export type AccountStatus = 'pending' | 'revision' | 'active' | 'suspended' | 'rejected';
 export type UserType = 'student' | 'faculty' | 'admin';
+
+export type AcademicStatus = 'enrolled' | 'graduated' | 'dropped' | 'expelled';
+export type EmploymentStatus = 'active' | 'on_leave' | 'resigned' | 'retired' | 'terminated';
 
 export type ComplaintCategory =
   | 'electrical'
@@ -87,9 +90,10 @@ export interface UserResponse {
   id: string;
   email: string;
   user_id?: string | null;
-  is_active: boolean;
+  account_status: AccountStatus;
   user_type: UserType;
-  status?: string | null;
+  academic_status?: AcademicStatus | null;
+  employment_status?: EmploymentStatus | null;
   name?: string | null;
   photo_url?: string | null;
 }
@@ -360,12 +364,15 @@ export interface StudentItemResponse {
   course_name: string;
   branch_name: string;
   year: number;
-  status: string;
+  account_status: AccountStatus;
+  academic_status: AcademicStatus;
+  status_note?: string | null;
 }
 
-export interface StudentApprovalRequest {
-  status: 'approved' | 'rejected';
-  rejection_reason?: string | null;
+export interface StudentStatusUpdateRequest {
+  account_status?: AccountStatus | null;
+  academic_status?: AcademicStatus | null;
+  status_note?: string | null;
 }
 
 // ── Admin: Faculty ───────────────────────────────────────────────────
@@ -378,7 +385,9 @@ export interface FacultyItemResponse {
   email: string;
   department: string;
   designation: string;
-  is_active: boolean;
+  account_status: AccountStatus;
+  employment_status: EmploymentStatus;
+  status_note?: string | null;
 }
 
 export interface FacultyCreateRequest {
@@ -393,7 +402,8 @@ export interface FacultyUpdateRequest {
   name?: string | null;
   department?: string | null;
   designation?: string | null;
-  status?: 'active' | 'inactive' | null;
+  account_status?: AccountStatus | null;
+  employment_status?: EmploymentStatus | null;
 }
 
 // ── Roles & Permissions ─────────────────────────────────────────────
@@ -456,5 +466,5 @@ export interface OutpassListParams extends PaginationParams {
 }
 
 export interface StudentListParams extends PaginationParams {
-  status?: string | null;
+  status?: AccountStatus | null;
 }

@@ -313,13 +313,13 @@ export function Profile() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="h-4 w-4 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <div className={`h-2 w-2 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <div className={`h-4 w-4 rounded-full flex items-center justify-center ${user.account_status === 'active' ? 'bg-green-500/20' : 'bg-amber-500/20'}`}>
+                      <div className={`h-2 w-2 rounded-full ${user.account_status === 'active' ? 'bg-green-500' : 'bg-amber-500'}`} />
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Account Status</p>
-                      <p className="text-sm text-foreground font-medium">
-                        {user.is_active ? 'Active' : 'Inactive'}
+                      <p className="text-sm text-foreground font-medium capitalize">
+                        {user.account_status}
                       </p>
                     </div>
                   </div>

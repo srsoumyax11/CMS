@@ -8,9 +8,10 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
-from app.models.user import User, UserType
-from app.models.profiles import StudentProfile, StudentStatus
+from app.models.user import User, UserType, AccountStatus
+from app.models.profiles import StudentProfile, AcademicStatus
 from app.models.academic import Course, Branch
+from app.models.rbac import Role, UserRole
 from app.schemas.auth import (
     RegisterRequest, 
     LoginRequest, 
@@ -78,9 +79,16 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
             branch_id=data.branch_id,
             year=data.year,
             hostel=data.hostel.strip().lower() if data.hostel else None,
-            status=StudentStatus.pending
+            academic_status=AcademicStatus.enrolled
         )
         db.add(student_profile)
+        
+        # Fetch the 'Student' system role and assign it
+        role_stmt = select(Role).where(Role.name == 'Student')
+        student_role = (await db.execute(role_stmt)).scalar_one_or_none()
+        if student_role:
+            db.add(UserRole(user_id=new_user.id, role_id=student_role.id))
+            
         await db.commit()
     except IntegrityError as e:
         await db.rollback()
@@ -93,7 +101,7 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
     return APIResponse(
         success=True, 
-        data=RegisterResponseData(user_id=new_user.id, status=StudentStatus.pending.value), 
+        data=RegisterResponseData(user_id=new_user.id, account_status=AccountStatus.pending, academic_status=AcademicStatus.enrolled), 
         error=None
     )
 
@@ -115,7 +123,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
         
-    if not user.is_active:
+    if user.account_status != AccountStatus.active:
         raise HTTPException(status_code=400, detail="Inactive user")
         
     access_token = create_access_token(subject=str(user.id))
@@ -141,15 +149,15 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Invalid email or password")
         
-    if not user.is_active:
+    if user.account_status != AccountStatus.active:
         raise HTTPException(status_code=400, detail="User account is deactivated")
         
-    # Get status from profile
-    profile_status = "unknown"
+    academic_status = None
+    employment_status = None
     if user.user_type == UserType.student and user.student_profile:
-        profile_status = user.student_profile.status.value
+        academic_status = user.student_profile.academic_status.value
     elif user.user_type == UserType.faculty and user.faculty_profile:
-        profile_status = user.faculty_profile.status.value
+        employment_status = user.faculty_profile.employment_status.value
 
     # Issue tokens
     access_token = create_access_token(subject=str(user.id))
@@ -161,7 +169,9 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
             access_token=access_token,
             refresh_token=refresh_token,
             user_type=user.user_type,
-            status=profile_status
+            account_status=user.account_status,
+            academic_status=academic_status,
+            employment_status=employment_status
         ), 
         error=None
     )
@@ -186,7 +196,7 @@ async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(ge
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     
-    if not user or not user.is_active:
+    if not user or user.account_status != AccountStatus.active:
         raise HTTPException(status_code=400, detail="User no longer valid or deactivated")
         
     new_access_token = create_access_token(subject=str(user.id))
@@ -208,36 +218,18 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
     Get current logged in user details. Doesn't require any RBAC permissions.
     Allows users with "pending" profiles to check their status.
     """
-    name = current_user.name
-    photo_url = current_user.photo_url
-    profile_status = None
-    
-    if current_user.user_type == UserType.student:
-        from app.models.profiles import StudentProfile
-        stmt = select(StudentProfile).where(StudentProfile.user_id == current_user.id)
-        res = await db.execute(stmt)
-        prof = res.scalar_one_or_none()
-        if prof:
-            profile_status = prof.status.value
-    elif current_user.user_type == UserType.faculty:
-        from app.models.profiles import FacultyProfile
-        stmt = select(FacultyProfile).where(FacultyProfile.user_id == current_user.id)
-        res = await db.execute(stmt)
-        prof = res.scalar_one_or_none()
-        if prof:
-            profile_status = prof.status.value
-            
     return APIResponse(
         success=True,
         data=UserResponse(
             id=current_user.id,
             email=current_user.email,
-            is_active=current_user.is_active,
             user_id=current_user.user_id,
+            account_status=current_user.account_status,
             user_type=current_user.user_type,
-            status=profile_status,
-            name=name,
-            photo_url=photo_url
+            academic_status=current_user.student_profile.academic_status if current_user.student_profile else None,
+            employment_status=current_user.faculty_profile.employment_status if current_user.faculty_profile else None,
+            name=current_user.name,
+            photo_url=current_user.photo_url
         ),
         error=None
     )
