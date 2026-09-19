@@ -96,7 +96,7 @@ app.add_middleware(
 # Include routers
 app.include_router(metadata.router, prefix="/api/metadata", tags=["Metadata"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
-app.include_router(users.router, prefix="/api/profiles", tags=["Users"])
+app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(roles.router, prefix="/api/roles", tags=["Roles & Permissions"])
 app.include_router(complaints.router, prefix="/api/complaints", tags=["Complaints (Student/Public)"])

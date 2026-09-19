@@ -19,7 +19,7 @@ FACULTY_PASSWORD = "facultypassword123"
 SUPERADMIN_EMAIL = "admin@example.com"
 SUPERADMIN_PASSWORD = "supersecret123"
 
-BASE_URL = "http://127.0.0.1:8000/api"
+BASE_URL = "http://127.0.0.1:8001/api"
 
 # Helper for pretty printing
 def print_step(msg):
@@ -87,17 +87,19 @@ def run_tests():
         "email": STUDENT_EMAIL,
         "password": STUDENT_PASSWORD,
         "name": "Test Student",
+        "user_id": f"STU{random_suffix.upper()}",
         "course_id": course_id,
         "branch_id": branch_id,
         "year": 2024,
         "hostel": "Hostel A"
     }
     r = requests.post(f"{BASE_URL}/auth/register", json=reg_data)
+    if r.status_code != 200:
+        print("Error response:", r.text)
     assert r.status_code == 200
     res_json = r.json()
     assert res_json["success"] is True
-    assert res_json["data"]["status"] == "pending"
-    student_id = res_json["data"]["user_id"]
+    student_id = f"STU{random_suffix.upper()}"
     print(f"✅ Student registered successfully! user_id: {student_id}")
 
     # ---------------------------------------------------------
@@ -107,6 +109,7 @@ def run_tests():
     
     # Negative Test: Bad password
     r = requests.post(f"{BASE_URL}/auth/login", json={"email": STUDENT_EMAIL, "password": "wrongpassword"})
+    assert r.status_code == 401, f"Expected 401 Unauthorized, got {r.status_code}"
     assert r.json()["success"] is False
     print("✅ Negative test passed: Wrong password rejected")
 
@@ -115,10 +118,16 @@ def run_tests():
     assert r.status_code == 200
     res_json = r.json()
     assert res_json["success"] is True
-    assert res_json["data"]["status"] == "pending", "Status should be pending on login"
+    assert res_json["data"]["account_status"] == "pending", "Status should be pending on login"
     student_token = res_json["data"]["access_token"]
     student_headers = {"Authorization": f"Bearer {student_token}"}
     print("✅ Student logged in successfully despite being pending.")
+    
+    r = requests.post(f"{BASE_URL}/users/me/student-profile", headers=student_headers, json={
+        "course_id": course_id, "branch_id": branch_id, "year": 2024, "hostel": "Hostel A"
+    })
+    assert r.status_code == 200, f"Profile creation failed: {r.text}"
+    print("✅ Student profile created successfully.")
 
     # ---------------------------------------------------------
     # 3. GET /api/auth/me AS PENDING STUDENT
@@ -128,6 +137,7 @@ def run_tests():
     assert r.status_code == 200
     res_json = r.json()
     assert res_json["success"] is True
+    student_uuid = res_json["data"]["id"]
     print("✅ /auth/me accessed successfully. No 403 Forbidden! The pre-approval trap is fixed.")
 
     # ---------------------------------------------------------
@@ -158,19 +168,19 @@ def run_tests():
     # ---------------------------------------------------------
     print_step("6. PATCH /api/admin/students/{id}/status")
     
-    # Negative Test: Try passing "active" to check Pydantic 422 rejection
+    # Negative Test: Try passing an invalid enum to check Pydantic 422 rejection
     r = requests.patch(f"{BASE_URL}/admin/students/{profile_id}/status", 
                        headers=admin_headers, 
-                       json={"status": "active"})
+                       json={"account_status": "invalid_status"})
     assert r.status_code == 422, f"Expected 422, got {r.status_code}"
-    print("✅ Negative test passed: Invalid enum status 'active' cleanly rejected with 422.")
+    print("✅ Negative test passed: Invalid enum status cleanly rejected with 422.")
     
-    # Positive Test: Approve the student
+    # Positive Test: Approve the student (active)
     r = requests.patch(f"{BASE_URL}/admin/students/{profile_id}/status", 
                        headers=admin_headers, 
-                       json={"status": "approved"})
+                       json={"account_status": "active", "status_note": "Welcome!"})
     assert r.status_code == 200
-    assert r.json()["data"]["status"] == "approved"
+    assert r.json()["data"]["account_status"] == "active"
     print("✅ Student approved successfully!")
 
     # ---------------------------------------------------------
@@ -234,7 +244,7 @@ def run_tests():
     r = requests.post(f"{BASE_URL}/admin/faculty", headers=admin_headers, json=fac_data)
     assert r.status_code == 200
     res_json = r.json()
-    fac_id = res_json["data"].get("user_id") or res_json["data"].get("id")
+    fac_id = res_json["data"]["user_uuid"]
     print("✅ Faculty created successfully! It is active immediately.")
 
     # ---------------------------------------------------------
@@ -261,6 +271,7 @@ def run_tests():
         "email": student2_email,
         "password": student2_password,
         "name": "Test Student 2",
+        "user_id": f"STU2{random_suffix.upper()}",
         "course_id": course_id,
         "branch_id": branch_id,
         "year": 2024,
@@ -268,26 +279,35 @@ def run_tests():
     }
     r = requests.post(f"{BASE_URL}/auth/register", json=register_s2_data)
     assert r.status_code == 200
-    s2_id = r.json()["data"]["user_id"]
+    s2_str_id = f"STU2{random_suffix.upper()}"
     
-    # Approve S2
-    r = requests.get(f"{BASE_URL}/admin/students?status=pending", headers=admin_headers)
-    students = r.json()["data"]
-    s2_profile = next((s for s in students if s["user_id"] == s2_id), None)
-    assert s2_profile is not None
-    s2_profile_id = s2_profile["id"]
-    
-    r = requests.patch(
-        f"{BASE_URL}/admin/students/{s2_profile_id}/status",
-        headers=admin_headers,
-        json={"status": "approved"}
-    )
-    assert r.status_code == 200
-    
+    # 1. Login S2
     r = requests.post(f"{BASE_URL}/auth/login", json={"email": student2_email, "password": student2_password})
     assert r.status_code == 200
     s2_token = r.json()["data"]["access_token"]
     s2_headers = {"Authorization": f"Bearer {s2_token}"}
+    
+    # 2. Create Profile for S2
+    r = requests.post(f"{BASE_URL}/users/me/student-profile", headers=s2_headers, json={
+        "course_id": course_id, "branch_id": branch_id, "year": 2024, "hostel": "Hostel B"
+    })
+    assert r.status_code == 200
+    
+    # 3. Fetch from Admin Pending list
+    r = requests.get(f"{BASE_URL}/admin/students?status=pending", headers=admin_headers)
+    students = r.json()["data"]
+    s2_profile = next((s for s in students if s["user_id"] == s2_str_id), None)
+    assert s2_profile is not None
+    s2_profile_id = s2_profile["id"]
+    s2_id = s2_profile["user_uuid"]
+    
+    # 4. Approve S2
+    r = requests.patch(
+        f"{BASE_URL}/admin/students/{s2_profile_id}/status",
+        headers=admin_headers,
+        json={"account_status": "active"}
+    )
+    assert r.status_code == 200
     
     print_step("12. POST /api/complaints (Student 1 - Public)")
     c1_res = requests.post(
@@ -384,7 +404,7 @@ def run_tests():
         headers=admin_headers,
         json={"assigned_to": fac_id}
     )
-    assert valid_assign.status_code == 200
+    assert valid_assign.status_code == 200, valid_assign.text
     print("✅ Assignee role validation successfully blocked Student and allowed Faculty.")
     
     print_step("19. GET /api/admin/complaints/analytics/recurring")
@@ -578,7 +598,7 @@ def run_tests():
     print("\n[========== 27. GET /api/outpasses/{id} (IDOR & Admin Access) ==========]")
     # 3. IDOR Regression: Student B CANNOT fetch it via GET /{id}
     op_s2 = requests.get(f"{BASE_URL}/outpasses/{outpass_id}", headers=s2_headers)
-    assert op_s2.status_code == 403, "IDOR Vulnerability: Student B viewed Student A's outpass!"
+    assert op_s2.status_code == 403, f"IDOR Vulnerability: Student B viewed Student A's outpass! Status: {op_s2.status_code} Body: {op_s2.text}"
     print("✅ IDOR Regression: Student B blocked from viewing Student A's outpass.")
     
     # 4. Owner Access: Student A CAN fetch their own
@@ -688,6 +708,19 @@ def run_tests():
     rost_s1 = requests.get(f"{BASE_URL}/attendance/roster/{slot_id}", headers=student_headers)
     assert rost_s1.status_code == 403
     print("✅ Student blocked from fetching roster.")
+    
+    # Negative: Second faculty member (who does not own the slot)
+    fac2_email = f"fac2_{random_suffix}@example.com"
+    requests.post(f"{BASE_URL}/admin/faculty", headers=admin_headers, json={
+        "email": fac2_email, "name": "Faculty Two", "department": "CSE", "designation": "Assistant Professor", "user_id": f"FAC2{random_suffix}", "password": FACULTY_PASSWORD
+    })
+    r_fac2_login = requests.post(f"{BASE_URL}/auth/login", json={"email": fac2_email, "password": FACULTY_PASSWORD})
+    fac2_token = r_fac2_login.json()["data"]["access_token"]
+    fac2_headers = {"Authorization": f"Bearer {fac2_token}"}
+    
+    rost_f2 = requests.get(f"{BASE_URL}/attendance/roster/{slot_id}", headers=fac2_headers)
+    assert rost_f2.status_code == 403
+    print("✅ Second faculty member (cross-tenant) blocked from fetching roster.")
 
     # Positive: Faculty A (owner) fetches roster
     rost_fac = requests.get(f"{BASE_URL}/attendance/roster/{slot_id}", headers=faculty_headers)
@@ -697,7 +730,7 @@ def run_tests():
     # Roster should contain Student 1 and Student 2 (both are Course 1, Branch 1, 2024)
     found_s1 = False
     for st in roster_data:
-        if st["student_id"] == student_id:
+        if st["student_id"] == student_uuid:
             found_s1 = True
     assert found_s1, "Student 1 not found in roster"
     print("✅ Roster fetched correctly for authorized faculty.")
@@ -710,7 +743,7 @@ def run_tests():
     batch_data_future = {
         "slot_id": slot_id,
         "date": future_date,
-        "records": [{"student_id": student_id, "status": "present"}]
+        "records": [{"student_id": student_uuid, "status": "present"}]
     }
     att_future = requests.post(f"{BASE_URL}/attendance/batch", headers=faculty_headers, json=batch_data_future)
     assert att_future.status_code == 422
@@ -751,7 +784,7 @@ def run_tests():
         "slot_id": slot_id,
         "date": attendance_date,
         "records": [
-            {"student_id": student_id, "status": "absent"},
+            {"student_id": student_uuid, "status": "absent"},
             {"student_id": s2_id, "status": "absent"}
         ]
     }

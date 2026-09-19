@@ -1,5 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { complaintsApi } from '@/api/complaintsApi';
+import { outpassesApi } from '@/api/outpassesApi';
+import { adminApi } from '@/api/adminApi';
+import { StatCard } from '@/components/shared/StatCard';
 import {
   Megaphone,
   ClipboardList,
@@ -7,8 +12,20 @@ import {
   Users,
   ShieldCheck,
   UtensilsCrossed,
+  Activity,
+  AlertTriangle,
+  Clock,
   type LucideIcon,
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 const adminModules: {
   icon: LucideIcon;
@@ -16,48 +33,133 @@ const adminModules: {
   desc: string;
   path: string;
 }[] = [
-  { icon: Megaphone, label: 'All Notices', desc: 'Publish and manage announcements', path: '/admin/notices' },
-  { icon: ClipboardList, label: 'All Complaints', desc: 'Review and resolve complaints', path: '/admin/complaints' },
-  { icon: CheckSquare, label: 'Outpass Requests', desc: 'Approve or reject outpass requests', path: '/admin/outpasses' },
-  { icon: Users, label: 'User Management', desc: 'Manage students and faculty', path: '/admin/users' },
-  { icon: ShieldCheck, label: 'Permissions', desc: 'Configure role-based access', path: '/admin/permissions' },
-  { icon: UtensilsCrossed, label: 'Mess Management', desc: 'Update mess menus and schedules', path: '/admin/mess' },
+  { icon: Megaphone, label: 'Notices', desc: 'Manage announcements', path: '/admin/notices' },
+  { icon: ClipboardList, label: 'Complaints', desc: 'Resolve issues', path: '/admin/complaints' },
+  { icon: CheckSquare, label: 'Outpasses', desc: 'Approve requests', path: '/admin/outpasses' },
+  { icon: Users, label: 'Users', desc: 'Manage students', path: '/admin/users' },
+  { icon: ShieldCheck, label: 'Permissions', desc: 'Access control', path: '/admin/permissions' },
+  { icon: UtensilsCrossed, label: 'Mess', desc: 'Menus & schedules', path: '/admin/mess' },
 ];
 
 export function AdminDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const { data: complaintsResp } = useQuery({
+    queryKey: ['admin-complaints-stats'],
+    queryFn: () => complaintsApi.listAll(),
+    enabled: !!user,
+  });
+
+  const { data: outpassesResp } = useQuery({
+    queryKey: ['admin-outpasses-stats'],
+    queryFn: () => outpassesApi.listAll(),
+    enabled: !!user,
+  });
+
+  const { data: studentsResp } = useQuery({
+    queryKey: ['admin-students-stats'],
+    queryFn: () => adminApi.listStudents(),
+    enabled: !!user,
+  });
+
   if (!user) return null;
 
+  const complaints = complaintsResp?.data?.data?.items || [];
+  const openComplaints = complaints.filter((c: any) => c.status === 'open' || c.status === 'in_progress').length;
+  
+  const outpasses = outpassesResp?.data?.data?.items || [];
+  const activeOutpasses = outpasses.filter((o: any) => o.status === 'active' || o.status === 'approved').length;
+  
+  const students = studentsResp?.data?.data || [];
+  const pendingStudents = students.filter((s: any) => s.account_status === 'pending').length;
+
+  // Chart data
+  const categoryCounts = complaints.reduce((acc: Record<string, number>, c: any) => {
+    acc[c.category] = (acc[c.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const chartData = Object.entries(categoryCounts).map(([name, count]) => ({
+    name: name.charAt(0).toUpperCase() + name.slice(1),
+    Issues: count,
+  }));
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div>
         <h2 className="text-2xl font-bold text-foreground">
           Admin Overview
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage campus operations from this dashboard.
+          Real-time campus operational intelligence.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {adminModules.map((mod) => (
-          <button
-            key={mod.label}
-            onClick={() => navigate(mod.path)}
-            className="flex items-center gap-3 rounded-xl border bg-card p-5 text-left shadow-sm transition-shadow hover:shadow-card"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
-              <mod.icon className="h-5 w-5 text-foreground" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                {mod.label}
-              </h3>
-              <p className="text-xs text-muted-foreground">{mod.desc}</p>
-            </div>
-          </button>
-        ))}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard
+          icon={AlertTriangle}
+          label="Open Complaints"
+          value={openComplaints}
+          hint="Requires immediate attention"
+          className="border-amber-200 bg-amber-50/30"
+        />
+        <StatCard
+          icon={Clock}
+          label="Pending Students"
+          value={pendingStudents}
+          hint="Awaiting account approval"
+          className="border-blue-200 bg-blue-50/30"
+        />
+        <StatCard
+          icon={Activity}
+          label="Active Outpasses"
+          value={activeOutpasses}
+          hint="Students currently off-campus"
+          className="border-green-200 bg-green-50/30"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 rounded-xl border bg-card p-6 shadow-sm">
+          <h3 className="mb-4 text-lg font-semibold">Issues by Category</h3>
+          <div className="h-64 w-full">
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    cursor={{ fill: 'var(--accent)' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Bar dataKey="Issues" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted-foreground">
+                No data available
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-card p-6 shadow-sm flex flex-col">
+          <h3 className="mb-4 text-lg font-semibold">Quick Actions</h3>
+          <div className="flex-1 grid grid-cols-2 gap-3">
+            {adminModules.map((mod) => (
+              <button
+                key={mod.label}
+                onClick={() => navigate(mod.path)}
+                className="flex flex-col items-center justify-center gap-2 rounded-lg border bg-background p-3 text-center transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <mod.icon className="h-5 w-5" />
+                <span className="text-xs font-medium">{mod.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

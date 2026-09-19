@@ -60,7 +60,10 @@ export function ComplaintCreate({ basePath }: ComplaintCreateProps) {
       toast.success('Complaint filed successfully');
       navigate(`${basePath}/complaints`);
     },
-    onError: () => toast.error('Failed to file complaint'),
+    onError: (err: any) => {
+      const msg = err.response?.data?.error || 'Failed to file complaint';
+      toast.error(msg);
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {

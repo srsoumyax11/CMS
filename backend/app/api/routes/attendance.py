@@ -8,7 +8,7 @@ from uuid import UUID
 import datetime
 
 from app.core.database import get_db
-from app.models.user import User, UserType
+from app.models.user import User, UserType, AccountStatus
 from app.models.academic import TimetableSlot, AttendanceRecord
 from app.models.profiles import StudentProfile
 from app.api.deps import get_current_user, require_permission, get_user_permissions, can_mark_attendance
@@ -49,10 +49,10 @@ async def get_attendance_roster(
     
     roster = []
     for sp in students:
-        if sp.user.is_active:  # Ensure user is active
+        if sp.user.account_status == AccountStatus.active:
             roster.append({
                 "student_id": sp.user_id,
-                "name": sp.name,
+                "name": sp.user.name,
                 "roll_number": None
             })
 

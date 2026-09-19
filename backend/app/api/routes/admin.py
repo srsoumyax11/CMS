@@ -14,7 +14,7 @@ from app.models.profiles import StudentProfile, FacultyProfile
 from app.models.rbac import Role, UserRole
 from app.schemas.common import APIResponse
 from app.schemas.admin import (
-    StudentStatusUpdateRequest, StudentItemResponse, 
+    StudentStatusUpdateRequest, StudentItemResponse, StudentAdminUpdateRequest,
     FacultyCreateRequest, FacultyItemResponse,
     FacultyUpdateRequest, AdminItemResponse
 )
@@ -138,6 +138,9 @@ async def update_student_status(
     
     if not u:
         raise HTTPException(status_code=404, detail="Student not found")
+        
+    if req.account_status == AccountStatus.active and not getattr(u, "student_profile", None):
+        raise HTTPException(status_code=422, detail="Cannot approve student: Student profile is incomplete")
         
     p = u.student_profile
     if req.academic_status and p:

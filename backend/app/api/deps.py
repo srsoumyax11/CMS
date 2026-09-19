@@ -28,22 +28,34 @@ class RateLimiter:
         self.requests: Dict[str, Tuple[float, int]] = {}
 
     def __call__(self, request: Request):
-        client_ip = request.client.host if request.client else "unknown"
+        client_key = request.client.host if request.client else "unknown"
+        
+        # Prefer user ID if authenticated (prevents shared-IP NAT issues in hostels)
+        auth = request.headers.get("Authorization")
+        if auth and auth.startswith("Bearer "):
+            token = auth.split(" ")[1]
+            try:
+                payload = decode_token(token)
+                if payload and "sub" in payload:
+                    client_key = payload["sub"]
+            except Exception:
+                pass
+                
         now = time.time()
         
-        if client_ip in self.requests:
-            start_time, count = self.requests[client_ip]
+        if client_key in self.requests:
+            start_time, count = self.requests[client_key]
             if now - start_time < self.window:
                 if count >= self.times:
                     raise HTTPException(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                         detail="Too many requests"
                     )
-                self.requests[client_ip] = (start_time, count + 1)
+                self.requests[client_key] = (start_time, count + 1)
             else:
-                self.requests[client_ip] = (now, 1)
+                self.requests[client_key] = (now, 1)
         else:
-            self.requests[client_ip] = (now, 1)
+            self.requests[client_key] = (now, 1)
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
     credentials_exception = HTTPException(

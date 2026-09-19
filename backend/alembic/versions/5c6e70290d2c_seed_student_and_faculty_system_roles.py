@@ -38,7 +38,7 @@ def upgrade() -> None:
         ("faculty_profile", ["view", "list"]),
         ("notice", ["view", "list"]),
         ("complaint", ["view", "list", "create"]),
-        ("outpass", ["create", "view", "cancel", "list"]),
+        ("outpass", ["create", "view", "cancel"]),
         ("timetable", ["view"]),
         ("attendance", ["view"]),
         ("mess", ["view", "feedback"])

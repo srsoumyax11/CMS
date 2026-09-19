@@ -76,44 +76,144 @@ export function OutpassManagement() {
 
   const approveMutation = useMutation({
     mutationFn: (id: string) => outpassesApi.approve(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
+      const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
+      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
+        if (!old?.data?.data?.items) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            data: {
+              ...old.data.data,
+              items: old.data.data.items.map((o: OutpassResponse) => 
+                o.id === id ? { ...o, status: 'approved' } : o
+              )
+            }
+          }
+        };
+      });
+      return { previous };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
       toast.success('Outpass approved');
       setConfirmAction(null);
     },
-    onError: () => toast.error('Failed to approve outpass'),
+    onError: (err: any, _id, context) => {
+      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context?.previous);
+      toast.error(err.response?.data?.error || 'Failed to approve outpass');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
+    },
   });
 
   const rejectMutation = useMutation({
     mutationFn: ({ id, note }: { id: string; note: string }) =>
       outpassesApi.reject(id, { note: note || null }),
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
+      const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
+      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
+        if (!old?.data?.data?.items) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            data: {
+              ...old.data.data,
+              items: old.data.data.items.map((o: OutpassResponse) => 
+                o.id === id ? { ...o, status: 'rejected' } : o
+              )
+            }
+          }
+        };
+      });
+      return { previous };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
       toast.success('Outpass rejected');
       setRejectTarget(null);
       setRejectNote('');
     },
-    onError: () => toast.error('Failed to reject outpass'),
+    onError: (err: any, _variables, context) => {
+      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context?.previous);
+      toast.error(err.response?.data?.error || 'Failed to reject outpass');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
+    },
   });
 
   const departMutation = useMutation({
     mutationFn: (id: string) => outpassesApi.depart(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
+      const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
+      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
+        if (!old?.data?.data?.items) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            data: {
+              ...old.data.data,
+              items: old.data.data.items.map((o: OutpassResponse) => 
+                o.id === id ? { ...o, status: 'active' } : o
+              )
+            }
+          }
+        };
+      });
+      return { previous };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
       toast.success('Marked as departed');
       setConfirmAction(null);
     },
-    onError: () => toast.error('Failed to mark departure'),
+    onError: (err: any, _id, context) => {
+      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context?.previous);
+      toast.error(err.response?.data?.error || 'Failed to mark departure');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
+    },
   });
 
   const returnMutation = useMutation({
     mutationFn: (id: string) => outpassesApi.return(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
+      const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
+      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
+        if (!old?.data?.data?.items) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            data: {
+              ...old.data.data,
+              items: old.data.data.items.map((o: OutpassResponse) => 
+                o.id === id ? { ...o, status: 'completed' } : o
+              )
+            }
+          }
+        };
+      });
+      return { previous };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
       toast.success('Marked as returned');
       setConfirmAction(null);
     },
-    onError: () => toast.error('Failed to mark return'),
+    onError: (err: any, _id, context) => {
+      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context?.previous);
+      toast.error(err.response?.data?.error || 'Failed to mark return');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
+    },
   });
 
   const pendingCount = outpasses.filter((o) => o.status === 'pending').length;
