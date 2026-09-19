@@ -7,6 +7,7 @@ import type {
   FacultyItemResponse,
   FacultyCreateRequest,
   FacultyUpdateRequest,
+  AdminItemResponse,
   StudentListParams,
   PaginationParams,
 } from '@/types/api';
@@ -23,7 +24,7 @@ export const adminApi = {
     client.patch<APIResponse<StudentItemResponse>>(API_ROUTES.ADMIN_STUDENT_STATUS(id), data),
 
   // Faculty
-  listFaculty: (params?: PaginationParams) =>
+  listFaculty: (params?: StudentListParams) =>
     client.get<APIResponse<FacultyItemResponse[]>>(API_ROUTES.ADMIN_FACULTY, { params }),
 
   createFaculty: (data: FacultyCreateRequest) =>
@@ -31,4 +32,7 @@ export const adminApi = {
 
   updateFaculty: (id: string, data: FacultyUpdateRequest) =>
     client.patch<APIResponse<FacultyItemResponse>>(API_ROUTES.ADMIN_FACULTY_DETAIL(id), data),
+
+  listAdmins: (params?: StudentListParams) =>
+    client.get<APIResponse<AdminItemResponse[]>>(API_ROUTES.ADMIN_ADMINS, { params }),
 };

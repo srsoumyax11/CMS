@@ -12,6 +12,7 @@ import type {
   NameUpdateRequest,
   PasswordChangeRequest,
   UserIdUpdateRequest,
+  StudentProfileCreateRequest,
 } from '@/types/api';
 
 export const authApi = {
@@ -24,7 +25,16 @@ export const authApi = {
   me: () => client.get<APIResponse<UserResponse>>(API_ROUTES.ME),
 
   register: (data: RegisterRequest) =>
-    client.post<APIResponse<RegisterResponseData>>(API_ROUTES.REGISTER, data),
+    client.post<APIResponse<TokenResponse>>(API_ROUTES.REGISTER, data),
+
+  createStudentProfile: (data: StudentProfileCreateRequest) =>
+    client.post<APIResponse<{ message: string }>>(API_ROUTES.CREATE_STUDENT_PROFILE, data),
+
+  updateStudentProfile: (data: StudentProfileCreateRequest) =>
+    client.put<APIResponse<{ message: string }>>(API_ROUTES.CREATE_STUDENT_PROFILE, data),
+
+  getStudentProfile: () =>
+    client.get<APIResponse<{ course_id: string; branch_id: string; year: number; hostel: string | null } | null>>(API_ROUTES.CREATE_STUDENT_PROFILE),
 
   uploadPhoto: (file: File) => {
     const formData = new FormData();

@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Login } from '@/pages/Login';
 import { Register } from '@/pages/Register';
+import { Onboarding } from '@/pages/auth/Onboarding';
 import { StudentDashboard } from '@/pages/StudentDashboard';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { Unauthorized } from '@/pages/Unauthorized';
@@ -123,6 +124,7 @@ function AppRoutes() {
       <Route path="/unauthorized" element={<Unauthorized />} />
 
       <Route element={<ProtectedRoute />}>
+        <Route path="/onboarding" element={<Onboarding />} />
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<RoleRedirect />} />
 

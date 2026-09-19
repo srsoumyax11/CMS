@@ -65,7 +65,8 @@ async def create_complaint(
         try:
             photo_path = await upload_complaint_photo(photo, str(current_user.id))
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to upload photo: {str(e)}")
+            print(f"Complaint photo upload error: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to upload complaint evidence")
 
     location_hostel = location_hostel.strip().lower()
     

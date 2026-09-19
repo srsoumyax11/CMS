@@ -7,6 +7,7 @@ import {
   CalendarDays,
   UtensilsCrossed,
   BookOpen,
+  AlertTriangle,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -40,6 +41,18 @@ export function StudentDashboard({ basePath = '/student' }: StudentDashboardProp
 
   return (
     <div className="space-y-6">
+      {user.account_status === 'pending' && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/50 dark:text-amber-200">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="flex flex-col">
+            <h3 className="font-semibold text-amber-800 dark:text-amber-300">Account Under Review</h3>
+            <p className="text-sm mt-1">
+              Your account has been created and your basic details are submitted. An administrator must verify and approve your account before you can access all features. You will be notified once approved. You can explore basic features in the meantime.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div>
         <h2 className="text-2xl font-bold text-foreground">
           Welcome back, {user.name?.split(' ')[0] || 'Student'}

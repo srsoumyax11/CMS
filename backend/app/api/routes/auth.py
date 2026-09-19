@@ -39,8 +39,8 @@ async def check_username(user_id: str, db: AsyncSession = Depends(get_db)):
 @router.post(
     "/register", 
     summary="Register Student", 
-    description="Registers a new student user. Assigns the default 'Student' role and sets status to 'pending'.", 
-    response_model=APIResponse[RegisterResponseData]
+    description="Registers a new student user. Assigns the default 'Student' role, sets status to 'pending', and logs them in.", 
+    response_model=APIResponse[TokenResponse]
 )
 async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     # Check if user already exists
@@ -48,19 +48,7 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Validate Course and Branch
-    branch_result = await db.execute(
-        select(Branch).where(
-            Branch.id == data.branch_id,
-            Branch.course_id == data.course_id,
-            Branch.is_active == True
-        )
-    )
-    branch = branch_result.scalar_one_or_none()
-    if not branch:
-        raise HTTPException(status_code=400, detail="Invalid or inactive course and branch combination")
-
-    # Atomic transaction for User and Profile
+    # Atomic transaction for User
     try:
         new_user = User(
             email=data.email,
@@ -72,16 +60,6 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
         )
         db.add(new_user)
         await db.flush()  # to get new_user.id
-        
-        student_profile = StudentProfile(
-            user_id=new_user.id,
-            course_id=data.course_id,
-            branch_id=data.branch_id,
-            year=data.year,
-            hostel=data.hostel.strip().lower() if data.hostel else None,
-            academic_status=AcademicStatus.enrolled
-        )
-        db.add(student_profile)
         
         # Fetch the 'Student' system role and assign it
         role_stmt = select(Role).where(Role.name == 'Student')
@@ -99,9 +77,20 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
             raise HTTPException(status_code=400, detail="User ID is already taken")
         raise HTTPException(status_code=400, detail="Database Integrity Error")
 
+    # Issue tokens
+    access_token = create_access_token(subject=str(new_user.id))
+    refresh_token = create_refresh_token(subject=str(new_user.id))
+    
     return APIResponse(
         success=True, 
-        data=RegisterResponseData(user_id=new_user.id, account_status=AccountStatus.pending, academic_status=AcademicStatus.enrolled), 
+        data=TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user_type=new_user.user_type,
+            account_status=new_user.account_status,
+            academic_status=None,
+            employment_status=None
+        ), 
         error=None
     )
 
@@ -123,8 +112,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
         
-    if user.account_status != AccountStatus.active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+    # User is authenticated. We allow all account statuses so the frontend can route them to appropriate status pages.
         
     access_token = create_access_token(subject=str(user.id))
     return {"access_token": access_token, "token_type": "bearer"}
@@ -149,9 +137,8 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Invalid email or password")
         
-    if user.account_status != AccountStatus.active:
-        raise HTTPException(status_code=400, detail="User account is deactivated")
-        
+    # User is authenticated. We allow all account statuses so the frontend can route them to appropriate status pages.
+    
     academic_status = None
     employment_status = None
     if user.user_type == UserType.student and user.student_profile:
@@ -225,6 +212,7 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
             email=current_user.email,
             user_id=current_user.user_id,
             account_status=current_user.account_status,
+            status_note=current_user.status_note,
             user_type=current_user.user_type,
             academic_status=current_user.student_profile.academic_status if current_user.student_profile else None,
             employment_status=current_user.faculty_profile.employment_status if current_user.faculty_profile else None,

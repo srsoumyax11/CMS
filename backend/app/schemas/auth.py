@@ -9,10 +9,6 @@ class RegisterRequest(BaseModel):
     password: str
     name: str
     user_id: str
-    course_id: uuid.UUID
-    branch_id: uuid.UUID
-    year: int = Field(..., ge=1990, le=2100, description="Admission or current year depending on convention")
-    hostel: str
     photo_url: Optional[str] = None
 
 class LoginRequest(BaseModel):
@@ -45,6 +41,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     user_id: Optional[str] = None
     account_status: AccountStatus
+    status_note: Optional[str] = None
     user_type: UserType
     academic_status: Optional[AcademicStatus] = None
     employment_status: Optional[EmploymentStatus] = None
@@ -56,6 +53,12 @@ class NameUpdateRequest(BaseModel):
 
 class UserIdUpdateRequest(BaseModel):
     user_id: str
+
+class StudentProfileCreateRequest(BaseModel):
+    course_id: uuid.UUID
+    branch_id: uuid.UUID
+    year: int = Field(..., ge=1990, le=2100)
+    hostel: Optional[str] = None
 
 class PasswordChangeRequest(BaseModel):
     current_password: str

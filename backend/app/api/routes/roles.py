@@ -13,7 +13,7 @@ from app.models.rbac import Role, Permission, Asset, Action, RolePermission, Use
 from app.models.user import User
 from app.schemas.common import APIResponse
 from app.schemas.roles import (
-    RoleCreateRequest, RoleResponse, PermissionMatrixResponse,
+    RoleCreateRequest, RoleUpdateRequest, RoleResponse, PermissionMatrixResponse,
     AssetMatrixItem, ActionMatrixItem
 )
 
@@ -29,16 +29,20 @@ async def list_roles(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.ROLE_VIEW))
 ):
-    stmt = select(Role)
+    stmt = (
+        select(Role, func.count(UserRole.user_id).label("assignment_count"))
+        .outerjoin(UserRole, Role.id == UserRole.role_id)
+        .group_by(Role.id)
+    )
     result = await db.execute(stmt)
-    roles = result.scalars().all()
     
     data = [RoleResponse(
         id=r.id,
         name=r.name,
         description=r.description,
-        is_system_role=r.is_system_role
-    ) for r in roles]
+        is_system_role=r.is_system_role,
+        assignment_count=count
+    ) for r, count in result.all()]
     
     return APIResponse(success=True, data=data, error=None)
 
@@ -128,6 +132,44 @@ async def create_role(
         name=new_role.name,
         description=new_role.description,
         is_system_role=new_role.is_system_role
+    )
+    return APIResponse(success=True, data=data, error=None)
+
+@router.patch(
+    "/{id}", 
+    summary="Update Role", 
+    description="Updates a custom role's metadata. Cannot be used for system roles. **Requires:** `role:edit`",
+    response_model=APIResponse[RoleResponse]
+)
+async def update_role(
+    id: UUID,
+    req: RoleUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.ROLE_EDIT))
+):
+    role = await db.get(Role, id)
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+        
+    if role.is_system_role:
+        raise HTTPException(status_code=400, detail="Cannot edit system role metadata")
+        
+    role.name = req.name
+    role.description = req.description
+    
+    await db.commit()
+    await db.refresh(role)
+    
+    # Calculate assignment count
+    count_stmt = select(func.count(UserRole.user_id)).where(UserRole.role_id == id)
+    assignment_count = (await db.execute(count_stmt)).scalar() or 0
+    
+    data = RoleResponse(
+        id=role.id,
+        name=role.name,
+        description=role.description,
+        is_system_role=role.is_system_role,
+        assignment_count=assignment_count
     )
     return APIResponse(success=True, data=data, error=None)
 

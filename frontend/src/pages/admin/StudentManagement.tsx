@@ -114,6 +114,13 @@ export function StudentManagement() {
       key: 'academic_status',
       header: 'Academic',
       render: (row: StudentItemResponse) => {
+        if (!row.academic_status) {
+          return (
+            <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
+              Incomplete
+            </Badge>
+          );
+        }
         const config = academicStatusConfig[row.academic_status] ?? {
           label: row.academic_status,
           className: 'bg-gray-100 text-gray-600 border-gray-200',
@@ -295,9 +302,15 @@ export function StudentManagement() {
                 <div className="space-y-1">
                   <p className="text-muted-foreground">Academic Status</p>
                   <div className="mt-1">
-                    <Badge variant="outline" className={academicStatusConfig[showDetails.academic_status]?.className}>
-                      {academicStatusConfig[showDetails.academic_status]?.label || showDetails.academic_status}
-                    </Badge>
+                    {showDetails.academic_status ? (
+                      <Badge variant="outline" className={academicStatusConfig[showDetails.academic_status]?.className}>
+                        {academicStatusConfig[showDetails.academic_status]?.label || showDetails.academic_status}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
+                        Incomplete
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>

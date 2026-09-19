@@ -26,7 +26,8 @@ async def upload_profile_photo(
             
         photo_url = await upload_avatar(photo, str(current_user.id))
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to upload photo: {str(e)}")
+        print(f"Photo upload error: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to upload photo")
         
     try:
         # Update the user profile in the database
@@ -38,8 +39,125 @@ async def upload_profile_photo(
         raise HTTPException(status_code=400, detail="Database Error")
         
     return APIResponse(success=True, data={"photo_url": photo_url}, error=None)
-from app.schemas.auth import NameUpdateRequest, PasswordChangeRequest, UserIdUpdateRequest
+from app.schemas.auth import NameUpdateRequest, PasswordChangeRequest, UserIdUpdateRequest, StudentProfileCreateRequest
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
+from app.models.profiles import StudentProfile, AcademicStatus
+from app.models.academic import Branch
+
+@router.get(
+    "/me/student-profile",
+    summary="Get My Student Profile",
+    description="Fetches the current student's academic profile for pre-filling forms.",
+    response_model=APIResponse[dict]
+)
+async def get_my_student_profile(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if current_user.user_type != UserType.student:
+        raise HTTPException(status_code=400, detail="Only students have a student profile")
+    
+    result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
+    profile = result.scalar_one_or_none()
+    if not profile:
+        return APIResponse(success=True, data=None, error=None)
+    
+    return APIResponse(success=True, data={
+        "course_id": str(profile.course_id),
+        "branch_id": str(profile.branch_id),
+        "year": profile.year,
+        "hostel": profile.hostel,
+        "academic_status": profile.academic_status.value if profile.academic_status else None,
+    }, error=None)
+
+@router.post(
+    "/me/student-profile",
+    summary="Create Student Profile",
+    description="Creates the academic profile for a newly registered student.",
+    response_model=APIResponse[dict]
+)
+async def create_student_profile(
+    data: StudentProfileCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if current_user.user_type != UserType.student:
+        raise HTTPException(status_code=400, detail="Only students can create a student profile")
+        
+    # Check if profile already exists
+    result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Student profile already exists")
+        
+    # Validate Course and Branch
+    branch_result = await db.execute(
+        select(Branch).where(
+            Branch.id == data.branch_id,
+            Branch.course_id == data.course_id,
+            Branch.is_active == True
+        )
+    )
+    if not branch_result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Invalid or inactive course and branch combination")
+        
+    try:
+        profile = StudentProfile(
+            user_id=current_user.id,
+            course_id=data.course_id,
+            branch_id=data.branch_id,
+            year=data.year,
+            hostel=data.hostel.strip().lower() if data.hostel else None,
+            academic_status=AcademicStatus.enrolled
+        )
+        db.add(profile)
+        await db.commit()
+        return APIResponse(success=True, data={"message": "Profile created successfully"}, error=None)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Database Error")
+
+@router.put(
+    "/me/student-profile",
+    summary="Update Student Profile",
+    description="Updates the academic profile for a student whose account is under revision.",
+    response_model=APIResponse[dict]
+)
+async def update_student_profile(
+    data: StudentProfileCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if current_user.user_type != UserType.student:
+        raise HTTPException(status_code=400, detail="Only students can update a student profile")
+        
+    # Fetch existing profile
+    result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
+    profile = result.scalar_one_or_none()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Student profile not found. Use POST to create one.")
+        
+    # Validate Course and Branch
+    branch_result = await db.execute(
+        select(Branch).where(
+            Branch.id == data.branch_id,
+            Branch.course_id == data.course_id,
+            Branch.is_active == True
+        )
+    )
+    if not branch_result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Invalid or inactive course and branch combination")
+        
+    try:
+        profile.course_id = data.course_id
+        profile.branch_id = data.branch_id
+        profile.year = data.year
+        profile.hostel = data.hostel.strip().lower() if data.hostel else None
+        await db.commit()
+        return APIResponse(success=True, data={"message": "Profile updated successfully"}, error=None)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Database Error")
 
 @router.patch(
     "/me/user-id",

@@ -74,10 +74,13 @@ export interface RegisterRequest {
   password: string;
   name: string;
   user_id: string;
+}
+
+export interface StudentProfileCreateRequest {
   course_id: string;
   branch_id: string;
   year: number;
-  hostel: string;
+  hostel?: string;
   photo_url?: string | null;
 }
 
@@ -91,6 +94,7 @@ export interface UserResponse {
   email: string;
   user_id?: string | null;
   account_status: AccountStatus;
+  status_note?: string | null;
   user_type: UserType;
   academic_status?: AcademicStatus | null;
   employment_status?: EmploymentStatus | null;
@@ -365,7 +369,7 @@ export interface StudentItemResponse {
   branch_name: string;
   year: number;
   account_status: AccountStatus;
-  academic_status: AcademicStatus;
+  academic_status: AcademicStatus | null;
   status_note?: string | null;
 }
 
@@ -375,7 +379,17 @@ export interface StudentStatusUpdateRequest {
   status_note?: string | null;
 }
 
-// ── Admin: Faculty ───────────────────────────────────────────────────
+// ── Admin: Faculty & Admins ───────────────────────────────────────────────────
+
+export interface AdminItemResponse {
+  id: string;
+  user_id: string;
+  user_uuid: string;
+  name: string;
+  email: string;
+  account_status: AccountStatus;
+  status_note?: string | null;
+}
 
 export interface FacultyItemResponse {
   id: string;
@@ -413,12 +427,18 @@ export interface RoleResponse {
   name: string;
   description?: string | null;
   is_system_role: boolean;
+  assignment_count: number;
 }
 
 export interface RoleCreateRequest {
   name: string;
   description?: string | null;
   permission_ids: string[];
+}
+
+export interface RoleUpdateRequest {
+  name: string;
+  description?: string | null;
 }
 
 export interface UpdatePermissionsRequest {

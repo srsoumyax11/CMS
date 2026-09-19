@@ -22,9 +22,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Plus, Users, Loader2, Pencil } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Plus, Users, Loader2, Pencil, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
-import type { FacultyItemResponse, FacultyCreateRequest, AccountStatus, EmploymentStatus } from '@/types/api';
+import type { FacultyItemResponse, FacultyCreateRequest, AccountStatus, EmploymentStatus, AdminItemResponse } from '@/types/api';
 
 const accountStatusConfig: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pending', className: 'bg-amber-100 text-amber-700 border-amber-200' },
@@ -47,6 +48,7 @@ export function FacultyManagement() {
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState<FacultyItemResponse | null>(null);
   const [showDetails, setShowDetails] = useState<FacultyItemResponse | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | undefined>();
 
   const [form, setForm] = useState<Omit<FacultyCreateRequest, 'user_id'>>({
     email: '',
@@ -71,11 +73,18 @@ export function FacultyManagement() {
   });
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: [QUERY_KEYS.FACULTY],
-    queryFn: () => adminApi.listFaculty(),
+    queryKey: [QUERY_KEYS.FACULTY, statusFilter],
+    queryFn: () => adminApi.listFaculty({ status: statusFilter as AccountStatus}),
   });
 
   const faculty: FacultyItemResponse[] = data?.data?.data ?? [];
+
+  const { data: adminsData, isLoading: adminsLoading, error: adminsError, refetch: refetchAdmins } = useQuery({
+    queryKey: [QUERY_KEYS.ADMINS, statusFilter],
+    queryFn: () => adminApi.listAdmins({ status: statusFilter as AccountStatus}),
+  });
+
+  const admins: AdminItemResponse[] = adminsData?.data?.data ?? [];
 
   const createMutation = useMutation({
     mutationFn: (data: FacultyCreateRequest) => adminApi.createFaculty(data),
@@ -177,20 +186,52 @@ export function FacultyManagement() {
           <Pencil className="h-4 w-4" />
         </Button>
       ),
+    }
+  ];
+
+  const adminColumns = [
+    {
+      key: 'name',
+      header: 'Name',
+      render: (row: AdminItemResponse) => (
+        <div className="flex flex-col">
+          <span className="font-medium text-foreground">{row.name || 'Unassigned'}</span>
+          <span className="text-xs text-muted-foreground">{row.email}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'user_id',
+      header: 'Admin ID',
+      render: (row: AdminItemResponse) => (
+        <span className="text-sm text-muted-foreground">{row.user_id}</span>
+      ),
+    },
+    {
+      key: 'account_status',
+      header: 'Account Status',
+      render: (row: AdminItemResponse) => {
+        const config = accountStatusConfig[row.account_status];
+        return (
+          <Badge variant="outline" className={config.className}>
+            {config.label}
+          </Badge>
+        );
+      },
     },
   ];
 
-  if (error) {
-    return <ErrorState onRetry={() => refetch()} />;
+  if (error || adminsError) {
+    return <ErrorState onRetry={() => { refetch(); refetchAdmins(); }} />;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Faculty Management</h2>
+          <h2 className="text-xl font-bold text-foreground">Staff & Admin Management</h2>
           <p className="text-sm text-muted-foreground">
-            Create and manage faculty accounts
+            View and manage faculty and administrators
           </p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
@@ -199,16 +240,47 @@ export function FacultyManagement() {
         </Button>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={faculty}
-        isLoading={isLoading}
-        rowKey={(row) => row.id}
-        onRowClick={(row) => setShowDetails(row)}
-        emptyTitle="No faculty members"
-        emptyDescription="There are no faculty accounts yet."
-        emptyIcon={<Users className="h-6 w-6" />}
-      />
+      <Tabs value={statusFilter ?? 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? undefined : v)}>
+        <TabsList>
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="pending">Pending</TabsTrigger>
+          <TabsTrigger value="active">Active</TabsTrigger>
+          <TabsTrigger value="suspended">Suspended</TabsTrigger>
+          <TabsTrigger value="rejected">Rejected</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      <Tabs defaultValue="faculty" className="w-full mt-2">
+        <TabsList className="mb-4">
+          <TabsTrigger value="faculty">Faculty Directory</TabsTrigger>
+          <TabsTrigger value="admins">Administrators</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="faculty">
+          <DataTable
+            columns={columns}
+            data={faculty}
+            isLoading={isLoading}
+            rowKey={(row) => row.id}
+            onRowClick={(row) => setShowDetails(row)}
+            emptyTitle="No faculty members"
+            emptyDescription="There are no faculty accounts yet."
+            emptyIcon={<Users className="h-6 w-6" />}
+          />
+        </TabsContent>
+
+        <TabsContent value="admins">
+          <DataTable
+            columns={adminColumns}
+            data={admins}
+            isLoading={adminsLoading}
+            rowKey={(row) => row.id}
+            emptyTitle="No administrators found"
+            emptyDescription="There are no admin accounts registered."
+            emptyIcon={<ShieldAlert className="h-6 w-6" />}
+          />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-md">

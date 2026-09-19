@@ -10,13 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 import {
   Dialog,
@@ -35,6 +28,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   ShieldCheck,
@@ -43,6 +42,9 @@ import {
   Lock,
   Trash2,
   AlertTriangle,
+  Users,
+  MoreVertical,
+  Edit2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type {
@@ -80,6 +82,9 @@ export function RolesPermissions() {
   const [assignUserId, setAssignUserId] = useState('');
   const [draftPermissions, setDraftPermissions] = useState<Set<string> | null>(null);
 
+  const [showEdit, setShowEdit] = useState<RoleResponse | null>(null);
+  const [editRole, setEditRole] = useState({ name: '', description: '' });
+
   const [newRole, setNewRole] = useState({
     name: '',
     description: '',
@@ -100,9 +105,22 @@ export function RolesPermissions() {
 
   const roles: RoleResponse[] = useMemo(() => {
     const raw = rolesQuery.data?.data?.data ?? [];
+    
+    const SYSTEM_ROLE_ORDER: Record<string, number> = {
+      'SuperAdmin': 1,
+      'Admin': 2,
+      'Faculty': 3,
+      'Student': 4
+    };
+
     return [...raw].sort((a, b) => {
       if (a.is_system_role !== b.is_system_role) {
         return a.is_system_role ? -1 : 1;
+      }
+      if (a.is_system_role && b.is_system_role) {
+        const orderA = SYSTEM_ROLE_ORDER[a.name] || 99;
+        const orderB = SYSTEM_ROLE_ORDER[b.name] || 99;
+        if (orderA !== orderB) return orderA - orderB;
       }
       return a.name.localeCompare(b.name);
     });
@@ -118,6 +136,17 @@ export function RolesPermissions() {
       toast.success('Role created successfully');
     },
     onError: () => toast.error('Failed to create role'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { name: string; description?: string } }) =>
+      rolesApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ROLES] });
+      setShowEdit(null);
+      toast.success('Role updated successfully');
+    },
+    onError: () => toast.error('Failed to update role'),
   });
 
   const savePermissionsMutation = useMutation({
@@ -285,52 +314,70 @@ export function RolesPermissions() {
                   <div className="p-4 flex flex-col gap-2">
                     <div className="flex items-start justify-between">
                       <p className="text-sm font-semibold text-foreground">{role.name}</p>
-                      {role.is_system_role && (
-                        <Badge variant="secondary" className="text-xs shrink-0 ml-2">
-                          <Lock className="mr-1 h-3 w-3" />
-                          System
-                        </Badge>
+                      <div className="flex items-center gap-2">
+                        {role.is_system_role ? (
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            <Lock className="mr-1 h-3 w-3" />
+                            System
+                          </Badge>
+                        ) : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 -mr-2 text-muted-foreground hover:text-foreground"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditRole({ name: role.name, description: role.description || '' });
+                                  setShowEdit(role);
+                                }}
+                              >
+                                <Edit2 className="mr-2 h-4 w-4" />
+                                Edit Role
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                disabled={isCheckingCount === role.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCheckDelete(role);
+                                }}
+                              >
+                                {isCheckingCount === role.id ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                )}
+                                Delete Role
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full shrink-0">
+                        <Users className="mr-1 h-3 w-3" />
+                        {role.assignment_count || 0} user{role.assignment_count !== 1 && 's'}
+                      </div>
+                      {role.description && (
+                        <div className="overflow-hidden whitespace-nowrap group">
+                          <p className="inline-block animate-marquee group-hover:[animation-play-state:paused] text-xs text-muted-foreground leading-relaxed pr-8">
+                            {role.description}
+                          </p>
+                        </div>
                       )}
                     </div>
-                    {role.description && (
-                      <div className="overflow-hidden whitespace-nowrap mt-1 group">
-                        <p className="inline-block animate-marquee group-hover:[animation-play-state:paused] text-xs text-muted-foreground leading-relaxed pr-8">
-                          {role.description}
-                        </p>
-                      </div>
-                    )}
                   </div>
-                  {!role.is_system_role && (
-                    <div className="flex items-center justify-between border-t bg-muted/30 px-4 py-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-3 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowAssign(role);
-                        }}
-                      >
-                        Assign to User
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCheckDelete(role);
-                        }}
-                        disabled={isCheckingCount === role.id}
-                      >
-                        {isCheckingCount === role.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             ))
@@ -536,6 +583,64 @@ export function RolesPermissions() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!showEdit} onOpenChange={(open) => !open && setShowEdit(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Role: {showEdit?.name}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (showEdit) {
+                updateMutation.mutate({
+                  id: showEdit.id,
+                  data: {
+                    name: editRole.name,
+                    description: editRole.description || undefined,
+                  },
+                });
+              }
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="edit-role-name">Role Name</Label>
+              <Input
+                id="edit-role-name"
+                value={editRole.name}
+                onChange={(e) => setEditRole({ ...editRole, name: e.target.value })}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-role-description">Description (Optional)</Label>
+              <Input
+                id="edit-role-description"
+                value={editRole.description}
+                onChange={(e) => setEditRole({ ...editRole, description: e.target.value })}
+                placeholder="Brief description of this role"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowEdit(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending || !editRole.name}>
+                {updateMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

@@ -139,11 +139,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     error_msg = traceback.format_exc()
     print(error_msg)
     
-    response_error = "Internal Server Error"
-    if settings.ENVIRONMENT == "dev":
-        response_error = f"Internal Server Error: {str(exc)}"
-        
     return JSONResponse(
         status_code=500,
-        content={"success": False, "data": None, "error": response_error}
+        content={"success": False, "data": None, "error": "Internal Server Error"}
     )

@@ -73,3 +73,54 @@ Use a hierarchical checkbox where selecting `college` auto-checks all sub-scopes
 2. **Multiple scoped roles?** — Use the union of all scopes. Standard and safest approach.
 
 3. **`self` scope** is best enforced directly in queries with `WHERE user_id = current_user.id`, not at middleware level. It is essentially row-level security.
+
+---
+
+# Future Features: Strict Password Complexity & Strength Meter
+
+## What This Is
+
+Currently, the application allows simple passwords during account creation. To improve security, we need to enforce strict password complexity rules on both the frontend and backend. Additionally, providing visual feedback (a strength meter) during registration will improve user experience.
+
+---
+
+## Requirements
+
+1. **Minimum Length:** At least 8 characters.
+2. **Uppercase Letter:** At least 1 uppercase letter (A-Z).
+3. **Lowercase Letter:** At least 1 lowercase letter (a-z).
+4. **Number:** At least 1 number (0-9).
+5. **Special Character:** At least 1 special character (e.g., `!@#$%^&*`).
+
+---
+
+## Backend Implementation Plan
+
+1. **Location:** `app/schemas/auth.py`
+2. **Implementation:** Update the `RegisterRequest` and `PasswordChangeRequest` Pydantic models.
+3. **Validation logic:** Add a `@field_validator('password')` or use Pydantic's `StringConstraints` with a strict Regex pattern.
+4. **Error Handling:** If validation fails, return a 422 Unprocessable Entity (or 400 Bad Request) with a clear, user-friendly error message indicating exactly which rules were not met.
+
+Example Regex for validation:
+```python
+pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+```
+
+---
+
+## Frontend Implementation Plan
+
+1. **Locations:** 
+   - `frontend/src/pages/auth/Register.tsx` (Account Creation)
+   - Change Password component (when implemented)
+2. **Strength Calculation Logic:**
+   - Create a utility function to evaluate password strength dynamically on input change.
+   - Score from 0 to 4 based on how many criteria are met.
+     - **0-1 (Bad):** Red
+     - **2 (Low):** Orange
+     - **3 (Good):** Yellow
+     - **4 (Strong):** Green
+3. **UI Components:**
+   - **Checklist:** A list of the 5 requirements below the password field. Display a ✅ (green) or ❌ (gray) next to each rule as the user types.
+   - **Progress Bar:** A smooth, animated `div` (or shadcn/ui `<Progress />`) that fills up and changes color based on the score. Add CSS transitions (`transition-all duration-300 ease-in-out`) for smoothness.
+   - **Text Feedback:** Display the strength word ("Bad", "Low", "Good", "Strong") dynamically alongside the bar.

@@ -16,7 +16,7 @@ from app.schemas.common import APIResponse
 from app.schemas.admin import (
     StudentStatusUpdateRequest, StudentItemResponse, 
     FacultyCreateRequest, FacultyItemResponse,
-    FacultyUpdateRequest
+    FacultyUpdateRequest, AdminItemResponse
 )
 
 router = APIRouter()
@@ -34,32 +34,33 @@ async def list_students(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.STUDENT_PROFILE_LIST))
 ):
-    stmt = select(StudentProfile).options(
-        selectinload(StudentProfile.user), 
-        selectinload(StudentProfile.course), 
-        selectinload(StudentProfile.branch)
-    )
+    stmt = select(User).outerjoin(StudentProfile, User.id == StudentProfile.user_id).options(
+        selectinload(User.student_profile).selectinload(StudentProfile.course),
+        selectinload(User.student_profile).selectinload(StudentProfile.branch)
+    ).where(User.user_type == UserType.student)
+    
     if status_filter:
-        stmt = stmt.join(User, StudentProfile.user_id == User.id).where(User.account_status == status_filter)
+        stmt = stmt.where(User.account_status == status_filter)
     
     stmt = stmt.offset(skip).limit(limit)
     result = await db.execute(stmt)
-    profiles = result.scalars().all()
+    users = result.scalars().all()
     
     data = []
-    for p in profiles:
+    for u in users:
+        p = u.student_profile
         data.append(StudentItemResponse(
-            id=p.id,
-            user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
-            user_uuid=p.user_id,
-            name=p.user.name if p.user else "",
-            email=p.user.email if p.user else "",
-            course_name=p.course.name if p.course else "",
-            branch_name=p.branch.name if p.branch else "",
-            year=p.year,
-            account_status=p.user.account_status if p.user else AccountStatus.pending,
-            academic_status=p.academic_status,
-            status_note=p.user.status_note if p.user else None
+            id=p.id if p else u.id,
+            user_id=u.user_id if u.user_id else str(u.id),
+            user_uuid=u.id,
+            name=u.name,
+            email=u.email,
+            course_name=p.course.name if p and p.course else "",
+            branch_name=p.branch.name if p and p.branch else "",
+            year=p.year if p else 0,
+            account_status=u.account_status,
+            academic_status=p.academic_status if p else None,
+            status_note=u.status_note
         ))
         
     return APIResponse(success=True, data=data, error=None)
@@ -75,30 +76,30 @@ async def get_student(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.STUDENT_PROFILE_LIST))
 ):
-    stmt = select(StudentProfile).options(
-        selectinload(StudentProfile.user), 
-        selectinload(StudentProfile.course), 
-        selectinload(StudentProfile.branch)
-    ).where(StudentProfile.id == id)
+    stmt = select(User).outerjoin(StudentProfile, User.id == StudentProfile.user_id).options(
+        selectinload(User.student_profile).selectinload(StudentProfile.course),
+        selectinload(User.student_profile).selectinload(StudentProfile.branch)
+    ).where(User.user_type == UserType.student).where((User.id == id) | (StudentProfile.id == id))
     
     result = await db.execute(stmt)
-    p = result.scalar_one_or_none()
+    u = result.scalar_one_or_none()
     
-    if not p:
+    if not u:
         raise HTTPException(status_code=404, detail="Student not found")
         
+    p = u.student_profile
     data = StudentItemResponse(
-        id=p.id,
-        user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
-        user_uuid=p.user_id,
-        name=p.user.name if p.user else "",
-        email=p.user.email if p.user else "",
-        course_name=p.course.name if p.course else "",
-        branch_name=p.branch.name if p.branch else "",
-        year=p.year,
-        account_status=p.user.account_status if p.user else AccountStatus.pending,
-        academic_status=p.academic_status,
-        status_note=p.user.status_note if p.user else None
+        id=p.id if p else u.id,
+        user_id=u.user_id if u.user_id else str(u.id),
+        user_uuid=u.id,
+        name=u.name,
+        email=u.email,
+        course_name=p.course.name if p and p.course else "",
+        branch_name=p.branch.name if p and p.branch else "",
+        year=p.year if p else 0,
+        account_status=u.account_status,
+        academic_status=p.academic_status if p else None,
+        status_note=u.status_note
     )
     return APIResponse(success=True, data=data, error=None)
 
@@ -125,55 +126,54 @@ async def update_student_status(
         if Perms.STUDENT_PROFILE_EDIT not in user_perms:
             raise HTTPException(status_code=403, detail="Insufficient permission to edit statuses")
 
-    stmt = select(StudentProfile).options(
-        selectinload(StudentProfile.user), 
-        selectinload(StudentProfile.course), 
-        selectinload(StudentProfile.branch)
-    ).where(StudentProfile.id == id)
+    stmt = select(User).outerjoin(StudentProfile, User.id == StudentProfile.user_id).options(
+        selectinload(User.student_profile).selectinload(StudentProfile.course),
+        selectinload(User.student_profile).selectinload(StudentProfile.branch)
+    ).where(User.user_type == UserType.student).where((User.id == id) | (StudentProfile.id == id))
     result = await db.execute(stmt)
-    p = result.scalar_one_or_none()
+    u = result.scalar_one_or_none()
     
-    if not p:
+    if not u:
         raise HTTPException(status_code=404, detail="Student not found")
         
-    if req.academic_status:
+    p = u.student_profile
+    if req.academic_status and p:
         p.academic_status = req.academic_status
 
-    if p.user:
-        if req.account_status:
-            p.user.account_status = req.account_status
-            if req.account_status == AccountStatus.active:
-                # Assign 'Student' role
-                role_stmt = select(Role).where(Role.name == "Student")
-                role_res = await db.execute(role_stmt)
-                student_role = role_res.scalar_one_or_none()
-                if student_role:
-                    ur_stmt = select(UserRole).where(UserRole.user_id == p.user_id, UserRole.role_id == student_role.id)
-                    ur_res = await db.execute(ur_stmt)
-                    if not ur_res.scalar_one_or_none():
-                        new_ur = UserRole(user_id=p.user_id, role_id=student_role.id)
-                        db.add(new_ur)
+    if req.account_status:
+        u.account_status = req.account_status
+        if req.account_status == AccountStatus.active:
+            # Assign 'Student' role
+            role_stmt = select(Role).where(Role.name == "Student")
+            role_res = await db.execute(role_stmt)
+            student_role = role_res.scalar_one_or_none()
+            if student_role:
+                # Check if already has role
+                ur_stmt = select(UserRole).where(UserRole.user_id == u.id, UserRole.role_id == student_role.id)
+                ur_res = await db.execute(ur_stmt)
+                if not ur_res.scalar_one_or_none():
+                    db.add(UserRole(user_id=u.id, role_id=student_role.id))
 
-        if req.status_note is not None:
-            p.user.status_note = req.status_note
+    if req.status_note is not None:
+        u.status_note = req.status_note
 
     await db.commit()
-    await db.refresh(p)
-    if p.user:
-        await db.refresh(p.user)
+    await db.refresh(u)
+    if p:
+        await db.refresh(p)
     
     data = StudentItemResponse(
-        id=p.id,
-        user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
-        user_uuid=p.user_id,
-        name=p.user.name if p.user else "",
-        email=p.user.email if p.user else "",
-        course_name=p.course.name if p.course else "",
-        branch_name=p.branch.name if p.branch else "",
-        year=p.year,
-        account_status=p.user.account_status if p.user else AccountStatus.pending,
-        academic_status=p.academic_status,
-        status_note=p.user.status_note if p.user else None
+        id=p.id if p else u.id,
+        user_id=u.user_id if u.user_id else str(u.id),
+        user_uuid=u.id,
+        name=u.name,
+        email=u.email,
+        course_name=p.course.name if p and p.course else "",
+        branch_name=p.branch.name if p and p.branch else "",
+        year=p.year if p else 0,
+        account_status=u.account_status,
+        academic_status=p.academic_status if p else None,
+        status_note=u.status_note
     )
     return APIResponse(success=True, data=data, error=None)
 
@@ -254,12 +254,17 @@ async def create_faculty(
     response_model=APIResponse[List[FacultyItemResponse]]
 )
 async def list_faculty(
+    status_filter: Optional[str] = Query(None, alias="status", description="Filter by account status (pending, active, rejected)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.FACULTY_PROFILE_LIST))
 ):
-    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user)).offset(skip).limit(limit)
+    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user))
+    if status_filter:
+        stmt = stmt.join(User, FacultyProfile.user_id == User.id).where(User.account_status == status_filter)
+    stmt = stmt.offset(skip).limit(limit)
+    
     result = await db.execute(stmt)
     profiles = result.scalars().all()
     
@@ -330,4 +335,39 @@ async def update_faculty(
         employment_status=p.employment_status,
         status_note=p.user.status_note if p.user else None
     )
+    return APIResponse(success=True, data=data, error=None)
+
+@router.get(
+    "/admins",
+    summary="List Admins",
+    description="Fetches a list of all administrators. **Requires:** `faculty_profile:list`",
+    response_model=APIResponse[List[AdminItemResponse]]
+)
+async def list_admins(
+    status_filter: Optional[str] = Query(None, alias="status", description="Filter by account status (pending, active, rejected)"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.FACULTY_PROFILE_LIST))
+):
+    stmt = select(User).where(User.user_type == UserType.admin)
+    if status_filter:
+        stmt = stmt.where(User.account_status == status_filter)
+    stmt = stmt.offset(skip).limit(limit)
+    
+    result = await db.execute(stmt)
+    users = result.scalars().all()
+    
+    data = []
+    for u in users:
+        data.append(AdminItemResponse(
+            id=u.id,  # using user's internal UUID as id for the row
+            user_id=u.user_id if u.user_id else str(u.id),
+            user_uuid=u.id,
+            name=u.name or "",
+            email=u.email,
+            account_status=u.account_status,
+            status_note=u.status_note
+        ))
+        
     return APIResponse(success=True, data=data, error=None)

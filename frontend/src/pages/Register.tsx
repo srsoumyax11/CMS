@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { authApi } from '@/api/authApi';
-import { metadataApi } from '@/api/metadataApi';
-import { QUERY_KEYS } from '@/lib/constants';
+import { useAuth } from '@/context/AuthContext';
+import { STORAGE_KEYS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,18 +16,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { GraduationCap, Loader2, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import type { Course } from '@/types/api';
 
 export function Register() {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
   const [email, setEmail] = useState('');
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [courseId, setCourseId] = useState('');
-  const [branchId, setBranchId] = useState('');
-  const [year, setYear] = useState('');
-  const [hostel, setHostel] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const [userIdError, setUserIdError] = useState<string | null>(null);
@@ -60,15 +56,6 @@ export function Register() {
     return () => clearTimeout(timer);
   }, [userId]);
 
-  const coursesQuery = useQuery({
-    queryKey: [QUERY_KEYS.COURSES],
-    queryFn: () => metadataApi.getCourses(),
-  });
-
-  const courses: Course[] = coursesQuery.data?.data?.data ?? [];
-  const selectedCourse = courses.find((c) => c.id === courseId);
-  const branches = selectedCourse?.branches ?? [];
-
   const registerMutation = useMutation({
     mutationFn: () =>
       authApi.register({
@@ -76,20 +63,15 @@ export function Register() {
         password,
         name,
         user_id: userId,
-        course_id: courseId,
-        branch_id: branchId,
-        year: parseInt(year, 10),
-        hostel,
       }),
-    onSuccess: (response) => {
-      const status = response.data.data?.status ?? 'pending';
-      navigate('/login', {
-        replace: true,
-        state: {
-          registeredEmail: email,
-          status,
-        },
-      });
+    onSuccess: async (response) => {
+      const tokenData = response.data.data;
+      if (tokenData) {
+        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokenData.access_token);
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refresh_token);
+        await refreshUser();
+        navigate('/onboarding', { replace: true });
+      }
     },
     onError: (err: unknown) => {
       const message =
@@ -103,10 +85,6 @@ export function Register() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!courseId || !branchId) {
-      setError('Please select a course and branch.');
-      return;
-    }
     if (userIdError) {
       setError('Please choose an available User ID.');
       return;
@@ -189,76 +167,6 @@ export function Register() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="course">Course</Label>
-                  <Select
-                    value={courseId}
-                    onValueChange={(v) => {
-                      setCourseId(v);
-                      setBranchId('');
-                    }}
-                  >
-                    <SelectTrigger id="course">
-                      <SelectValue placeholder="Select course" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {courses.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="branch">Branch</Label>
-                  <Select
-                    value={branchId}
-                    onValueChange={setBranchId}
-                    disabled={!branches.length}
-                  >
-                    <SelectTrigger id="branch">
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="year">Year</Label>
-                  <Input
-                    id="year"
-                    type="number"
-                    min={1990}
-                    max={2100}
-                    value={year}
-                    onChange={(e) => setYear(e.target.value)}
-                    required
-                    placeholder="e.g., 2024"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hostel">Hostel</Label>
-                  <Input
-                    id="hostel"
-                    value={hostel}
-                    onChange={(e) => setHostel(e.target.value)}
-                    required
-                    placeholder="e.g., Block A"
-                  />
-                </div>
-              </div>
-
               {error && (
                 <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -269,7 +177,7 @@ export function Register() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={registerMutation.isPending || !email || !userId || !password || !name || !courseId || !branchId || !year || !hostel}
+                disabled={registerMutation.isPending || !email || !userId || !password || !name}
               >
                 {registerMutation.isPending ? (
                   <>

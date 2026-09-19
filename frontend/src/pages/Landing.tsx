@@ -86,9 +86,6 @@ export function Landing() {
             ) : (
               <>
                 <Link to="/login">
-                  <Button variant="ghost" className="hidden sm:inline-flex">Sign In</Button>
-                </Link>
-                <Link to="/login">
                   <Button>Get Started</Button>
                 </Link>
               </>

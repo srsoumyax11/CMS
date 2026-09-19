@@ -148,15 +148,55 @@ export function DashboardLayout() {
               <div>
                 <h4 className="font-semibold">Account Pending Approval</h4>
                 <p className="text-sm">
-                  Your account is currently pending administrator approval. You will not be able to access the dashboard or its features until your account has been approved.
+                  Your account is currently pending administrator approval. You can explore the dashboard, but you won't be able to view or perform actions until approved.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {user.account_status === 'revision' && (
+            <div className="mb-6 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-blue-900 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-200">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
+              <div>
+                <h4 className="font-semibold">Revision Required</h4>
+                <p className="text-sm mb-2">
+                  Your application requires updates before it can be approved. 
+                  {user.status_note && <span className="block mt-1 italic">Note: {user.status_note}</span>}
+                </p>
+                <Button size="sm" variant="secondary" onClick={() => navigate('/onboarding')}>
+                  Update Application Details
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {user.account_status === 'suspended' && (
+            <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-900 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+              <div>
+                <h4 className="font-semibold">Account Suspended</h4>
+                <p className="text-sm">
+                  Your account has been suspended. You cannot access most features.
+                  {user.status_note && <span className="block mt-1 italic">Reason: {user.status_note}</span>}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {user.account_status === 'rejected' && (
+            <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-900 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+              <div>
+                <h4 className="font-semibold">Application Rejected</h4>
+                <p className="text-sm">
+                  Your application has been rejected. 
+                  {user.status_note && <span className="block mt-1 italic">Reason: {user.status_note}</span>}
                 </p>
               </div>
             </div>
           )}
           
-          {user.account_status !== 'pending' || location.pathname.endsWith('/profile') ? (
-            <Outlet />
-          ) : null}
+          <Outlet />
         </main>
       </div>
     </div>

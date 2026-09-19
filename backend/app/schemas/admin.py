@@ -18,7 +18,7 @@ class StudentItemResponse(BaseModel):
     branch_name: str
     year: int
     account_status: AccountStatus
-    academic_status: AcademicStatus
+    academic_status: Optional[AcademicStatus] = None
     status_note: Optional[str] = None
 
 class FacultyCreateRequest(BaseModel):
@@ -47,3 +47,12 @@ class FacultyUpdateRequest(BaseModel):
     designation: Optional[str] = None
     account_status: Optional[AccountStatus] = None
     employment_status: Optional[EmploymentStatus] = None
+
+class AdminItemResponse(BaseModel):
+    id: UUID4
+    user_id: str
+    user_uuid: UUID4
+    name: str
+    email: str
+    account_status: AccountStatus
+    status_note: Optional[str] = None

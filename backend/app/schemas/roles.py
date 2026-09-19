@@ -7,11 +7,16 @@ class RoleCreateRequest(BaseModel):
     description: Optional[str] = None
     permission_ids: List[UUID]
 
+class RoleUpdateRequest(BaseModel):
+    name: str
+    description: Optional[str] = None
+
 class RoleResponse(BaseModel):
     id: UUID
     name: str
     description: Optional[str] = None
     is_system_role: bool
+    assignment_count: int = 0
 
 class ActionMatrixItem(BaseModel):
     id: UUID

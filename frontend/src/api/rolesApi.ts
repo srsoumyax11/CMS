@@ -4,6 +4,7 @@ import type {
   APIResponse,
   RoleResponse,
   RoleCreateRequest,
+  RoleUpdateRequest,
   UpdatePermissionsRequest,
   AssignRoleRequest,
   PermissionMatrixResponse,
@@ -16,6 +17,9 @@ export const rolesApi = {
 
   create: (data: RoleCreateRequest) =>
     client.post<APIResponse<RoleResponse>>(API_ROUTES.ROLES, data),
+
+  update: (id: string, data: RoleUpdateRequest) =>
+    client.patch<APIResponse<RoleResponse>>(`${API_ROUTES.ROLES}/${id}`, data),
 
   getTemplates: () =>
     client.get<APIResponse<RoleTemplatesResponse>>(API_ROUTES.ROLE_TEMPLATES),
