@@ -55,9 +55,12 @@ async def list_students(
             user_uuid=u.id,
             name=u.name,
             email=u.email,
+            course_id=p.course_id if p else None,
             course_name=p.course.name if p and p.course else "",
+            branch_id=p.branch_id if p else None,
             branch_name=p.branch.name if p and p.branch else "",
             year=p.year if p else 0,
+            hostel=p.hostel if p else None,
             account_status=u.account_status,
             academic_status=p.academic_status if p else None,
             status_note=u.status_note
@@ -168,9 +171,71 @@ async def update_student_status(
         user_uuid=u.id,
         name=u.name,
         email=u.email,
+        course_id=p.course_id if p else None,
         course_name=p.course.name if p and p.course else "",
+        branch_id=p.branch_id if p else None,
         branch_name=p.branch.name if p and p.branch else "",
         year=p.year if p else 0,
+        hostel=p.hostel if p else None,
+        account_status=u.account_status,
+        academic_status=p.academic_status if p else None,
+        status_note=u.status_note
+    )
+    return APIResponse(success=True, data=data, error=None)
+
+@router.put(
+    "/students/{id}",
+    summary="Update Student Details",
+    description="Updates a student's profile details. **Requires:** `student_profile:edit`",
+    response_model=APIResponse[StudentItemResponse]
+)
+async def update_student_details(
+    id: UUID,
+    req: StudentAdminUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.STUDENT_PROFILE_EDIT))
+):
+    stmt = select(User).outerjoin(StudentProfile, User.id == StudentProfile.user_id).options(
+        selectinload(User.student_profile).selectinload(StudentProfile.course),
+        selectinload(User.student_profile).selectinload(StudentProfile.branch)
+    ).where(User.user_type == UserType.student).where((User.id == id) | (StudentProfile.id == id))
+    result = await db.execute(stmt)
+    u = result.scalar_one_or_none()
+    
+    if not u:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    if req.name is not None:
+        u.name = req.name
+        
+    p = u.student_profile
+    if p:
+        if req.course_id is not None:
+            p.course_id = req.course_id
+        if req.branch_id is not None:
+            p.branch_id = req.branch_id
+        if req.year is not None:
+            p.year = req.year
+        if req.hostel is not None:
+            p.hostel = req.hostel.strip().lower()
+
+    await db.commit()
+    await db.refresh(u)
+    if p:
+        await db.refresh(p)
+        
+    data = StudentItemResponse(
+        id=p.id if p else u.id,
+        user_id=u.user_id if u.user_id else str(u.id),
+        user_uuid=u.id,
+        name=u.name,
+        email=u.email,
+        course_id=p.course_id if p else None,
+        course_name=p.course.name if p and p.course else "",
+        branch_id=p.branch_id if p else None,
+        branch_name=p.branch.name if p and p.branch else "",
+        year=p.year if p else 0,
+        hostel=p.hostel if p else None,
         account_status=u.account_status,
         academic_status=p.academic_status if p else None,
         status_note=u.status_note

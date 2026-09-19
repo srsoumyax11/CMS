@@ -365,9 +365,12 @@ export interface StudentItemResponse {
   user_uuid: string;
   name: string;
   email: string;
+  course_id?: string | null;
   course_name: string;
+  branch_id?: string | null;
   branch_name: string;
   year: number;
+  hostel?: string | null;
   account_status: AccountStatus;
   academic_status: AcademicStatus | null;
   status_note?: string | null;

@@ -14,12 +14,22 @@ class StudentItemResponse(BaseModel):
     user_uuid: UUID4
     name: str
     email: str
+    course_id: Optional[UUID4] = None
     course_name: str
+    branch_id: Optional[UUID4] = None
     branch_name: str
     year: int
+    hostel: Optional[str] = None
     account_status: AccountStatus
     academic_status: Optional[AcademicStatus] = None
     status_note: Optional[str] = None
+
+class StudentAdminUpdateRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=2, max_length=100)
+    course_id: Optional[UUID4] = None
+    branch_id: Optional[UUID4] = None
+    year: Optional[int] = Field(None, ge=1, le=5)
+    hostel: Optional[str] = Field(None, max_length=100)
 
 class FacultyCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)

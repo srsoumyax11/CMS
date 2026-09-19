@@ -23,6 +23,9 @@ export const adminApi = {
   updateStudentStatus: (id: string, data: StudentStatusUpdateRequest) =>
     client.patch<APIResponse<StudentItemResponse>>(API_ROUTES.ADMIN_STUDENT_STATUS(id), data),
 
+  updateStudentDetails: (id: string, data: any) =>
+    client.put<APIResponse<StudentItemResponse>>(API_ROUTES.ADMIN_STUDENT_DETAIL(id), data),
+
   // Faculty
   listFaculty: (params?: StudentListParams) =>
     client.get<APIResponse<FacultyItemResponse[]>>(API_ROUTES.ADMIN_FACULTY, { params }),

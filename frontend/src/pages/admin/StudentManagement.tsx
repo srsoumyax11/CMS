@@ -1,13 +1,23 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/adminApi';
+import { metadataApi } from '@/api/metadataApi';
 import { QUERY_KEYS } from '@/lib/constants';
 import { DataTable } from '@/components/shared/DataTable';
 import { ErrorState } from '@/components/shared/ErrorState';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -25,7 +35,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Check, X, Users, MoreVertical, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { StudentItemResponse, AccountStatus, AcademicStatus } from '@/types/api';
+import type { StudentItemResponse, AccountStatus, AcademicStatus, Course } from '@/types/api';
 
 const accountStatusConfig: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pending', className: 'bg-amber-100 text-amber-700 border-amber-200' },
@@ -52,11 +62,26 @@ export function StudentManagement() {
     payload: { account_status?: AccountStatus; academic_status?: AcademicStatus; status_note?: string };
     label: string;
   } | null>(null);
+  const [statusNote, setStatusNote] = useState('');
+  
+  const [editAction, setEditAction] = useState<{
+    id: string;
+    payload: { name: string; course_id: string; branch_id: string; year: number; hostel: string };
+  } | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: [QUERY_KEYS.STUDENTS, statusFilter],
     queryFn: () => adminApi.listStudents({ status: statusFilter as AccountStatus }),
   });
+
+  const { data: coursesResponse } = useQuery({
+    queryKey: [QUERY_KEYS.COURSES],
+    queryFn: () => metadataApi.getCourses(),
+  });
+
+  const courses: Course[] = coursesResponse?.data?.data ?? [];
+  const selectedCourse = courses.find((c) => c.id === editAction?.payload.course_id);
+  const branches = selectedCourse?.branches ?? [];
 
   const students: StudentItemResponse[] = data?.data?.data ?? [];
 
@@ -69,6 +94,17 @@ export function StudentManagement() {
       setUpdateAction(null);
     },
     onError: () => toast.error('Failed to update student status'),
+  });
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
+      adminApi.updateStudentDetails(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
+      toast.success('Student details updated');
+      setEditAction(null);
+    },
+    onError: () => toast.error('Failed to update student details'),
   });
 
   const columns = [
@@ -168,6 +204,25 @@ export function StudentManagement() {
                 </Button>
               </>
             )}
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title="Edit Profile"
+              onClick={() => setEditAction({
+                id: row.id,
+                payload: {
+                  name: row.name,
+                  course_id: row.course_id || '',
+                  branch_id: row.branch_id || '',
+                  year: row.year,
+                  hostel: row.hostel || ''
+                }
+              })}
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -250,14 +305,141 @@ export function StudentManagement() {
         emptyIcon={<Users className="h-6 w-6" />}
       />
 
-      <ConfirmDialog
-        open={!!updateAction}
-        onOpenChange={(open) => !open && setUpdateAction(null)}
-        title={updateAction ? `Confirm Update` : 'Confirm Action'}
-        description={updateAction ? `Are you sure you want to ${updateAction.label}?` : ''}
-        confirmLabel="Confirm"
-        onConfirm={() => updateAction && updateMutation.mutate({ id: updateAction.id, payload: updateAction.payload })}
-      />
+      <Dialog open={!!updateAction} onOpenChange={(open) => {
+        if (!open) {
+          setUpdateAction(null);
+          setStatusNote('');
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{updateAction ? `Confirm Update` : 'Confirm Action'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              {updateAction ? `Are you sure you want to ${updateAction.label}?` : ''}
+            </p>
+            {updateAction && ['revision', 'suspended', 'rejected'].includes(updateAction.payload.account_status ?? '') && (
+              <div className="space-y-2">
+                <Label htmlFor="status_note">Reason / Note (Optional)</Label>
+                <Textarea
+                  id="status_note"
+                  placeholder="Provide a reason for this status change..."
+                  value={statusNote}
+                  onChange={(e) => setStatusNote(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setUpdateAction(null);
+              setStatusNote('');
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              if (updateAction) {
+                updateMutation.mutate({ 
+                  id: updateAction.id, 
+                  payload: { ...updateAction.payload, status_note: statusNote || undefined } 
+                });
+              }
+            }}>
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editAction} onOpenChange={(open) => !open && setEditAction(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Student Profile</DialogTitle>
+          </DialogHeader>
+          {editAction && (
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  value={editAction.payload.name}
+                  onChange={(e) => setEditAction({ ...editAction, payload: { ...editAction.payload, name: e.target.value } })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Course</Label>
+                <Select
+                  value={editAction.payload.course_id}
+                  onValueChange={(val) => setEditAction({ ...editAction, payload: { ...editAction.payload, course_id: val, branch_id: '' } })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select course" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Branch</Label>
+                <Select
+                  value={editAction.payload.branch_id}
+                  onValueChange={(val) => setEditAction({ ...editAction, payload: { ...editAction.payload, branch_id: val } })}
+                  disabled={!editAction.payload.course_id}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Year</Label>
+                  <Select
+                    value={String(editAction.payload.year)}
+                    onValueChange={(val) => setEditAction({ ...editAction, payload: { ...editAction.payload, year: parseInt(val) } })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5].map((y) => (
+                        <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hostel">Hostel (Optional)</Label>
+                  <Input
+                    id="hostel"
+                    value={editAction.payload.hostel}
+                    onChange={(e) => setEditAction({ ...editAction, payload: { ...editAction.payload, hostel: e.target.value } })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditAction(null)}>Cancel</Button>
+            <Button onClick={() => {
+              if (editAction) {
+                editMutation.mutate({ id: editAction.id, payload: editAction.payload });
+              }
+            }}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!showDetails} onOpenChange={(open) => !open && setShowDetails(null)}>
         <DialogContent className="max-w-md">

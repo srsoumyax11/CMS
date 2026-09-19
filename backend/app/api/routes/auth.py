@@ -59,14 +59,6 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
             photo_url=data.photo_url
         )
         db.add(new_user)
-        await db.flush()  # to get new_user.id
-        
-        # Fetch the 'Student' system role and assign it
-        role_stmt = select(Role).where(Role.name == 'Student')
-        student_role = (await db.execute(role_stmt)).scalar_one_or_none()
-        if student_role:
-            db.add(UserRole(user_id=new_user.id, role_id=student_role.id))
-            
         await db.commit()
     except IntegrityError as e:
         await db.rollback()
