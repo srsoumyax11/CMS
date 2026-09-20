@@ -196,7 +196,7 @@ export function ComplaintManagement() {
           <SelectContent>
             <SelectItem value="unassigned">Unassigned</SelectItem>
             {faculty.map((f) => (
-              <SelectItem key={f.id} value={f.user_id}>
+              <SelectItem key={f.id} value={f.id}>
                 {f.name}
               </SelectItem>
             ))}

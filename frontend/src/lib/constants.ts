@@ -8,11 +8,11 @@ export const API_ROUTES = {
   CHECK_USERNAME: '/api/auth/check-username',
 
   // Profile
-  UPLOAD_PHOTO: '/api/profiles/me/photo',
-  UPDATE_NAME: '/api/profiles/me/name',
-  UPDATE_USER_ID: '/api/profiles/me/user-id',
-  CHANGE_PASSWORD: '/api/profiles/me/password',
-  CREATE_STUDENT_PROFILE: '/api/profiles/me/student-profile',
+  UPLOAD_PHOTO: '/api/users/me/photo',
+  UPDATE_NAME: '/api/users/me/name',
+  UPDATE_USER_ID: '/api/users/me/user-id',
+  CHANGE_PASSWORD: '/api/users/me/password',
+  CREATE_STUDENT_PROFILE: '/api/users/me/student-profile',
 
   // Metadata
   COURSES: '/api/metadata/courses',

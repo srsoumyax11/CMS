@@ -19,6 +19,10 @@ export default {
           'sans-serif',
         ],
       },
+      container: {
+        center: true,
+        padding: '2rem',
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
