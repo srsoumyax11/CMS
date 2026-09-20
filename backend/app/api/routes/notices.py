@@ -39,14 +39,24 @@ async def create_notice(
 ):
     attachment_url = None
     if file:
-        if file.content_type not in ["image/jpeg", "image/png", "image/webp", "application/pdf"]:
+        ALLOWED_MIME_TYPES = {
+            "image/jpeg": ".jpg",
+            "image/png": ".png",
+            "image/webp": ".webp",
+            "application/pdf": ".pdf"
+        }
+        
+        if file.content_type not in ALLOWED_MIME_TYPES:
             raise HTTPException(status_code=400, detail="Only JPEG, PNG, WEBP, and PDF files are allowed.")
+            
+        if getattr(file, "size", 0) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="File size exceeds the 10MB limit.")
             
         file_content = await file.read()
         if len(file_content) > MAX_FILE_SIZE:
             raise HTTPException(status_code=400, detail="File size exceeds the 10MB limit.")
             
-        attachment_url = await upload_notice_attachment(file_content, file.filename, file.content_type)
+        attachment_url = await upload_notice_attachment(file_content, file.content_type)
         
     if target_hostel:
         target_hostel = target_hostel.strip().lower()

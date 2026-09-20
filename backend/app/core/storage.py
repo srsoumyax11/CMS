@@ -64,25 +64,20 @@ def get_signed_url(bucket_name: str, file_path: str, expires_in: int = 900) -> s
     except Exception:
         return None
 
-async def upload_notice_attachment(file_content: bytes, filename: str, content_type: str) -> str:
+async def upload_notice_attachment(file_content: bytes, content_type: str) -> str:
     """
     Uploads a notice attachment to the public 'notice-attachments' bucket.
-    Renames the file to a random UUID to prevent enumeration.
+    Uses a strict MIME type to extension mapping to prevent arbitrary file upload vulnerabilities.
     Returns the public URL of the uploaded file.
     """
-    # Create a random UUID filename but preserve extension
-    ext = os.path.splitext(filename)[1].lower()
-    if not ext:
-        # Fallback if no extension
-        if "pdf" in content_type:
-            ext = ".pdf"
-        elif "png" in content_type:
-            ext = ".png"
-        elif "jpeg" in content_type or "jpg" in content_type:
-            ext = ".jpg"
-        else:
-            ext = ".bin"
-            
+    ALLOWED_MIME_TYPES = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "application/pdf": ".pdf"
+    }
+    
+    ext = ALLOWED_MIME_TYPES.get(content_type, ".bin")
     safe_filename = f"{uuid.uuid4()}{ext}"
     bucket_name = "notice-attachments"
     

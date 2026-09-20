@@ -104,7 +104,7 @@ export function NoticeCreate() {
               <Label>Attachment (optional)</Label>
               <FileUpload
                 label="Upload attachment"
-                accept="image/*,.pdf,.doc,.docx"
+                accept="image/*,.pdf"
                 maxSizeMB={10}
                 onFileSelect={setFile}
               />

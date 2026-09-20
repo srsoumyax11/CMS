@@ -7,6 +7,7 @@ import { DataTable } from '@/components/shared/DataTable';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { StatCard } from '@/components/shared/StatCard';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -360,30 +361,16 @@ export function ComplaintManagement() {
         </TabsContent>
       </Tabs>
 
-      {statusUpdateTarget && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <Card className="shadow-lg">
-            <CardContent className="flex items-center gap-3 p-4">
-              <span className="text-sm text-foreground">
-                Update to <strong>{statusUpdateTarget.status}</strong>?
-              </span>
-              <Button
-                size="sm"
-                onClick={() => statusMutation.mutate(statusUpdateTarget)}
-              >
-                Confirm
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setStatusUpdateTarget(null)}
-              >
-                Cancel
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!statusUpdateTarget}
+        onOpenChange={(open) => !open && setStatusUpdateTarget(null)}
+        title="Update Status"
+        description={`Are you sure you want to change the status to ${statusUpdateTarget?.status.replace('_', ' ')}?`}
+        confirmLabel="Update Status"
+        onConfirm={() => {
+          if (statusUpdateTarget) statusMutation.mutate(statusUpdateTarget);
+        }}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { outpassesApi } from '@/api/outpassesApi';
 import { QUERY_KEYS } from '@/lib/constants';
+import { UI_CONFIG } from '@/config';
 import { DataTable } from '@/components/shared/DataTable';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -77,6 +78,7 @@ export function OutpassManagement() {
   const approveMutation = useMutation({
     mutationFn: (id: string) => outpassesApi.approve(id),
     onMutate: async (id) => {
+      if (!UI_CONFIG.ENABLE_OPTIMISTIC_UPDATES) return { previous: null };
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
       const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
       queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
@@ -101,7 +103,9 @@ export function OutpassManagement() {
       setConfirmAction(null);
     },
     onError: (err: any, _id, context) => {
-      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context?.previous);
+      if (context?.previous) {
+        queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
+      }
       toast.error(err.response?.data?.error || 'Failed to approve outpass');
     },
     onSettled: () => {
@@ -113,6 +117,7 @@ export function OutpassManagement() {
     mutationFn: ({ id, note }: { id: string; note: string }) =>
       outpassesApi.reject(id, { note: note || null }),
     onMutate: async ({ id }) => {
+      if (!UI_CONFIG.ENABLE_OPTIMISTIC_UPDATES) return { previous: null };
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
       const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
       queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
@@ -138,7 +143,9 @@ export function OutpassManagement() {
       setRejectNote('');
     },
     onError: (err: any, _variables, context) => {
-      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context?.previous);
+      if (context?.previous) {
+        queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
+      }
       toast.error(err.response?.data?.error || 'Failed to reject outpass');
     },
     onSettled: () => {
@@ -149,6 +156,7 @@ export function OutpassManagement() {
   const departMutation = useMutation({
     mutationFn: (id: string) => outpassesApi.depart(id),
     onMutate: async (id) => {
+      if (!UI_CONFIG.ENABLE_OPTIMISTIC_UPDATES) return { previous: null };
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
       const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
       queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
@@ -173,7 +181,9 @@ export function OutpassManagement() {
       setConfirmAction(null);
     },
     onError: (err: any, _id, context) => {
-      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context?.previous);
+      if (context?.previous) {
+        queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
+      }
       toast.error(err.response?.data?.error || 'Failed to mark departure');
     },
     onSettled: () => {
@@ -184,6 +194,7 @@ export function OutpassManagement() {
   const returnMutation = useMutation({
     mutationFn: (id: string) => outpassesApi.return(id),
     onMutate: async (id) => {
+      if (!UI_CONFIG.ENABLE_OPTIMISTIC_UPDATES) return { previous: null };
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
       const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
       queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
@@ -208,7 +219,9 @@ export function OutpassManagement() {
       setConfirmAction(null);
     },
     onError: (err: any, _id, context) => {
-      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context?.previous);
+      if (context?.previous) {
+        queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
+      }
       toast.error(err.response?.data?.error || 'Failed to mark return');
     },
     onSettled: () => {
