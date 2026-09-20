@@ -7,6 +7,7 @@ from app.models.academic import Course, Branch, TimetableSlot, AttendanceRecord
 from app.models.notice import Notice
 from app.models.outpass import Outpass, OutpassStatusLog
 from app.models.mess import MessMenu, MessFeedback, MessOptOut
+from app.models.settings import SystemSetting
 
 __all__ = [
     "Base",
@@ -23,6 +24,7 @@ __all__ = [
     "Branch",
     "TimetableSlot",
     "AttendanceRecord",
+    "SystemSetting",
     "Outpass",
     "OutpassStatusLog",
     "MessMenu",

@@ -27,6 +27,10 @@ class User(Base, UUIDMixin, TimestampMixin):
     user_id: Mapped[Optional[str]] = mapped_column(String(50), unique=True, index=True, nullable=True)
     name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     photo_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    
+    # Preferences
+    email_notifications: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    in_app_alerts: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     student_profile: Mapped[Optional["StudentProfile"]] = relationship("StudentProfile", back_populates="user", cascade="all, delete-orphan", uselist=False)
     faculty_profile: Mapped[Optional["FacultyProfile"]] = relationship("FacultyProfile", back_populates="user", cascade="all, delete-orphan", uselist=False)

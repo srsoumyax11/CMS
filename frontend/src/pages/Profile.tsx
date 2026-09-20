@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { authApi } from '@/api/authApi';
 import { Button } from '@/components/ui/button';
@@ -39,8 +39,15 @@ export function Profile() {
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 
   // Preferences Tab State
-  const [emailNotifs, setEmailNotifs] = useState(true);
-  const [appNotifs, setAppNotifs] = useState(true);
+  const [emailNotifs, setEmailNotifs] = useState(user?.email_notifications ?? true);
+  const [appNotifs, setAppNotifs] = useState(user?.in_app_alerts ?? true);
+
+  useEffect(() => {
+    if (user) {
+      setEmailNotifs(user.email_notifications ?? true);
+      setAppNotifs(user.in_app_alerts ?? true);
+    }
+  }, [user]);
 
   if (!user) return null;
 
@@ -161,20 +168,20 @@ export function Profile() {
         <TabsContent value="general" className="space-y-6">
           <Card className="shadow-sm">
             <CardContent className="flex flex-col md:flex-row gap-8 p-8">
-              {/* Left Side: Profile Info */}
-              <div className="flex flex-col items-center gap-4 border-b md:border-b-0 md:border-r border-border pb-8 md:pb-0 md:pr-8 min-w-[250px]">
+              {/* Left Side: Avatar and Role */}
+              <div className="flex flex-col items-center gap-6 border-b md:border-b-0 md:border-r border-border pb-8 md:pb-0 md:pr-8 md:w-64">
                 <div className="relative">
-                  <Avatar className="h-24 w-24 border-4 border-background shadow-md">
+                  <Avatar className="h-32 w-32 border-4 border-background shadow-md">
                     <AvatarImage src={user.photo_url ?? undefined} alt={user.name ?? ''} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-bold">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
                   <button
-                    className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-110"
+                    className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-110"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <Camera className="h-4 w-4" />
+                    <Camera className="h-5 w-5" />
                   </button>
                   <input
                     ref={fileInputRef}
@@ -200,129 +207,128 @@ export function Profile() {
                   onCropComplete={handleUpload}
                 />
 
-                <div className="text-center w-full max-w-sm">
-                  {isEditingName ? (
-                    <div className="flex items-center gap-2 mb-1 justify-center">
-                      <Input 
-                        value={editNameValue} 
-                        onChange={(e) => setEditNameValue(e.target.value)} 
-                        className="h-8 text-center text-sm font-semibold max-w-[200px]"
-                        placeholder="Enter your name"
-                        disabled={isSavingName}
-                      />
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={handleUpdateName} disabled={isSavingName}>
-                        {isSavingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600" onClick={() => setIsEditingName(false)} disabled={isSavingName}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-2 mb-1">
-                      <h3 className="text-xl font-bold text-foreground">
-                        {user.name || 'Unnamed User'}
-                      </h3>
-                      <button 
-                        onClick={() => {
-                          setEditNameValue(user.name || '');
-                          setIsEditingName(true);
-                        }}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-                  <div className="flex flex-col items-center justify-center gap-1 mt-2 w-full">
-                    <p className="text-sm font-medium text-muted-foreground">{user.email}</p>
-                    {isEditingUserId ? (
-                      <div className="flex flex-col items-center w-full">
-                        <div className="flex items-center gap-2 mb-1 justify-center mt-1">
-                          <Input 
-                            value={editUserIdValue} 
-                            onChange={(e) => {
-                              setEditUserIdValue(e.target.value);
-                              setUserIdError(null);
-                            }} 
-                            className={`h-7 text-center text-xs font-semibold max-w-[150px] ${userIdError ? 'border-destructive' : ''}`}
-                            placeholder="Enter User ID"
-                            disabled={isSavingUserId}
-                          />
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600" onClick={handleUpdateUserId} disabled={isSavingUserId}>
-                            {isSavingUserId ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-red-600" onClick={() => {
-                            setIsEditingUserId(false);
-                            setUserIdError(null);
-                          }} disabled={isSavingUserId}>
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        {userIdError && <p className="text-[10px] text-destructive">{userIdError}</p>}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2 mt-1">
-                        <p className="text-xs bg-muted px-2 py-0.5 rounded-md text-muted-foreground border">
-                          ID: {user.user_id || 'Not Set'}
-                        </p>
-                        <button 
-                          onClick={() => {
-                            setEditUserIdValue(user.user_id || '');
-                            setIsEditingUserId(true);
-                          }}
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
                 {role && (
-                  <div className="flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 mt-2">
-                    <Shield className="h-4 w-4 text-foreground" />
-                    <span className="text-sm font-medium text-foreground">
-                      {ROLE_LABELS[role]}
-                    </span>
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Primary Role</span>
+                    <div className="flex items-center gap-2 rounded-full bg-accent px-4 py-2 shadow-sm border border-border/50">
+                      <Shield className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold text-foreground">
+                        {ROLE_LABELS[role]}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Right Side: Account Details */}
-              <div className="flex-1 flex flex-col justify-center pl-0 md:pl-4">
-                <h3 className="text-lg font-semibold text-foreground mb-6">Account Details</h3>
-                <div className="flex flex-col gap-6">
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Email Address</p>
-                      <p className="text-sm text-foreground font-medium">{user.email}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">User ID (UUID)</p>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm text-foreground font-medium font-mono text-xs">{user.id}</p>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopyId}>
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
+              {/* Right Side: Account Details Grid */}
+              <div className="flex-1 flex flex-col pl-0 md:pl-4">
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-foreground">Personal Information</h3>
+                  <p className="text-sm text-muted-foreground">Basic info, like your name and email.</p>
+                </div>
+                
+                <div className="grid gap-6 border-b border-border pb-8">
+                  {/* Name Field */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
+                    <div className="text-sm font-medium text-muted-foreground">Full Name</div>
+                    <div className="md:col-span-2">
+                      {isEditingName ? (
+                        <div className="flex items-center gap-2 max-w-sm">
+                          <Input 
+                            value={editNameValue} 
+                            onChange={(e) => setEditNameValue(e.target.value)} 
+                            className="h-9"
+                            placeholder="Enter your name"
+                            disabled={isSavingName}
+                          />
+                          <Button size="icon" variant="ghost" className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100" onClick={handleUpdateName} disabled={isSavingName}>
+                            {isSavingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-red-700 hover:bg-red-100" onClick={() => setIsEditingName(false)} disabled={isSavingName}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-semibold text-foreground">{user.name || 'Not provided'}</span>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => { setEditNameValue(user.name || ''); setIsEditingName(true); }}>
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className={`h-4 w-4 rounded-full flex items-center justify-center ${user.account_status === 'active' ? 'bg-green-500/20' : 'bg-amber-500/20'}`}>
-                      <div className={`h-2 w-2 rounded-full ${user.account_status === 'active' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                  {/* Email Field */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
+                    <div className="text-sm font-medium text-muted-foreground">Email Address</div>
+                    <div className="md:col-span-2">
+                      <span className="text-sm text-foreground">{user.email}</span>
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Account Status</p>
-                      <p className="text-sm text-foreground font-medium capitalize">
-                        {user.account_status}
-                      </p>
+                  </div>
+                </div>
+
+                <div className="mt-8 mb-6">
+                  <h3 className="text-lg font-semibold text-foreground">System Information</h3>
+                  <p className="text-sm text-muted-foreground">Identifiers and status within the platform.</p>
+                </div>
+
+                <div className="grid gap-6">
+                  {/* User ID Field */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
+                    <div className="text-sm font-medium text-muted-foreground">Registration / User ID</div>
+                    <div className="md:col-span-2">
+                      {isEditingUserId ? (
+                        <div className="flex flex-col gap-1 max-w-sm">
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              value={editUserIdValue} 
+                              onChange={(e) => { setEditUserIdValue(e.target.value); setUserIdError(null); }} 
+                              className={`h-9 font-mono text-sm ${userIdError ? 'border-red-500' : ''}`}
+                              placeholder="Enter User ID"
+                              disabled={isSavingUserId}
+                            />
+                            <Button size="icon" variant="ghost" className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 shrink-0" onClick={handleUpdateUserId} disabled={isSavingUserId}>
+                              {isSavingUserId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-red-700 hover:bg-red-100 shrink-0" onClick={() => { setIsEditingUserId(false); setUserIdError(null); }} disabled={isSavingUserId}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {userIdError && <span className="text-xs text-red-500">{userIdError}</span>}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-mono bg-muted px-2 py-1 rounded-md border text-muted-foreground">
+                            {user.user_id || 'Not Set'}
+                          </span>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => { setEditUserIdValue(user.user_id || ''); setIsEditingUserId(true); }}>
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* UUID Field */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
+                    <div className="text-sm font-medium text-muted-foreground">System UUID</div>
+                    <div className="md:col-span-2 flex items-center gap-3">
+                      <span className="text-xs font-mono text-muted-foreground truncate max-w-[200px] sm:max-w-xs">{user.id}</span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyId} title="Copy UUID">
+                        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Status Field */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
+                    <div className="text-sm font-medium text-muted-foreground">Account Status</div>
+                    <div className="md:col-span-2">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border bg-card">
+                        <div className={`h-2 w-2 rounded-full ${user.account_status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500'}`} />
+                        <span className="text-sm font-medium capitalize text-foreground">{user.account_status}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -460,9 +466,16 @@ export function Profile() {
                 </div>
                 <Switch 
                   checked={emailNotifs}
-                  onCheckedChange={(val) => {
+                  onCheckedChange={async (val) => {
                     setEmailNotifs(val);
-                    mockAction('Email Notifications save');
+                    try {
+                      await authApi.updatePreferences({ email_notifications: val });
+                      await refreshUser();
+                      toast.success('Email preferences updated');
+                    } catch {
+                      setEmailNotifs(!val);
+                      toast.error('Failed to update email preferences');
+                    }
                   }}
                 />
               </div>
@@ -477,9 +490,16 @@ export function Profile() {
                 </div>
                 <Switch 
                   checked={appNotifs}
-                  onCheckedChange={(val) => {
+                  onCheckedChange={async (val) => {
                     setAppNotifs(val);
-                    mockAction('In-App Alerts save');
+                    try {
+                      await authApi.updatePreferences({ in_app_alerts: val });
+                      await refreshUser();
+                      toast.success('In-App alerts updated');
+                    } catch {
+                      setAppNotifs(!val);
+                      toast.error('Failed to update in-app alerts');
+                    }
                   }}
                 />
               </div>

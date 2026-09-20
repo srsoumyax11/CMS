@@ -14,6 +14,7 @@ import { Landing } from '@/pages/Landing';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { ROLE_ROUTES } from '@/lib/navigation';
 import { Toaster } from 'sonner';
+import SystemSettings from '@/pages/admin/SystemSettings';
 
 // Notices
 import { NoticeList } from '@/pages/notices/NoticeList';
@@ -53,7 +54,7 @@ function RoleRedirect() {
   return <Navigate to={target} replace />;
 }
 
-function StudentRoutes() {
+export function StudentRoutes() {
   return (
     <Routes>
       <Route index element={<StudentDashboard />} />
@@ -73,7 +74,7 @@ function StudentRoutes() {
   );
 }
 
-function FacultyRoutes() {
+export function FacultyRoutes() {
   return (
     <Routes>
       <Route index element={<StudentDashboard basePath="/faculty" />} />
@@ -89,11 +90,11 @@ function FacultyRoutes() {
   );
 }
 
-function AdminRoutes() {
+export function AdminRoutes() {
   return (
     <Routes>
       <Route index element={<AdminDashboard />} />
-      <Route path="notices" element={<NoticeList basePath="/admin" canCreate />} />
+      <Route path="notices" element={<NoticeList basePath="/admin/notices" canCreate />} />
       <Route path="notices/new" element={<NoticeCreate />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
       <Route path="complaints" element={<ComplaintManagement />} />
@@ -106,6 +107,7 @@ function AdminRoutes() {
       <Route path="users" element={<StudentManagement />} />
       <Route path="faculty" element={<FacultyManagement />} />
       <Route path="permissions" element={<RolesPermissions />} />
+      <Route path="settings" element={<SystemSettings />} />
       <Route path="profile" element={<Profile />} />
     </Routes>
   );

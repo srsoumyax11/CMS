@@ -13,6 +13,7 @@ export const API_ROUTES = {
   UPDATE_USER_ID: '/api/users/me/user-id',
   CHANGE_PASSWORD: '/api/users/me/password',
   CREATE_STUDENT_PROFILE: '/api/users/me/student-profile',
+  UPDATE_PREFERENCES: '/api/users/me/preferences',
 
   // Metadata
   COURSES: '/api/metadata/courses',
@@ -75,6 +76,12 @@ export const API_ROUTES = {
   ADMIN_STUDENTS: '/api/admin/students',
   ADMIN_STUDENT_DETAIL: (id: string) => `/api/admin/students/${id}`,
   ADMIN_STUDENT_STATUS: (id: string) => `/api/admin/students/${id}/status`,
+
+  // Admin: Roles & Settings
+  ADMIN_ROLES: '/api/admin/roles',
+  ADMIN_ROLE_PERMISSIONS: (id: string) => `/api/admin/roles/${id}/permissions`,
+  ADMIN_USER_ROLES: (id: string) => `/api/admin/users/${id}/roles`,
+  ADMIN_SETTINGS: '/api/admin/settings',
 
   // Admin: Faculty
   ADMIN_FACULTY: '/api/admin/faculty',

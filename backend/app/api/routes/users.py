@@ -225,3 +225,31 @@ async def change_password(
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Database Error")
+
+from app.schemas.auth import UserPreferencesUpdateRequest
+
+@router.patch(
+    "/me/preferences",
+    summary="Update Preferences",
+    description="Updates the user's notification preferences.",
+    response_model=APIResponse[dict]
+)
+async def update_preferences(
+    data: UserPreferencesUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        if data.email_notifications is not None:
+            current_user.email_notifications = data.email_notifications
+        if data.in_app_alerts is not None:
+            current_user.in_app_alerts = data.in_app_alerts
+            
+        await db.commit()
+        return APIResponse(success=True, data={
+            "email_notifications": current_user.email_notifications,
+            "in_app_alerts": current_user.in_app_alerts
+        }, error=None)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Database Error")

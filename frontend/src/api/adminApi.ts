@@ -10,6 +10,8 @@ import type {
   AdminItemResponse,
   StudentListParams,
   PaginationParams,
+  SystemSetting,
+  SystemSettingUpdate,
 } from '@/types/api';
 
 export const adminApi = {
@@ -38,4 +40,11 @@ export const adminApi = {
 
   listAdmins: (params?: StudentListParams) =>
     client.get<APIResponse<AdminItemResponse[]>>(API_ROUTES.ADMIN_ADMINS, { params }),
+
+  // Settings
+  getSystemSettings: () =>
+    client.get<APIResponse<SystemSetting[]>>(API_ROUTES.ADMIN_SETTINGS),
+
+  updateSystemSetting: (key: string, data: SystemSettingUpdate) =>
+    client.patch<APIResponse<SystemSetting>>(`${API_ROUTES.ADMIN_SETTINGS}/${key}`, data),
 };

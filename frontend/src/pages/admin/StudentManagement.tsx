@@ -40,14 +40,14 @@ import type { StudentItemResponse, AccountStatus, AcademicStatus, Course } from 
 const accountStatusConfig: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pending', className: 'bg-amber-100 text-amber-700 border-amber-200' },
   revision: { label: 'Revision', className: 'bg-purple-100 text-purple-700 border-purple-200' },
-  active: { label: 'Active', className: 'bg-green-100 text-green-700 border-green-200' },
+  active: { label: 'Active', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
   suspended: { label: 'Suspended', className: 'bg-orange-100 text-orange-700 border-orange-200' },
   rejected: { label: 'Rejected', className: 'bg-red-100 text-red-700 border-red-200' },
 };
 
 const academicStatusConfig: Record<string, { label: string; className: string }> = {
-  enrolled: { label: 'Enrolled', className: 'bg-blue-100 text-blue-700 border-blue-200' },
-  graduated: { label: 'Graduated', className: 'bg-green-100 text-green-700 border-green-200' },
+  enrolled: { label: 'Enrolled', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  graduated: { label: 'Graduated', className: 'bg-blue-100 text-blue-700 border-blue-200' },
   dropped: { label: 'Dropped', className: 'bg-gray-100 text-gray-700 border-gray-200' },
   expelled: { label: 'Expelled', className: 'bg-red-100 text-red-700 border-red-200' },
 };
@@ -179,7 +179,7 @@ export function StudentManagement() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100"
+                  className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100"
                   title="Approve"
                   onClick={() => setUpdateAction({ 
                     id: row.id, 
@@ -192,7 +192,7 @@ export function StudentManagement() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-red-100"
+                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
                   title="Reject"
                   onClick={() => setUpdateAction({ 
                     id: row.id, 

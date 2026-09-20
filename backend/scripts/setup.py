@@ -33,6 +33,17 @@ async def run_seeds():
         await session.commit()
     print("Storage buckets bootstrapped.\n")
     
+    print("\n--- Seeding Advanced System Settings & Permissions ---")
+    
+    # Import and run the seeds dynamically to avoid circular issues
+    from scripts.seed_settings_advanced import seed_settings
+    from scripts.seed_settings_perm import seed_permissions
+    
+    await seed_permissions()
+    await seed_settings()
+    
+    print("Settings and permissions seeded.\n")
+    
     print("\n✅ All database setup steps completed successfully!")
 
 if __name__ == "__main__":

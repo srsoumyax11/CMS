@@ -439,3 +439,65 @@ async def list_admins(
         ))
         
     return APIResponse(success=True, data=data, error=None)
+
+from app.models.settings import SystemSetting
+from app.schemas.admin import SystemSettingResponse, SystemSettingUpdateRequest
+
+@router.get(
+    "/settings",
+    summary="Get System Settings",
+    description="Fetches all global system settings. **Requires:** `system_setting:manage`",
+    response_model=APIResponse[List[SystemSettingResponse]]
+)
+async def get_system_settings(
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.SYSTEM_SETTING_MANAGE))
+):
+    stmt = select(SystemSetting)
+    result = await db.execute(stmt)
+    settings = result.scalars().all()
+    
+    data = [
+        SystemSettingResponse(
+            key=s.key, 
+            value=s.value, 
+            category=s.category,
+            data_type=s.data_type,
+            is_public=s.is_public,
+            description=s.description
+        )
+        for s in settings
+    ]
+    return APIResponse(success=True, data=data, error=None)
+
+@router.patch(
+    "/settings/{key}",
+    summary="Update System Setting",
+    description="Updates a specific system setting. **Requires:** `system_setting:manage`",
+    response_model=APIResponse[SystemSettingResponse]
+)
+async def update_system_setting(
+    key: str,
+    data: SystemSettingUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.SYSTEM_SETTING_MANAGE))
+):
+    stmt = select(SystemSetting).where(SystemSetting.key == key)
+    result = await db.execute(stmt)
+    setting = result.scalar_one_or_none()
+    
+    if not setting:
+        raise HTTPException(status_code=404, detail="Setting not found")
+        
+    setting.value = data.value
+    await db.commit()
+    
+    response_data = SystemSettingResponse(
+        key=setting.key, 
+        value=setting.value,
+        category=setting.category,
+        data_type=setting.data_type,
+        is_public=setting.is_public,
+        description=setting.description
+    )
+    return APIResponse(success=True, data=response_data, error=None)

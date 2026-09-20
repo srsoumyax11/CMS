@@ -102,21 +102,21 @@ export function AdminDashboard() {
           label="Open Complaints"
           value={openComplaints}
           hint="Requires immediate attention"
-          className="border-amber-200 bg-amber-50/30"
+          className="border-warning/30 bg-warning/10 text-warning-foreground"
         />
         <StatCard
           icon={Clock}
           label="Pending Students"
           value={pendingStudents}
           hint="Awaiting account approval"
-          className="border-blue-200 bg-blue-50/30"
+          className="border-info/30 bg-info/10 text-info-foreground"
         />
         <StatCard
           icon={Activity}
           label="Active Outpasses"
           value={activeOutpasses}
           hint="Students currently off-campus"
-          className="border-green-200 bg-green-50/30"
+          className="border-success/30 bg-success/10 text-success-foreground"
         />
       </div>
 
@@ -131,10 +131,10 @@ export function AdminDashboard() {
                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} />
                   <Tooltip
-                    cursor={{ fill: 'var(--accent)' }}
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    cursor={{ fill: 'hsl(var(--accent))' }}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--background))', color: 'hsl(var(--foreground))', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
-                  <Bar dataKey="Issues" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Issues" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (

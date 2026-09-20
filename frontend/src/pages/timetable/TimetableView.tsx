@@ -28,12 +28,12 @@ const dayLabels: Record<DayOfWeek, string> = {
 };
 
 const subjectColors = [
-  'bg-blue-50 border-blue-200 text-blue-900',
-  'bg-green-50 border-green-200 text-green-900',
-  'bg-amber-50 border-amber-200 text-amber-900',
-  'bg-rose-50 border-rose-200 text-rose-900',
-  'bg-teal-50 border-teal-200 text-teal-900',
-  'bg-orange-50 border-orange-200 text-orange-900',
+  'bg-primary/10 border-primary/20 text-primary',
+  'bg-secondary border-border text-secondary-foreground',
+  'bg-muted border-border text-foreground',
+  'bg-accent border-border text-accent-foreground',
+  'bg-destructive/10 border-destructive/20 text-destructive',
+  'bg-popover border-border text-popover-foreground',
 ];
 
 function getSubjectColor(subject: string): string {

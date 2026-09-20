@@ -65,3 +65,6 @@ class Perms:
     MESS_MANAGE = "mess:manage"
     MESS_VIEW = "mess:view"
     MESS_FEEDBACK = "mess:feedback"
+
+    # Asset: system_setting
+    SYSTEM_SETTING_MANAGE = "system_setting:manage"

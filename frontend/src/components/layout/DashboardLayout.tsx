@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { NAV_ITEMS, ROLE_LABELS } from '@/lib/navigation';
+import { NAV_GROUPS, ROLE_LABELS, getBreadcrumbLabel } from '@/lib/navigation';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { GraduationCap, LogOut, Menu, User as UserIcon, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -26,13 +28,8 @@ export function DashboardLayout() {
 
   if (!user || !role) return null;
 
-  const navItems = NAV_ITEMS[role];
+  const navGroups = NAV_GROUPS[role];
   const roleLabel = ROLE_LABELS[role];
-
-  const currentNav = navItems.find(
-    (item) => location.pathname === item.to || location.pathname.startsWith(item.to + '/')
-  );
-  const pageTitle = currentNav?.label ?? 'Dashboard';
 
   const handleLogout = () => {
     logout();
@@ -80,72 +77,58 @@ export function DashboardLayout() {
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
         <TooltipProvider delayDuration={0}>
-          {navItems.map((item) => {
-            const isExact = item.to === `/${role}`;
-            const isActive = isExact 
-              ? location.pathname === item.to 
-              : location.pathname.startsWith(item.to);
+          {navGroups.map((group, groupIdx) => (
+            <div key={group.name} className="flex flex-col gap-1">
+              {!collapsed && (
+                <span className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 mt-2">
+                  {group.name}
+                </span>
+              )}
+              {collapsed && groupIdx > 0 && <div className="h-px bg-border mx-2 my-2" />}
+              {group.items.map((item) => {
+                const isExact = item.to === `/${role}`;
+                const isActive = isExact 
+                  ? location.pathname === item.to 
+                  : location.pathname.startsWith(item.to);
 
-            return (
-              <Tooltip key={item.to}>
-                <TooltipTrigger asChild>
-                  <NavLink
-                    to={item.to}
-                    end={isExact}
-                    onClick={() => isMobile && setMobileOpen(false)}
-                    className={cn(
-                      'flex items-center rounded-lg text-sm font-medium transition-all duration-300 ease-in-out',
-                      collapsed ? 'justify-center w-10 h-10 mx-auto p-0' : 'px-3 py-2.5 gap-3 w-full',
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                return (
+                  <Tooltip key={item.to}>
+                    <TooltipTrigger asChild>
+                      <NavLink
+                        to={item.to}
+                        end={isExact}
+                        onClick={() => isMobile && setMobileOpen(false)}
+                        className={cn(
+                          'flex items-center rounded-lg text-sm font-medium transition-all duration-300 ease-in-out',
+                          collapsed ? 'justify-center w-10 h-10 mx-auto p-0' : 'px-3 py-2.5 gap-3 w-full',
+                          isActive
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        )}
+                      >
+                        <item.icon className={cn("shrink-0", collapsed ? "h-5 w-5" : "h-4 w-4")} />
+                        <span className={cn(
+                          "whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out",
+                          collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                        )}>
+                          {item.label}
+                        </span>
+                      </NavLink>
+                    </TooltipTrigger>
+                    {collapsed && !isMobile && (
+                      <TooltipContent side="right" className="font-medium">
+                        {item.label}
+                      </TooltipContent>
                     )}
-                  >
-                    <item.icon className={cn("shrink-0", collapsed ? "h-5 w-5" : "h-4 w-4")} />
-                    <span className={cn(
-                      "whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out",
-                      collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-                    )}>
-                      {item.label}
-                    </span>
-                  </NavLink>
-                </TooltipTrigger>
-                {collapsed && !isMobile && (
-                  <TooltipContent side="right" className="font-medium">
-                    {item.label}
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            );
-          })}
+                  </Tooltip>
+                );
+              })}
+            </div>
+          ))}
         </TooltipProvider>
       </nav>
-
-      <div className="border-t px-3 py-4">
-        <div className={cn(
-          "flex items-center rounded-lg bg-muted transition-all duration-300 ease-in-out",
-          collapsed ? "justify-center w-10 h-10 mx-auto p-0" : "px-3 py-2.5 gap-3 w-full"
-        )}>
-          {collapsed ? (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-              <UserIcon className="h-5 w-5 text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background border shadow-sm">
-              <UserIcon className="h-4 w-4 text-muted-foreground" />
-            </div>
-          )}
-          <div className={cn(
-            "flex flex-col overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out",
-            collapsed ? "w-0 opacity-0" : "w-full opacity-100"
-          )}>
-            <p className="truncate text-xs font-medium text-foreground">{user.name || user.email}</p>
-            <p className="truncate text-xs text-muted-foreground">{roleLabel}</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 
@@ -160,7 +143,7 @@ export function DashboardLayout() {
         <SidebarContent collapsed={isCollapsed} onToggle={() => setIsCollapsed(!isCollapsed)} />
       </aside>
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden bg-muted/30">
         <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 md:px-6">
           <div className="flex items-center gap-3">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -173,11 +156,33 @@ export function DashboardLayout() {
                 <SidebarContent collapsed={false} isMobile={true} />
               </SheetContent>
             </Sheet>
-            <h1 className="text-lg font-semibold text-foreground">{pageTitle}</h1>
+            
+            <div className="flex items-center text-sm">
+              {location.pathname.split('/').filter(Boolean).map((segment, index, arr) => {
+                const isLast = index === arr.length - 1;
+                const title = getBreadcrumbLabel(segment);
+                const to = `/${arr.slice(0, index + 1).join('/')}`;
+                
+                return (
+                  <div key={to} className="flex items-center">
+                    {index > 0 && <ChevronRight className="h-4 w-4 mx-2 text-muted-foreground" />}
+                    {isLast ? (
+                      <span className="font-semibold text-foreground">{title}</span>
+                    ) : (
+                      <Link to={to} className="text-muted-foreground hover:text-foreground transition-colors">
+                        {title}
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 px-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user.photo_url ?? undefined} alt={user.name ?? ''} />
@@ -216,61 +221,54 @@ export function DashboardLayout() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </header>
+        </div>
+      </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {user.account_status === 'pending' && (
-            <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-              <div>
-                <h4 className="font-semibold">Account Pending Approval</h4>
-                <p className="text-sm">
-                  Your account is currently pending administrator approval. You can explore the dashboard, but you won't be able to view or perform actions until approved.
-                </p>
-              </div>
-            </div>
+            <Alert className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Account Pending Approval</AlertTitle>
+              <AlertDescription>
+                Your account is currently pending administrator approval. You can explore the dashboard, but you won't be able to view or perform actions until approved.
+              </AlertDescription>
+            </Alert>
           )}
 
           {user.account_status === 'revision' && (
-            <div className="mb-6 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-blue-900 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-200">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
-              <div>
-                <h4 className="font-semibold">Revision Required</h4>
-                <p className="text-sm mb-2">
-                  Your application requires updates before it can be approved. 
-                  {user.status_note && <span className="block mt-1 italic">Note: {user.status_note}</span>}
-                </p>
-                <Button size="sm" variant="secondary" onClick={() => navigate('/onboarding')}>
+            <Alert className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Revision Required</AlertTitle>
+              <AlertDescription>
+                Your application requires updates before it can be approved. 
+                {user.status_note && <span className="block mt-1 italic">Note: {user.status_note}</span>}
+                <Button size="sm" variant="secondary" onClick={() => navigate('/onboarding')} className="mt-3">
                   Update Application Details
                 </Button>
-              </div>
-            </div>
+              </AlertDescription>
+            </Alert>
           )}
 
           {user.account_status === 'suspended' && (
-            <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-900 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
-              <div>
-                <h4 className="font-semibold">Account Suspended</h4>
-                <p className="text-sm">
-                  Your account has been suspended. You cannot access most features.
-                  {user.status_note && <span className="block mt-1 italic">Reason: {user.status_note}</span>}
-                </p>
-              </div>
-            </div>
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Account Suspended</AlertTitle>
+              <AlertDescription>
+                Your account has been suspended. You cannot access most features.
+                {user.status_note && <span className="block mt-1 italic">Reason: {user.status_note}</span>}
+              </AlertDescription>
+            </Alert>
           )}
 
           {user.account_status === 'rejected' && (
-            <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-900 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
-              <div>
-                <h4 className="font-semibold">Application Rejected</h4>
-                <p className="text-sm">
-                  Your application has been rejected. 
-                  {user.status_note && <span className="block mt-1 italic">Reason: {user.status_note}</span>}
-                </p>
-              </div>
-            </div>
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Application Rejected</AlertTitle>
+              <AlertDescription>
+                Your application has been rejected. 
+                {user.status_note && <span className="block mt-1 italic">Reason: {user.status_note}</span>}
+              </AlertDescription>
+            </Alert>
           )}
           
           <Outlet />

@@ -279,7 +279,7 @@ export function OutpassManagement() {
               key="approve"
               variant="ghost"
               size="sm"
-              className="h-7 text-green-600"
+              className="h-7 text-green-600 hover:text-green-700 hover:bg-green-100"
               onClick={(e) => {
                 e.stopPropagation();
                 setConfirmAction({ outpass: row, type: 'approve' });
@@ -308,7 +308,7 @@ export function OutpassManagement() {
               key="depart"
               variant="ghost"
               size="sm"
-              className="h-7 text-blue-600"
+              className="h-7 text-blue-600 hover:text-blue-700 hover:bg-blue-100"
               onClick={(e) => {
                 e.stopPropagation();
                 setConfirmAction({ outpass: row, type: 'depart' });
@@ -325,7 +325,7 @@ export function OutpassManagement() {
               key="return"
               variant="ghost"
               size="sm"
-              className="h-7 text-green-600"
+              className="h-7 text-green-600 hover:text-green-700 hover:bg-green-100"
               onClick={(e) => {
                 e.stopPropagation();
                 setConfirmAction({ outpass: row, type: 'return' });

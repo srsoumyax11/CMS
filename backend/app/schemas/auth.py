@@ -47,6 +47,12 @@ class UserResponse(BaseModel):
     employment_status: Optional[EmploymentStatus] = None
     name: Optional[str] = None
     photo_url: Optional[str] = None
+    email_notifications: bool = True
+    in_app_alerts: bool = True
+
+class UserPreferencesUpdateRequest(BaseModel):
+    email_notifications: Optional[bool] = None
+    in_app_alerts: Optional[bool] = None
 
 class NameUpdateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)

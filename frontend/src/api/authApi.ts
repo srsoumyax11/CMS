@@ -13,6 +13,7 @@ import type {
   PasswordChangeRequest,
   UserIdUpdateRequest,
   StudentProfileCreateRequest,
+  UserPreferencesUpdateRequest,
 } from '@/types/api';
 
 export const authApi = {
@@ -57,4 +58,7 @@ export const authApi = {
 
   checkUsername: (userId: string) =>
     client.get<APIResponse<boolean>>(`${API_ROUTES.CHECK_USERNAME}?user_id=${encodeURIComponent(userId)}`),
+
+  updatePreferences: (data: UserPreferencesUpdateRequest) =>
+    client.patch<APIResponse<{ email_notifications: boolean; in_app_alerts: boolean }>>(API_ROUTES.UPDATE_PREFERENCES, data),
 };

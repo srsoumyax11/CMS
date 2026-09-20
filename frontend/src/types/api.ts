@@ -100,6 +100,13 @@ export interface UserResponse {
   employment_status?: EmploymentStatus | null;
   name?: string | null;
   photo_url?: string | null;
+  email_notifications: boolean;
+  in_app_alerts: boolean;
+}
+
+export interface UserPreferencesUpdateRequest {
+  email_notifications?: boolean;
+  in_app_alerts?: boolean;
 }
 
 export interface NameUpdateRequest {
@@ -475,6 +482,25 @@ export type RoleTemplatesResponse = Record<string, string[]>;
 export interface PaginationParams {
   skip?: number;
   limit?: number;
+}
+
+export interface AnalyticsParams {
+  start_date?: string;
+  end_date?: string;
+  limit?: number;
+}
+
+export interface SystemSetting {
+  key: string;
+  value: string | null;
+  category: string;
+  data_type: string;
+  is_public: boolean;
+  description: string | null;
+}
+
+export interface SystemSettingUpdate {
+  value: string;
 }
 
 export interface ComplaintListParams extends PaginationParams {

@@ -58,6 +58,22 @@ class FacultyUpdateRequest(BaseModel):
     account_status: Optional[AccountStatus] = None
     employment_status: Optional[EmploymentStatus] = None
 
+class AnalyticsParams(BaseModel):
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    limit: Optional[int] = 10
+
+class SystemSettingResponse(BaseModel):
+    key: str
+    value: Optional[str] = None
+    category: str
+    data_type: str
+    is_public: bool
+    description: Optional[str] = None
+
+class SystemSettingUpdateRequest(BaseModel):
+    value: Optional[str] = None
+
 class AdminItemResponse(BaseModel):
     id: UUID4
     user_id: str
