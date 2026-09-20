@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { ProfilePhotoCropper } from '@/components/shared/ProfilePhotoCropper';
 
 export function Profile() {
-  const { user, role, refreshUser } = useAuth();
+  const { user, role, refreshUser, logout } = useAuth();
   
   // General Tab State
   const [cropperOpen, setCropperOpen] = useState(false);
@@ -428,12 +428,12 @@ export function Profile() {
               
               <div className="flex items-center justify-between border-t pt-6">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Active Sessions</p>
-                  <p className="text-xs text-muted-foreground">Log out of all other devices and browsers.</p>
+                  <p className="text-sm font-medium text-foreground">Sign Out</p>
+                  <p className="text-xs text-muted-foreground">Log out of your account on this device.</p>
                 </div>
-                <Button variant="destructive" size="sm" onClick={() => mockAction('Session Revocation')}>
+                <Button variant="destructive" size="sm" onClick={() => logout()}>
                   <LogOut className="h-4 w-4 mr-2" />
-                  Revoke Sessions
+                  Log Out
                 </Button>
               </div>
             </CardContent>

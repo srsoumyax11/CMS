@@ -19,7 +19,7 @@ FACULTY_PASSWORD = "facultypassword123"
 SUPERADMIN_EMAIL = "admin@example.com"
 SUPERADMIN_PASSWORD = "supersecret123"
 
-BASE_URL = "http://127.0.0.1:8001/api"
+BASE_URL = "http://127.0.0.1:8000/api"
 
 # Helper for pretty printing
 def print_step(msg):
@@ -369,15 +369,15 @@ def run_tests():
     assert cancel_res.json()["data"]["status"] == "cancelled"
     print("✅ Self-cancellation of open complaint successful.")
     
-    print_step("17. PATCH /api/admin/complaints/{id}/status (State Machine)")
-    # Try invalid transition: Cancelled -> Resolved
+    print_step("17. PATCH /api/admin/complaints/{id}/status (State Machine Removed)")
+    # Valid transition: Cancelled -> Resolved (should be allowed now)
     invalid_patch = requests.patch(
         f"{BASE_URL}/admin/complaints/{c1_id}/status",
         headers=admin_headers,
         json={"status": "resolved"}
     )
-    assert invalid_patch.status_code == 422
-    print("✅ State machine successfully blocked invalid transition (Cancelled -> Resolved).")
+    assert invalid_patch.status_code == 200
+    print("✅ State machine successfully allowed any transition (Cancelled -> Resolved).")
     
     # Valid transition: Open -> In Progress (on C2)
     valid_patch = requests.patch(

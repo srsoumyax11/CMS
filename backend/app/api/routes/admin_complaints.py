@@ -23,15 +23,6 @@ from app.core.storage import get_signed_url
 
 router = APIRouter()
 
-# Define valid state transitions
-VALID_TRANSITIONS = {
-    ComplaintStatus.open: [ComplaintStatus.in_progress, ComplaintStatus.resolved, ComplaintStatus.closed, ComplaintStatus.cancelled],
-    ComplaintStatus.in_progress: [ComplaintStatus.resolved, ComplaintStatus.closed, ComplaintStatus.open],
-    ComplaintStatus.resolved: [ComplaintStatus.closed, ComplaintStatus.in_progress],
-    ComplaintStatus.closed: [], # Terminal
-    ComplaintStatus.cancelled: [] # Terminal
-}
-
 @router.get(
     "", 
     summary="List All Complaints (Admin)", 
@@ -123,12 +114,6 @@ async def update_complaint_status(
     
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
-        
-    if req.status not in VALID_TRANSITIONS.get(complaint.status, []):
-        raise HTTPException(
-            status_code=422, 
-            detail=f"Invalid state transition from {complaint.status} to {req.status}"
-        )
         
     complaint.status = req.status
     

@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { GraduationCap, LogOut, Menu, User as UserIcon, AlertCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { GraduationCap, LogOut, Menu, User as UserIcon, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function DashboardLayout() {
@@ -21,6 +22,7 @@ export function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (!user || !role) return null;
 
@@ -37,41 +39,111 @@ export function DashboardLayout() {
     navigate('/login', { replace: true });
   };
 
-  const sidebarContent = (
+  const SidebarContent = ({ 
+    collapsed, 
+    onToggle, 
+    isMobile 
+  }: { 
+    collapsed: boolean; 
+    onToggle?: () => void;
+    isMobile?: boolean;
+  }) => (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-3 border-b px-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <GraduationCap className="h-5 w-5" />
+      <div 
+        className={cn(
+          "group relative flex h-16 cursor-pointer items-center border-b transition-colors hover:bg-accent/50", 
+          collapsed ? "justify-center" : "px-6"
+        )}
+        onClick={onToggle}
+      >
+        <div className={cn("flex items-center gap-3", collapsed && !isMobile && "transition-opacity group-hover:opacity-0")}>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <GraduationCap className="h-5 w-5" />
+          </div>
+          <span className={cn(
+            "text-lg font-bold text-foreground whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out",
+            collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+          )}>
+            Synergy CMS
+          </span>
         </div>
-        <span className="text-lg font-bold text-foreground">Synergy CMS</span>
+        
+        {onToggle && !isMobile && (
+          <div className={cn(
+            "absolute opacity-0 transition-opacity group-hover:opacity-100",
+            collapsed ? "inset-0 flex items-center justify-center" : "right-4 top-1/2 -translate-y-1/2"
+          )}>
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-background border shadow-sm text-foreground">
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </div>
+          </div>
+        )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === `/${role}`}
-            onClick={() => setMobileOpen(false)}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              )
-            }
-          >
-            <item.icon className="h-4 w-4 shrink-0" />
-            {item.label}
-          </NavLink>
-        ))}
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <TooltipProvider delayDuration={0}>
+          {navItems.map((item) => {
+            const isExact = item.to === `/${role}`;
+            const isActive = isExact 
+              ? location.pathname === item.to 
+              : location.pathname.startsWith(item.to);
+
+            return (
+              <Tooltip key={item.to}>
+                <TooltipTrigger asChild>
+                  <NavLink
+                    to={item.to}
+                    end={isExact}
+                    onClick={() => isMobile && setMobileOpen(false)}
+                    className={cn(
+                      'flex items-center rounded-lg text-sm font-medium transition-all duration-300 ease-in-out',
+                      collapsed ? 'justify-center w-10 h-10 mx-auto p-0' : 'px-3 py-2.5 gap-3 w-full',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    )}
+                  >
+                    <item.icon className={cn("shrink-0", collapsed ? "h-5 w-5" : "h-4 w-4")} />
+                    <span className={cn(
+                      "whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out",
+                      collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                    )}>
+                      {item.label}
+                    </span>
+                  </NavLink>
+                </TooltipTrigger>
+                {collapsed && !isMobile && (
+                  <TooltipContent side="right" className="font-medium">
+                    {item.label}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            );
+          })}
+        </TooltipProvider>
       </nav>
 
-      <div className="border-t p-4">
-        <div className="rounded-lg bg-muted px-3 py-2.5">
-          <p className="text-xs font-medium text-foreground">{user.name || user.email}</p>
-          <p className="text-xs text-muted-foreground">{roleLabel}</p>
+      <div className="border-t px-3 py-4">
+        <div className={cn(
+          "flex items-center rounded-lg bg-muted transition-all duration-300 ease-in-out",
+          collapsed ? "justify-center w-10 h-10 mx-auto p-0" : "px-3 py-2.5 gap-3 w-full"
+        )}>
+          {collapsed ? (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+              <UserIcon className="h-5 w-5 text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background border shadow-sm">
+              <UserIcon className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
+          <div className={cn(
+            "flex flex-col overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out",
+            collapsed ? "w-0 opacity-0" : "w-full opacity-100"
+          )}>
+            <p className="truncate text-xs font-medium text-foreground">{user.name || user.email}</p>
+            <p className="truncate text-xs text-muted-foreground">{roleLabel}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -79,8 +151,13 @@ export function DashboardLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <aside className="hidden w-64 shrink-0 border-r bg-card md:block">
-        {sidebarContent}
+      <aside 
+        className={cn(
+          "hidden shrink-0 border-r bg-card transition-all duration-300 ease-in-out md:block",
+          isCollapsed ? "w-20" : "w-64"
+        )}
+      >
+        <SidebarContent collapsed={isCollapsed} onToggle={() => setIsCollapsed(!isCollapsed)} />
       </aside>
 
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -93,7 +170,7 @@ export function DashboardLayout() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
-                {sidebarContent}
+                <SidebarContent collapsed={false} isMobile={true} />
               </SheetContent>
             </Sheet>
             <h1 className="text-lg font-semibold text-foreground">{pageTitle}</h1>
