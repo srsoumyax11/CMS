@@ -26,6 +26,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Plus, Users, Loader2, Pencil, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import type { FacultyItemResponse, FacultyCreateRequest, AccountStatus, EmploymentStatus, AdminItemResponse } from '@/types/api';
+import { PasswordRequirements } from '@/components/shared/PasswordRequirements';
 
 const accountStatusConfig: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pending', className: 'bg-amber-100 text-amber-700 border-amber-200' },
@@ -54,19 +55,19 @@ export function FacultyManagement() {
     email: '',
     password: '',
     name: '',
-    department: '',
+    department_id: '',
     designation: '',
   });
   
   const [editForm, setEditForm] = useState<{
     name: string;
-    department: string;
+    department_id: string;
     designation: string;
     account_status: AccountStatus;
     employment_status: EmploymentStatus;
   }>({
     name: '',
-    department: '',
+    department_id: '',
     designation: '',
     account_status: 'active',
     employment_status: 'active',
@@ -76,6 +77,12 @@ export function FacultyManagement() {
     queryKey: [QUERY_KEYS.FACULTY, statusFilter],
     queryFn: () => adminApi.listFaculty({ status: statusFilter as AccountStatus}),
   });
+
+  const { data: deptData } = useQuery({
+    queryKey: ['departments'],
+    queryFn: () => adminApi.listDepartments(),
+  });
+  const activeDepartments = deptData?.data?.data?.filter(d => d.is_active) ?? [];
 
   const faculty: FacultyItemResponse[] = data?.data?.data ?? [];
 
@@ -92,7 +99,7 @@ export function FacultyManagement() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FACULTY] });
       toast.success('Faculty member created');
       setShowCreate(false);
-      setForm({ email: '', password: '', name: '', department: '', designation: '' });
+      setForm({ email: '', password: '', name: '', department_id: '', designation: '' });
     },
     onError: () => toast.error('Failed to create faculty member'),
   });
@@ -126,7 +133,7 @@ export function FacultyManagement() {
     {
       key: 'department',
       header: 'Department',
-      render: (row: FacultyItemResponse) => row.department,
+      render: (row: FacultyItemResponse) => row.department_name,
     },
     {
       key: 'designation',
@@ -175,7 +182,7 @@ export function FacultyManagement() {
             e.stopPropagation();
             setEditForm({ 
               name: row.name, 
-              department: row.department, 
+              department_id: row.department_id, 
               designation: row.designation, 
               account_status: row.account_status,
               employment_status: row.employment_status
@@ -323,16 +330,25 @@ export function FacultyManagement() {
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 required
               />
+              <PasswordRequirements password={form.password} className="mt-2" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="f-dept">Department</Label>
-                <Input
-                  id="f-dept"
-                  value={form.department}
-                  onChange={(e) => setForm({ ...form, department: e.target.value })}
+                <Select
+                  value={form.department_id}
+                  onValueChange={(val) => setForm({ ...form, department_id: val })}
                   required
-                />
+                >
+                  <SelectTrigger id="f-dept">
+                    <SelectValue placeholder="Select Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeDepartments.map(d => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="f-desig">Designation</Label>
@@ -386,11 +402,19 @@ export function FacultyManagement() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="e-dept">Department</Label>
-                <Input
-                  id="e-dept"
-                  value={editForm.department}
-                  onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-                />
+                <Select
+                  value={editForm.department_id}
+                  onValueChange={(val) => setEditForm({ ...editForm, department_id: val })}
+                >
+                  <SelectTrigger id="e-dept">
+                    <SelectValue placeholder="Select Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeDepartments.map(d => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="e-desig">Designation</Label>
@@ -477,7 +501,7 @@ export function FacultyManagement() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
                   <p className="text-muted-foreground">Department</p>
-                  <p className="font-medium text-foreground">{showDetails.department}</p>
+                  <p className="font-medium text-foreground">{showDetails.department_name}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-muted-foreground">Email Address</p>

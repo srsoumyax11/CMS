@@ -17,6 +17,7 @@ export const API_ROUTES = {
 
   // Metadata
   COURSES: '/api/metadata/courses',
+  PUBLIC_SETTINGS: '/api/metadata/settings/public',
 
   // Complaints (Student/Public)
   COMPLAINTS: '/api/complaints',
@@ -26,16 +27,21 @@ export const API_ROUTES = {
   COMPLAINT_CANCEL: (id: string) => `/api/complaints/${id}/cancel`,
 
   // Complaints (Admin/Faculty)
-  ADMIN_COMPLAINTS: '/api/admin/complaints',
-  ADMIN_COMPLAINT_STATUS: (id: string) => `/api/admin/complaints/${id}/status`,
-  ADMIN_COMPLAINT_ASSIGN: (id: string) => `/api/admin/complaints/${id}/assign`,
-  ADMIN_COMPLAINTS_RECURRING: '/api/admin/complaints/analytics/recurring',
-  ADMIN_COMPLAINTS_AGEING: '/api/admin/complaints/analytics/ageing',
+  ADMIN_COMPLAINTS: '/api/complaints',
+  ADMIN_COMPLAINT_STATUS: (id: string) => `/api/complaints/${id}/status`,
+  ADMIN_COMPLAINT_ASSIGN: (id: string) => `/api/complaints/${id}/assign`,
+  ADMIN_COMPLAINTS_RECURRING: '/api/complaints/analytics/recurring',
+  ADMIN_COMPLAINTS_AGEING: '/api/complaints/analytics/ageing',
 
   // Notices
   NOTICES: '/api/notices',
   NOTICE_DETAIL: (id: string) => `/api/notices/${id}`,
   NOTICE_READ: (id: string) => `/api/notices/${id}/read`,
+
+  // Notifications
+  NOTIFICATIONS: '/api/notifications',
+  NOTIFICATION_READ: (id: string) => `/api/notifications/${id}/read`,
+  NOTIFICATIONS_READ_ALL: '/api/notifications/read-all',
 
   // Outpasses (Student)
   OUTPASSES: '/api/outpasses',
@@ -44,12 +50,12 @@ export const API_ROUTES = {
   OUTPASS_CANCEL: (id: string) => `/api/outpasses/${id}/cancel`,
 
   // Outpasses (Admin)
-  ADMIN_OUTPASSES: '/api/admin/outpasses',
-  ADMIN_OUTPASS_DETAIL: (id: string) => `/api/admin/outpasses/${id}`,
-  ADMIN_OUTPASS_APPROVE: (id: string) => `/api/admin/outpasses/${id}/approve`,
-  ADMIN_OUTPASS_REJECT: (id: string) => `/api/admin/outpasses/${id}/reject`,
-  ADMIN_OUTPASS_DEPART: (id: string) => `/api/admin/outpasses/${id}/depart`,
-  ADMIN_OUTPASS_RETURN: (id: string) => `/api/admin/outpasses/${id}/return`,
+  ADMIN_OUTPASSES: '/api/outpasses',
+  ADMIN_OUTPASS_DETAIL: (id: string) => `/api/outpasses/${id}`,
+  ADMIN_OUTPASS_APPROVE: (id: string) => `/api/outpasses/${id}/approve`,
+  ADMIN_OUTPASS_REJECT: (id: string) => `/api/outpasses/${id}/reject`,
+  ADMIN_OUTPASS_DEPART: (id: string) => `/api/outpasses/${id}/depart`,
+  ADMIN_OUTPASS_RETURN: (id: string) => `/api/outpasses/${id}/return`,
 
   // Timetable
   MY_TIMETABLE: '/api/timetable/mine',
@@ -69,8 +75,8 @@ export const API_ROUTES = {
   MESS_OPTOUT: '/api/mess/optout',
 
   // Mess (Admin)
-  ADMIN_MESS_MENU: '/api/admin/mess/menu',
-  ADMIN_MESS_ANALYTICS_TODAY: '/api/admin/mess/analytics/today',
+  ADMIN_MESS_MENU: '/api/mess/menu',
+  ADMIN_MESS_ANALYTICS_TODAY: '/api/mess/analytics/today',
 
   // Admin: Students
   ADMIN_STUDENTS: '/api/admin/students',
@@ -89,6 +95,10 @@ export const API_ROUTES = {
 
   // Admin: Admins
   ADMIN_ADMINS: '/api/admin/admins',
+
+  // Admin: Departments
+  ADMIN_DEPARTMENTS: '/api/admin/departments',
+  ADMIN_DEPARTMENT_DETAIL: (id: string) => `/api/admin/departments/${id}`,
 
   // Roles & Permissions
   ROLES: '/api/roles',

@@ -11,6 +11,7 @@ import { Camera, Mail, Shield, Edit2, Loader2, Check, X, Copy, Key, ShieldCheck,
 import { ROLE_LABELS } from '@/lib/navigation';
 import { toast } from 'sonner';
 import { ProfilePhotoCropper } from '@/components/shared/ProfilePhotoCropper';
+import { PasswordRequirements } from '@/components/shared/PasswordRequirements';
 
 export function Profile() {
   const { user, role, refreshUser, logout } = useAuth();
@@ -127,14 +128,21 @@ export function Profile() {
       toast.error('Please fill in both fields');
       return;
     }
+    
+    if (newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters long');
+      return;
+    }
+
     setIsChangingPassword(true);
     try {
       await authApi.changePassword({ current_password: currentPassword, new_password: newPassword });
       toast.success('Password changed successfully');
       setCurrentPassword('');
       setNewPassword('');
-    } catch {
-      toast.error('Failed to change password. Check your current password.');
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || 'Failed to change password. Check your current password.';
+      toast.error(errorMsg);
     } finally {
       setIsChangingPassword(false);
     }
@@ -402,6 +410,7 @@ export function Profile() {
                     </span>
                   </Button>
                 </div>
+                <PasswordRequirements password={newPassword} className="mt-2" />
               </div>
               <Button onClick={handleChangePassword} disabled={isChangingPassword}>
                 {isChangingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

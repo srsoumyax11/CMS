@@ -110,6 +110,7 @@ export const NAV_GROUPS: Record<UserRole, NavGroup[]> = {
         { label: 'User Management', to: '/admin/users', icon: Users },
         { label: 'Faculty', to: '/admin/faculty', icon: UserCog },
         { label: 'Roles', to: '/admin/permissions', icon: ShieldCheck },
+        { label: 'Departments', to: '/admin/departments', icon: Settings },
         { label: 'System Settings', to: '/admin/settings', icon: Settings },
       ]
     },
@@ -144,5 +145,13 @@ export const BREADCRUMB_CONFIG: Record<string, string> = {
 };
 
 export const getBreadcrumbLabel = (segment: string): string => {
-  return BREADCRUMB_CONFIG[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+  if (BREADCRUMB_CONFIG[segment]) return BREADCRUMB_CONFIG[segment];
+  
+  // If the segment is a UUID, display a cleaner label instead of the raw ID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(segment)) {
+    return 'Details';
+  }
+  
+  return segment.charAt(0).toUpperCase() + segment.slice(1);
 };

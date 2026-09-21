@@ -45,6 +45,7 @@ import { ComplaintManagement } from '@/pages/admin/ComplaintManagement';
 import { OutpassManagement } from '@/pages/admin/OutpassManagement';
 import { MessManagement } from '@/pages/admin/MessManagement';
 import { RolesPermissions } from '@/pages/admin/RolesPermissions';
+import { DepartmentManagement } from '@/pages/admin/DepartmentManagement';
 
 import './App.css';
 
@@ -94,7 +95,7 @@ export function AdminRoutes() {
   return (
     <Routes>
       <Route index element={<AdminDashboard />} />
-      <Route path="notices" element={<NoticeList basePath="/admin/notices" canCreate />} />
+      <Route path="notices" element={<NoticeList basePath="/admin" canCreate />} />
       <Route path="notices/new" element={<NoticeCreate />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
       <Route path="complaints" element={<ComplaintManagement />} />
@@ -107,6 +108,7 @@ export function AdminRoutes() {
       <Route path="users" element={<StudentManagement />} />
       <Route path="faculty" element={<FacultyManagement />} />
       <Route path="permissions" element={<RolesPermissions />} />
+      <Route path="departments" element={<DepartmentManagement />} />
       <Route path="settings" element={<SystemSettings />} />
       <Route path="profile" element={<Profile />} />
     </Routes>

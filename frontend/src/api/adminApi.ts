@@ -12,6 +12,9 @@ import type {
   PaginationParams,
   SystemSetting,
   SystemSettingUpdate,
+  Department,
+  DepartmentCreateRequest,
+  DepartmentUpdateRequest
 } from '@/types/api';
 
 export const adminApi = {
@@ -47,4 +50,17 @@ export const adminApi = {
 
   updateSystemSetting: (key: string, data: SystemSettingUpdate) =>
     client.patch<APIResponse<SystemSetting>>(`${API_ROUTES.ADMIN_SETTINGS}/${key}`, data),
+
+  // Departments
+  listDepartments: () =>
+    client.get<APIResponse<Department[]>>(API_ROUTES.ADMIN_DEPARTMENTS),
+
+  createDepartment: (data: DepartmentCreateRequest) =>
+    client.post<APIResponse<Department>>(API_ROUTES.ADMIN_DEPARTMENTS, data),
+
+  updateDepartment: (id: string, data: DepartmentUpdateRequest) =>
+    client.patch<APIResponse<Department>>(API_ROUTES.ADMIN_DEPARTMENT_DETAIL(id), data),
+
+  deleteDepartment: (id: string) =>
+    client.delete<APIResponse<{message: string}>>(API_ROUTES.ADMIN_DEPARTMENT_DETAIL(id)),
 };

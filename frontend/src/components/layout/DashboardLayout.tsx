@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { NAV_GROUPS, ROLE_LABELS, getBreadcrumbLabel } from '@/lib/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from '@/components/layout/NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -181,6 +182,7 @@ export function DashboardLayout() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 px-2">

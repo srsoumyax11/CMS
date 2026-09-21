@@ -60,7 +60,12 @@ client.interceptors.response.use(
       _retry?: boolean;
     };
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    if (
+      error.response?.status !== 401 ||
+      originalRequest._retry ||
+      originalRequest.url === API_ROUTES.LOGIN ||
+      originalRequest.url === API_ROUTES.REGISTER
+    ) {
       const serverError = error.response?.data?.error || error.message || 'An error occurred';
       const err = new Error(serverError) as Error & { status?: number };
       err.status = error.response?.status;

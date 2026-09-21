@@ -16,6 +16,25 @@ export type ComplaintCategory =
   | 'security'
   | 'other';
 
+export interface Department {
+  id: string;
+  name: string;
+  code: string;
+  is_active: boolean;
+}
+
+export interface DepartmentCreateRequest {
+  name: string;
+  code: string;
+  is_active?: boolean;
+}
+
+export interface DepartmentUpdateRequest {
+  name?: string;
+  code?: string;
+  is_active?: boolean;
+}
+
 export type ComplaintStatus =
   | 'open'
   | 'in_progress'
@@ -407,7 +426,8 @@ export interface FacultyItemResponse {
   user_uuid: string;
   name: string;
   email: string;
-  department: string;
+  department_id: string;
+  department_name: string;
   designation: string;
   account_status: AccountStatus;
   employment_status: EmploymentStatus;
@@ -415,19 +435,20 @@ export interface FacultyItemResponse {
 }
 
 export interface FacultyCreateRequest {
-  email: string;
-  password: string;
   name: string;
-  department: string;
+  email: string;
+  password?: string;
+  department_id: string;
   designation: string;
 }
 
 export interface FacultyUpdateRequest {
-  name?: string | null;
-  department?: string | null;
-  designation?: string | null;
-  account_status?: AccountStatus | null;
-  employment_status?: EmploymentStatus | null;
+  name?: string;
+  email?: string;
+  department_id?: string;
+  designation?: string;
+  account_status?: AccountStatus;
+  employment_status?: EmploymentStatus;
 }
 
 // ── Roles & Permissions ─────────────────────────────────────────────
