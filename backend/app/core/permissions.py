@@ -68,3 +68,6 @@ class Perms:
 
     # Asset: system_setting
     SYSTEM_SETTING_MANAGE = "system_setting:manage"
+
+    # Asset: department
+    DEPARTMENT_MANAGE = "department:manage"

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Welcome to Synergy CMS, {{ name }}! 🎉</h2>
+<p>Your account has been successfully created.</p>
+<p>Here are your registration details:</p>
+<ul>
+    <li><strong>Email:</strong> {{ email }}</li>
+    <li><strong>User ID:</strong> {{ user_id }}</li>
+    <li><strong>Role:</strong> {{ role }}</li>
+</ul>
+<p>You can now log in to the dashboard using your email and password.</p>
+<p style="text-align: center; margin-top: 30px;">
+    <a href="{{ login_url | default('http://localhost:5173/login') }}" class="button">Log In to Dashboard</a>
+</p>
+{% endblock %}

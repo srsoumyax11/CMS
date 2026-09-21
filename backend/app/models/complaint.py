@@ -3,8 +3,7 @@ import enum
 from sqlalchemy import Column, String, ForeignKey, Text, Enum, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, TimestampMixin, UUIDMixin
 
 class ComplaintCategory(str, enum.Enum):
     electrical = "electrical"
@@ -26,10 +25,9 @@ class ComplaintStatus(str, enum.Enum):
     closed = "closed"
     cancelled = "cancelled"
 
-class Complaint(Base, TimestampMixin):
+class Complaint(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "complaints"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     raised_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
     category = Column(Enum(ComplaintCategory, name="complaint_category_enum", create_type=True), nullable=False, index=True)
@@ -48,16 +46,13 @@ class Complaint(Base, TimestampMixin):
     assignee = relationship("User", foreign_keys=[assigned_to], backref="assigned_complaints")
     status_logs = relationship("ComplaintStatusLog", back_populates="complaint", cascade="all, delete-orphan", order_by="ComplaintStatusLog.created_at")
 
-class ComplaintStatusLog(Base):
+class ComplaintStatusLog(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "complaint_status_logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     complaint_id = Column(UUID(as_uuid=True), ForeignKey("complaints.id", ondelete="CASCADE"), nullable=False)
     status = Column(Enum(ComplaintStatus, name="complaint_status_enum", create_type=False), nullable=False)
     changed_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     note = Column(Text, nullable=True)
-    
-    created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
     
     # Relationships
     complaint = relationship("Complaint", back_populates="status_logs")

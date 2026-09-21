@@ -9,3 +9,5 @@ PyJWT
 pwdlib[bcrypt]
 python-multipart
 supabase
+aiosmtplib
+jinja2

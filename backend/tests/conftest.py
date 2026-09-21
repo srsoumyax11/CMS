@@ -37,9 +37,14 @@ async def create_and_approve_student(client: httpx.AsyncClient, email: str, name
     reg_res = await client.post(f"{BASE_URL}/api/auth/register", json=reg_data)
     assert reg_res.status_code == 200, f"Registration failed: {reg_res.text}"
 
+    import sys
+    import os
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from app.core.config import settings
+    
     admin_login = {
-        "email": "admin@example.com",
-        "password": "supersecret123"
+        "email": settings.SUPERADMIN_EMAIL,
+        "password": settings.SUPERADMIN_PASSWORD
     }
     admin_res = await client.post(f"{BASE_URL}/api/auth/login", json=admin_login)
     assert admin_res.status_code == 200, f"Admin login failed: {admin_res.text}"

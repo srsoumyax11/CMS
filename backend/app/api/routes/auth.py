@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from app.api.deps import get_current_user, RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +22,8 @@ from app.schemas.auth import (
     UserResponse
 )
 from app.schemas.common import APIResponse
+from app.utils.email import send_email_background
+from app.utils.validation import validate_password
 
 router = APIRouter()
 
@@ -42,7 +44,10 @@ async def check_username(user_id: str, db: AsyncSession = Depends(get_db)):
     description="Registers a new student user. Assigns the default 'Student' role, sets status to 'pending', and logs them in.", 
     response_model=APIResponse[TokenResponse]
 )
-async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
+async def register(data: RegisterRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+    # Validate password against system settings
+    await validate_password(data.password, db)
+
     # Check if user already exists
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
@@ -72,6 +77,20 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     # Issue tokens
     access_token = create_access_token(subject=str(new_user.id))
     refresh_token = create_refresh_token(subject=str(new_user.id))
+    
+    # Trigger Welcome Email
+    send_email_background(
+        background_tasks=background_tasks,
+        to_email=new_user.email,
+        subject="Welcome to Synergy CMS!",
+        template_name="welcome.html",
+        context={
+            "name": new_user.name,
+            "email": new_user.email,
+            "user_id": new_user.user_id,
+            "role": "Student"
+        }
+    )
     
     return APIResponse(
         success=True, 

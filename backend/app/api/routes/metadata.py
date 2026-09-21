@@ -7,7 +7,22 @@ from app.core.database import get_db
 from app.models.academic import Course
 from app.schemas.common import APIResponse
 
+from app.models.settings import SystemSetting
+
 router = APIRouter()
+
+@router.get(
+    "/settings/public",
+    summary="Get Public System Settings",
+    description="Returns all system settings that are marked as public (e.g., password rules, site name).",
+    response_model=APIResponse
+)
+async def get_public_settings(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(SystemSetting).where(SystemSetting.is_public == True))
+    settings = result.scalars().all()
+    
+    data = {s.key: s.value for s in settings}
+    return APIResponse(success=True, data=data, error=None)
 
 @router.get(
     "/courses", 

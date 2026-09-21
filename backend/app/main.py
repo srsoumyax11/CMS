@@ -15,13 +15,11 @@ from app.api.routes import (
     roles,
     notices,
     complaints,
-    admin_complaints,
     outpasses,
-    admin_outpasses,
     timetable,
     attendance,
     mess,
-    admin_mess
+    notifications
 )
 
 tags_metadata = [
@@ -99,15 +97,13 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(roles.router, prefix="/api/roles", tags=["Roles & Permissions"])
-app.include_router(complaints.router, prefix="/api/complaints", tags=["Complaints (Student/Public)"])
-app.include_router(admin_complaints.router, prefix="/api/admin/complaints", tags=["Complaints (Admin/Faculty)"])
+app.include_router(complaints.router, prefix="/api/complaints", tags=["Complaints"])
 app.include_router(notices.router, prefix="/api/notices", tags=["Notices"])
 app.include_router(outpasses.router, prefix="/api/outpasses", tags=["Outpasses"])
-app.include_router(admin_outpasses.router, prefix="/api/admin/outpasses", tags=["Admin Outpasses"])
 app.include_router(timetable.router, prefix="/api/timetable", tags=["Timetable"])
 app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
-app.include_router(mess.router, prefix="/api/mess", tags=["Mess (Student/Public)"])
-app.include_router(admin_mess.router, prefix="/api/admin/mess", tags=["Mess (Admin)"])
+app.include_router(mess.router, prefix="/api/mess", tags=["Mess"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 
 # Exception Handlers
 @app.exception_handler(RequestValidationError)

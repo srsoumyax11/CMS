@@ -35,7 +35,7 @@ class FacultyCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     password: str = Field(..., min_length=8)
-    department: str = Field(..., min_length=2, max_length=255)
+    department_id: UUID4
     designation: str = Field(..., min_length=2, max_length=255)
 
 class FacultyItemResponse(BaseModel):
@@ -44,7 +44,8 @@ class FacultyItemResponse(BaseModel):
     user_uuid: UUID4
     name: str
     email: str
-    department: str
+    department_id: UUID4
+    department_name: str
     designation: str
     account_status: AccountStatus
     employment_status: EmploymentStatus
@@ -53,10 +54,26 @@ class FacultyItemResponse(BaseModel):
 class FacultyUpdateRequest(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
-    department: Optional[str] = None
+    department_id: Optional[UUID4] = None
     designation: Optional[str] = None
     account_status: Optional[AccountStatus] = None
     employment_status: Optional[EmploymentStatus] = None
+
+class DepartmentResponse(BaseModel):
+    id: UUID4
+    name: str
+    code: str
+    is_active: bool
+
+class DepartmentCreateRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+    code: str = Field(..., min_length=2, max_length=50)
+    is_active: bool = True
+
+class DepartmentUpdateRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=2, max_length=255)
+    code: Optional[str] = Field(None, min_length=2, max_length=50)
+    is_active: Optional[bool] = None
 
 class AnalyticsParams(BaseModel):
     start_date: Optional[str] = None

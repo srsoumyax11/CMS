@@ -38,9 +38,10 @@ class FacultyProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "faculty_profiles"
 
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    department: Mapped[str] = mapped_column(String(255), nullable=False)
+    department_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="RESTRICT"), nullable=False)
     designation: Mapped[str] = mapped_column(String(255), nullable=False)
 
     employment_status: Mapped[EmploymentStatus] = mapped_column(Enum(EmploymentStatus, name="employment_status_enum"), default=EmploymentStatus.active, nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="faculty_profile")
+    department: Mapped["Department"] = relationship("Department")

@@ -13,10 +13,13 @@ from app.models.user import User, UserType, AccountStatus
 from app.models.profiles import StudentProfile, FacultyProfile
 from app.models.rbac import Role, UserRole
 from app.schemas.common import APIResponse
+from app.utils.validation import validate_password
+from app.models.academic import Department
 from app.schemas.admin import (
     StudentStatusUpdateRequest, StudentItemResponse, StudentAdminUpdateRequest,
     FacultyCreateRequest, FacultyItemResponse,
-    FacultyUpdateRequest, AdminItemResponse
+    FacultyUpdateRequest, AdminItemResponse,
+    DepartmentResponse, DepartmentCreateRequest, DepartmentUpdateRequest
 )
 
 router = APIRouter()
@@ -256,6 +259,9 @@ async def create_faculty(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.FACULTY_PROFILE_CREATE))
 ):
+    # Validate password against system settings
+    await validate_password(req.password, db)
+
     # Check if email exists
     existing = await db.execute(select(User).where(User.email == req.email))
     if existing.scalar_one_or_none():
@@ -284,7 +290,7 @@ async def create_faculty(
     from app.models.profiles import EmploymentStatus
     new_profile = FacultyProfile(
         user_id=new_user.id,
-        department=req.department,
+        department_id=req.department_id,
         designation=req.designation,
         employment_status=EmploymentStatus.active
     )
@@ -301,13 +307,19 @@ async def create_faculty(
     await db.commit()
     await db.refresh(new_profile)
     
+    # Need to load department explicitly for the response
+    stmt = select(Department).where(Department.id == new_profile.department_id)
+    res = await db.execute(stmt)
+    dept = res.scalar_one_or_none()
+
     data = FacultyItemResponse(
         id=new_profile.id,
         user_id=new_user.user_id if new_user.user_id else str(new_profile.user_id),
         user_uuid=new_profile.user_id,
         name=new_user.name,
         email=new_user.email,
-        department=new_profile.department,
+        department_id=new_profile.department_id,
+        department_name=dept.name if dept else "Unknown",
         designation=new_profile.designation,
         account_status=new_user.account_status,
         employment_status=new_profile.employment_status,
@@ -328,7 +340,7 @@ async def list_faculty(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.FACULTY_PROFILE_LIST))
 ):
-    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user))
+    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user), selectinload(FacultyProfile.department))
     if status_filter:
         stmt = stmt.join(User, FacultyProfile.user_id == User.id).where(User.account_status == status_filter)
     stmt = stmt.offset(skip).limit(limit)
@@ -344,7 +356,8 @@ async def list_faculty(
             user_uuid=p.user_id,
             name=p.user.name if p.user else "",
             email=p.user.email if p.user else "",
-            department=p.department,
+            department_id=p.department_id,
+            department_name=p.department.name if p.department else "Unknown",
             designation=p.designation,
             account_status=p.user.account_status if p.user else AccountStatus.pending,
             employment_status=p.employment_status,
@@ -365,43 +378,49 @@ async def update_faculty(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.FACULTY_PROFILE_EDIT))
 ):
-    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user)).where(FacultyProfile.id == id)
+    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user), selectinload(FacultyProfile.department)).where(FacultyProfile.id == id)
     result = await db.execute(stmt)
     p = result.scalar_one_or_none()
-    
     if not p:
         raise HTTPException(status_code=404, detail="Faculty profile not found")
         
-    if req.name is not None and p.user:
+    if req.name and p.user:
         p.user.name = req.name
-    if req.email is not None and p.user:
+    if req.email and p.user:
         p.user.email = req.email
-    if req.department is not None:
-        p.department = req.department
+    if req.department_id is not None:
+        p.department_id = req.department_id
     if req.designation is not None:
         p.designation = req.designation
-    if req.employment_status is not None:
-        p.employment_status = req.employment_status
-        
-    if req.account_status is not None and p.user:
+    if req.account_status and p.user:
         p.user.account_status = req.account_status
+    if req.employment_status:
+        p.employment_status = req.employment_status
         
     await db.commit()
     await db.refresh(p)
-    if p.user:
-        await db.refresh(p.user)
     
+    # Load department explicitly if changed
+    dept_name = p.department.name if p.department else "Unknown"
+    if req.department_id is not None:
+         stmt = select(Department).where(Department.id == p.department_id)
+         res = await db.execute(stmt)
+         dept = res.scalar_one_or_none()
+         if dept:
+             dept_name = dept.name
+
     data = FacultyItemResponse(
         id=p.id,
-        user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
+        user_id=p.user.user_id if p.user.user_id else str(p.user_id),
         user_uuid=p.user_id,
-        name=p.user.name if p.user else "",
-        email=p.user.email if p.user else "",
-        department=p.department,
+        name=p.user.name,
+        email=p.user.email,
+        department_id=p.department_id,
+        department_name=dept_name,
         designation=p.designation,
-        account_status=p.user.account_status if p.user else AccountStatus.pending,
+        account_status=p.user.account_status,
         employment_status=p.employment_status,
-        status_note=p.user.status_note if p.user else None
+        status_note=p.user.status_note
     )
     return APIResponse(success=True, data=data, error=None)
 
@@ -501,3 +520,126 @@ async def update_system_setting(
         description=setting.description
     )
     return APIResponse(success=True, data=response_data, error=None)
+
+# ── Departments ────────────────────────────────────────────────────────
+@router.get(
+    "/departments",
+    summary="List Departments",
+    description="Returns all departments.",
+    response_model=APIResponse[List[DepartmentResponse]]
+)
+async def list_departments(
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(Department).order_by(Department.name)
+    result = await db.execute(stmt)
+    departments = result.scalars().all()
+    
+    data = [
+        DepartmentResponse(
+            id=d.id, name=d.name, code=d.code, is_active=d.is_active
+        ) for d in departments
+    ]
+    return APIResponse(success=True, data=data, error=None)
+
+@router.post(
+    "/departments",
+    summary="Create Department",
+    description="Creates a new department. **Requires:** `department:manage`",
+    response_model=APIResponse[DepartmentResponse]
+)
+async def create_department(
+    req: DepartmentCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.DEPARTMENT_MANAGE))
+):
+    # Check if name or code already exists
+    existing = await db.execute(
+        select(Department).where((Department.name == req.name) | (Department.code == req.code))
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Department with this name or code already exists")
+        
+    new_dept = Department(name=req.name, code=req.code, is_active=req.is_active)
+    db.add(new_dept)
+    
+    try:
+        await db.commit()
+        await db.refresh(new_dept)
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Database error")
+        
+    return APIResponse(success=True, data=DepartmentResponse(
+        id=new_dept.id, name=new_dept.name, code=new_dept.code, is_active=new_dept.is_active
+    ), error=None)
+
+@router.patch(
+    "/departments/{id}",
+    summary="Update Department",
+    description="Updates a department. **Requires:** `department:manage`",
+    response_model=APIResponse[DepartmentResponse]
+)
+async def update_department(
+    id: UUID,
+    req: DepartmentUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.DEPARTMENT_MANAGE))
+):
+    stmt = select(Department).where(Department.id == id)
+    result = await db.execute(stmt)
+    dept = result.scalar_one_or_none()
+    
+    if not dept:
+        raise HTTPException(status_code=404, detail="Department not found")
+        
+    if req.name is not None:
+        dept.name = req.name
+    if req.code is not None:
+        dept.code = req.code
+    if req.is_active is not None:
+        dept.is_active = req.is_active
+        
+    try:
+        await db.commit()
+        await db.refresh(dept)
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Database error or duplicate name/code")
+        
+    return APIResponse(success=True, data=DepartmentResponse(
+        id=dept.id, name=dept.name, code=dept.code, is_active=dept.is_active
+    ), error=None)
+
+@router.delete(
+    "/departments/{id}",
+    summary="Delete Department",
+    description="Deletes a department if it is not referenced by any faculty. **Requires:** `department:manage`",
+    response_model=APIResponse[dict]
+)
+async def delete_department(
+    id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.DEPARTMENT_MANAGE))
+):
+    stmt = select(Department).where(Department.id == id)
+    result = await db.execute(stmt)
+    dept = result.scalar_one_or_none()
+    
+    if not dept:
+        raise HTTPException(status_code=404, detail="Department not found")
+        
+    # Check if any faculty profile uses this department
+    faculty_stmt = select(FacultyProfile).where(FacultyProfile.department_id == id).limit(1)
+    faculty_res = await db.execute(faculty_stmt)
+    if faculty_res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Cannot delete department because it is assigned to faculty members")
+        
+    try:
+        await db.delete(dept)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Database error")
+        
+    return APIResponse(success=True, data={"message": "Department deleted successfully"}, error=None)

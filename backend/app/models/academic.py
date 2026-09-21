@@ -3,22 +3,27 @@ from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Enum, Time,
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.models.base import Base
+from app.models.base import Base, TimestampMixin, UUIDMixin
 
-class Course(Base):
+class Department(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "departments"
+
+    name = Column(String, unique=True, nullable=False)
+    code = Column(String, unique=True, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+class Course(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "courses"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, unique=True, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
     branches = relationship("Branch", back_populates="course")
 
 
-class Branch(Base):
+class Branch(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "branches"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -26,10 +31,9 @@ class Branch(Base):
     course = relationship("Course", back_populates="branches")
 
 
-class TimetableSlot(Base):
+class TimetableSlot(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "timetable_slots"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
     branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="CASCADE"), nullable=False)
     year = Column(Integer, nullable=False)
@@ -43,10 +47,9 @@ class TimetableSlot(Base):
     end_time = Column(Time, nullable=False)
     room = Column(String, nullable=True)
 
-class AttendanceRecord(Base):
+class AttendanceRecord(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "attendance_records"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     timetable_slot_id = Column(UUID(as_uuid=True), ForeignKey("timetable_slots.id", ondelete="CASCADE"), nullable=False)
     student_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     date = Column(Date, nullable=False)

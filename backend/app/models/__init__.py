@@ -8,6 +8,7 @@ from app.models.notice import Notice
 from app.models.outpass import Outpass, OutpassStatusLog
 from app.models.mess import MessMenu, MessFeedback, MessOptOut
 from app.models.settings import SystemSetting
+from app.models.notification import Notification, NotificationType
 
 __all__ = [
     "Base",
@@ -29,5 +30,7 @@ __all__ = [
     "OutpassStatusLog",
     "MessMenu",
     "MessFeedback",
-    "MessOptOut"
+    "MessOptOut",
+    "Notification",
+    "NotificationType",
 ]
