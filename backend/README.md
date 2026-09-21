@@ -28,9 +28,9 @@ This is the FastAPI backend skeleton for the campus management platform.
    **Important:** Set `SUPERADMIN_EMAIL` and `SUPERADMIN_PASSWORD` in your `.env`.
 
 4. **Database Setup (One-Click)**
-   Make sure your database (e.g. Supabase local instance) is running, then run the unified setup script. This script automatically applies all database migrations and seeds the required data (Courses, Branches, Roles, Permissions, and SuperAdmin):
+   Make sure your database (e.g. Supabase local instance) is running, then run Alembic. Alembic will automatically create all tables and seed the required initial data (Courses, Branches, Roles, Permissions, and SuperAdmin):
    ```bash
-   python scripts/setup.py
+   alembic upgrade head
    ```
    *Note: If you left the default credentials in `.env.example`, your SuperAdmin account will be seeded as:*
    **Email:** `admin@example.com`
@@ -46,6 +46,7 @@ This is the FastAPI backend skeleton for the campus management platform.
 ---
 
 ## Documentation
+- [Supabase Local Development & Restart Guide](docs/supabase_setup.md): Guide for restarting your DB, setting up env, and configuring buckets.
 - [Phase 1 Walkthrough](docs/phase1_walkthrough.md): Authentication, Supabase Storage, and Environment configurations.
 - [Phase 2 Walkthrough](docs/phase2_walkthrough.md): RBAC Architecture, Seed Scripts, Admin Routes, and Dependency Caching.
 

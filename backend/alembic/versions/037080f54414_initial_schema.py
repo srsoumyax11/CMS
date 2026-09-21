@@ -1,8 +1,8 @@
-"""Initial schema
+"""initial_schema
 
-Revision ID: 55d07001e926
+Revision ID: 037080f54414
 Revises: 
-Create Date: 2026-09-18 23:07:02.653863
+Create Date: 2026-09-21 12:36:25.242340
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '55d07001e926'
+revision: str = '037080f54414'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -38,11 +38,24 @@ def upgrade() -> None:
     sa.UniqueConstraint('name')
     )
     op.create_table('courses',
-    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
+    )
+    op.create_table('departments',
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('code', sa.String(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name'),
+    sa.UniqueConstraint('code')
     )
     op.create_table('mess_menu',
     sa.Column('day_of_week', sa.Enum('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', name='day_of_week_enum'), nullable=False),
@@ -64,6 +77,18 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
     )
+    op.create_table('system_settings',
+    sa.Column('key', sa.String(length=100), nullable=False),
+    sa.Column('value', sa.String(length=2000), nullable=True),
+    sa.Column('category', sa.String(length=50), nullable=False),
+    sa.Column('data_type', sa.String(length=20), nullable=False),
+    sa.Column('description', sa.String(length=500), nullable=True),
+    sa.Column('is_public', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.PrimaryKeyConstraint('key')
+    )
+    op.create_index(op.f('ix_system_settings_key'), 'system_settings', ['key'], unique=False)
     op.create_table('users',
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('hashed_password', sa.String(length=255), nullable=False),
@@ -73,6 +98,8 @@ def upgrade() -> None:
     sa.Column('user_id', sa.String(length=50), nullable=True),
     sa.Column('name', sa.String(length=255), nullable=True),
     sa.Column('photo_url', sa.String(length=255), nullable=True),
+    sa.Column('email_notifications', sa.Boolean(), nullable=False),
+    sa.Column('in_app_alerts', sa.Boolean(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -80,16 +107,30 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_user_id'), 'users', ['user_id'], unique=True)
-    op.create_table('branches',
+    op.create_table('notifications',
+    sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.Column('title', sa.String(length=255), nullable=False),
+    sa.Column('message', sa.Text(), nullable=False),
+    sa.Column('type', sa.Enum('info', 'success', 'warning', 'error', name='notification_type_enum'), nullable=False),
+    sa.Column('link', sa.String(length=255), nullable=True),
+    sa.Column('is_read', sa.Boolean(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('branches',
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('course_id', sa.UUID(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['course_id'], ['courses.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('complaints',
-    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('raised_by', sa.UUID(), nullable=False),
     sa.Column('category', sa.Enum('electrical', 'plumbing', 'wifi', 'cleanliness', 'furniture', 'security', 'other', name='complaint_category_enum'), nullable=False),
     sa.Column('location_hostel', sa.String(), nullable=False),
@@ -99,6 +140,7 @@ def upgrade() -> None:
     sa.Column('visibility', sa.Enum('public', 'private', name='complaint_visibility_enum'), nullable=False),
     sa.Column('status', sa.Enum('open', 'in_progress', 'resolved', 'closed', 'cancelled', name='complaint_status_enum'), nullable=False),
     sa.Column('assigned_to', sa.UUID(), nullable=True),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['assigned_to'], ['users.id'], ondelete='SET NULL'),
@@ -111,12 +153,13 @@ def upgrade() -> None:
     op.create_index(op.f('ix_complaints_status'), 'complaints', ['status'], unique=False)
     op.create_table('faculty_profiles',
     sa.Column('user_id', sa.UUID(), nullable=False),
-    sa.Column('department', sa.String(length=255), nullable=False),
+    sa.Column('department_id', sa.UUID(), nullable=False),
     sa.Column('designation', sa.String(length=255), nullable=False),
     sa.Column('employment_status', sa.Enum('active', 'on_leave', 'resigned', 'retired', 'terminated', name='employment_status_enum'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['department_id'], ['departments.id'], ondelete='RESTRICT'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id')
@@ -150,7 +193,6 @@ def upgrade() -> None:
     op.create_index(op.f('ix_mess_optout_date'), 'mess_optout', ['date'], unique=False)
     op.create_index(op.f('ix_mess_optout_meal_type'), 'mess_optout', ['meal_type'], unique=False)
     op.create_table('outpasses',
-    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('student_id', sa.UUID(), nullable=False),
     sa.Column('destination', sa.String(), nullable=False),
     sa.Column('reason', sa.Text(), nullable=False),
@@ -159,6 +201,7 @@ def upgrade() -> None:
     sa.Column('actual_return_time', sa.DateTime(timezone=True), nullable=True),
     sa.Column('status', sa.Enum('pending', 'approved', 'active', 'completed', 'rejected', 'cancelled', name='outpass_status_enum'), nullable=False),
     sa.Column('approved_by', sa.UUID(), nullable=True),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['approved_by'], ['users.id'], ondelete='SET NULL'),
@@ -188,18 +231,18 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('user_id', 'role_id')
     )
     op.create_table('complaint_status_logs',
-    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('complaint_id', sa.UUID(), nullable=False),
     sa.Column('status', sa.Enum('open', 'in_progress', 'resolved', 'closed', 'cancelled', name='complaint_status_enum'), nullable=False),
     sa.Column('changed_by', sa.UUID(), nullable=True),
     sa.Column('note', sa.Text(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['changed_by'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['complaint_id'], ['complaints.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('notices',
-    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
     sa.Column('author_id', sa.UUID(), nullable=False),
@@ -209,6 +252,7 @@ def upgrade() -> None:
     sa.Column('target_year', sa.Integer(), nullable=True),
     sa.Column('target_hostel', sa.String(length=255), nullable=True),
     sa.Column('target_user_types', sa.String(length=255), nullable=True),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['author_id'], ['users.id'], ondelete='CASCADE'),
@@ -217,12 +261,13 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('outpass_status_logs',
-    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('outpass_id', sa.UUID(), nullable=False),
     sa.Column('status', sa.Enum('pending', 'approved', 'active', 'completed', 'rejected', 'cancelled', name='outpass_status_enum'), nullable=False),
     sa.Column('changed_by', sa.UUID(), nullable=True),
     sa.Column('note', sa.Text(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['changed_by'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['outpass_id'], ['outpasses.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -254,7 +299,6 @@ def upgrade() -> None:
     sa.UniqueConstraint('user_id')
     )
     op.create_table('timetable_slots',
-    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('course_id', sa.UUID(), nullable=False),
     sa.Column('branch_id', sa.UUID(), nullable=False),
     sa.Column('year', sa.Integer(), nullable=False),
@@ -264,18 +308,23 @@ def upgrade() -> None:
     sa.Column('start_time', sa.Time(), nullable=False),
     sa.Column('end_time', sa.Time(), nullable=False),
     sa.Column('room', sa.String(), nullable=True),
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['branch_id'], ['branches.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['course_id'], ['courses.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['faculty_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('attendance_records',
-    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('timetable_slot_id', sa.UUID(), nullable=False),
     sa.Column('student_id', sa.UUID(), nullable=False),
     sa.Column('date', sa.Date(), nullable=False),
     sa.Column('status', sa.Enum('present', 'absent', 'late', 'excused', name='attendancestatus'), nullable=False),
     sa.Column('marked_by', sa.UUID(), nullable=True),
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['marked_by'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['student_id'], ['users.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['timetable_slot_id'], ['timetable_slots.id'], ondelete='CASCADE'),
@@ -283,10 +332,10 @@ def upgrade() -> None:
     sa.UniqueConstraint('timetable_slot_id', 'student_id', 'date', name='uq_attendance_slot_student_date')
     )
     op.create_table('notice_reads',
-    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('notice_id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('read_at', sa.DateTime(), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['notice_id'], ['notices.id'], ondelete='CASCADE'),
@@ -300,6 +349,7 @@ def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table('notice_reads')
+    op.drop_table('notifications')
     op.drop_table('attendance_records')
     op.drop_table('timetable_slots')
     op.drop_table('student_profiles')
@@ -329,9 +379,12 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_users_user_id'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
+    op.drop_index(op.f('ix_system_settings_key'), table_name='system_settings')
+    op.drop_table('system_settings')
     op.drop_table('roles')
     op.drop_table('mess_menu')
     op.drop_table('courses')
+    op.drop_table('departments')
     op.drop_table('assets')
     op.drop_table('actions')
     # ### end Alembic commands ###
