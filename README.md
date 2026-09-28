@@ -1,105 +1,110 @@
-# BPUT CMS
+<div align="center">
+  
+  # 🚀 BPUT CMS
+  
+  ### A modern, role-based university Content Management System.
 
-A modern, role-based Content Management System (CMS) for BPUT.
+  [![Live Demo](https://img.shields.io/badge/demo-online-green.svg)](https://your-demo-link.com)
+  [![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+  [![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
+  
+  <br />
+  
+  <!-- Add a stunning dashboard screenshot here later -->
+  <!-- <img src="./docs/assets/dashboard.png" width="900" alt="BPUT CMS Dashboard"> -->
+  
+  <p>
+    <strong>BPUT CMS</strong> is a full-stack enterprise application built with React, FastAPI, PostgreSQL, and Supabase to streamline university operations, complaint tracking, and student outpasses.
+  </p>
 
----
+  [Live Demo](https://your-demo-link.com) · [Documentation](./docs) · [Report Bug](https://github.com/srsoumyax11/CMS/issues)
 
-## 🚀 Complete "Fresh Start" Setup Guide
-
-Follow this guide to tear everything down and set up the project completely from scratch.
-
-### 1. Prerequisites
-
-Ensure you have the following installed on your machine:
-
-- **[Git](https://git-scm.com/downloads)**: Required for cloning the repository.
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**: Required to run the local Supabase database. Must be open and running in the background.
-- **[Node.js](https://nodejs.org/en/download)** (v18+): Required for the frontend and installing Supabase CLI.
-- **[Python](https://www.python.org/downloads/)** (v3.10+): Required for the backend API.
-- **Supabase CLI**: Required for managing the local database. Once Node.js is installed, open your terminal and run:
-  ```bash
-  npm install -g supabase
-  ```
-
-### 2. Clone the Repository
-
-```bash
-git clone https://github.com/srsoumyax11/CMS.git
-cd CMS
-```
-
-### 3. Database Setup (Supabase)
-
-The database runs locally using Docker containers managed by the Supabase CLI.
-
-```bash
-cd backend
-
-# Stop any dangling containers from other projects (if you have port conflicts)
-docker ps -q | ForEach-Object { docker stop $_ }
-
-# Start the local Supabase environment (Postgres, Auth, Mailpit, etc.)
-supabase start
-
-# Apply all database migrations and seed default data
-supabase db reset
-```
-
-*Note: You can view local outgoing emails in your browser at `http://localhost:54324/monitor`.*
-
-### 4. Backend Setup (FastAPI)
-
-Set up your Python virtual environment and install dependencies.
-
-```bash
-# Ensure you are still in the backend directory
-cd backend  
-
-# Create and activate virtual environment
-python -m venv venv
-.\venv\Scripts\activate   # (On Windows)
-# source venv/bin/activate # (On Mac/Linux)
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run database migrations to create all tables (CRITICAL STEP)
-alembic upgrade head
-
-# Start the backend server
-uvicorn app.main:app --reload --port 8000
-```
-
-*The API is now running at `http://localhost:8000` with interactive docs at `http://localhost:8000/docs`.*
-
-### 5. Frontend Setup (React/Vite)
-
-Open a **new** terminal window to start the frontend.
-
-```bash
-# From the root CMS directory
-cd frontend
-
-# Install Node dependencies
-npm install
-
-# Start the development server
-npm run dev
-```
-
-*The frontend is now running at `http://localhost:5173`.*
+</div>
 
 ---
 
-## 🧹 How to Wipe and Tear Everything Down
+## ✨ Features
 
-If you ever want to completely wipe the local database and stop all services so you can start completely fresh again:
+- **🔐 Advanced Role-Based Access Control (RBAC):** Strict permission matrices for SuperAdmins, Faculty, and Students.
+- **🏢 Hierarchical Departments:** Dynamic nested departments (e.g., Computer Science -> AI Labs).
+- **📝 Complaint Management:** Real-time tracking with photo attachment evidence via secure storage buckets.
+- **🚪 Digital Outpass System:** Automated approval workflows with medical proof document uploads.
+- **🛡️ High Security:** Stateless email verification flows using custom JWT implementations.
 
-```bash
-cd backend
+---
 
-# Stop supabase and completely wipe the database volumes
-supabase stop --no-backup
+## 🏗️ Architecture
+
+```text
+React (Vite)
+     │
+     ▼
+FastAPI (Python)
+     │
+     ├── PostgreSQL (Relational Data via SQLAlchemy)
+     └── Supabase Storage (S3-compatible File Buckets)
 ```
 
-*(After this, you can just run `supabase start` and `supabase db reset` to rebuild a brand new database from the migration scripts!)*
+👉 [Read the complete architecture](./docs/ARCHITECTURE.md)
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+| --- | --- |
+| **Frontend** | React, TypeScript, Vite, TailwindCSS, Lucide Icons |
+| **Backend** | Python, FastAPI, SQLAlchemy, Alembic |
+| **Database** | PostgreSQL |
+| **Authentication** | Custom JWT (Stateless) |
+| **Storage** | Supabase Storage |
+| **Deployment** | Render (API) / Vercel (UI) |
+
+---
+
+## 📂 Project Structure
+
+```text
+CMS/
+ ├── frontend/            # React UI (Vite)
+ ├── backend/             # Python API (FastAPI)
+ ├── docs/                # Project Documentation
+ │    ├── SETUP.md        # Local development guide
+ │    └── DEPLOYMENT.md   # Cloud production guide
+ └── README.md            # You are here!
+```
+
+👉 [View detailed project structure](./docs/PROJECT_STRUCTURE.md)
+
+---
+
+## ⚡ Quick Start
+
+For detailed step-by-step instructions on setting up Docker, the Supabase CLI, and running the servers, please refer to the complete setup guide.
+
+👉 **[Complete Setup Guide](./docs/SETUP.md)**
+
+---
+
+## 📚 Documentation
+
+| Document | Description |
+| --- | --- |
+| **[Setup Guide](./docs/SETUP.md)** | How to configure the project locally from scratch |
+| **[Deployment Guide](./docs/DEPLOYMENT.md)** | How to push the project to production (Render + Vercel) |
+| **[Architecture](./docs/ARCHITECTURE.md)** | System architecture and design choices (Coming Soon) |
+| **[API Docs](./docs/API.md)** | API endpoint documentation (Coming Soon) |
+
+---
+
+## 🚀 Deployment
+
+This application is container-ready and built to be deployed on modern cloud platforms. The database migrations automatically run via our CI/CD startup scripts in the cloud.
+
+👉 **[Production Deployment Guide](./docs/DEPLOYMENT.md)**
+
+---
+
+## 📄 License
+
+Distributed under the MIT License.
