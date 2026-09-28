@@ -63,18 +63,21 @@ class DepartmentResponse(BaseModel):
     code: str
     department_type: Literal["academic", "administrative"]
     is_active: bool
+    hod_user_id: Optional[UUID4] = None
 
 class DepartmentCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
     code: str = Field(..., min_length=2, max_length=50)
     department_type: Literal["academic", "administrative"] = "academic"
     is_active: bool = True
+    hod_user_id: Optional[UUID4] = None
 
 class DepartmentUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=255)
     code: Optional[str] = Field(None, min_length=2, max_length=50)
     department_type: Optional[Literal["academic", "administrative"]] = None
     is_active: Optional[bool] = None
+    hod_user_id: Optional[UUID4] = None
 
 class AnalyticsParams(BaseModel):
     start_date: Optional[str] = None

@@ -16,6 +16,9 @@ class Department(Base, UUIDMixin, TimestampMixin):
         server_default='academic'
     )
     is_active = Column(Boolean, default=True, nullable=False)
+    hod_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    hod = relationship("User", foreign_keys=[hod_user_id])
 
 class Course(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "courses"

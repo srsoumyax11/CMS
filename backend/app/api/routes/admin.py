@@ -531,7 +531,7 @@ async def list_departments(
     
     data = [
         DepartmentResponse(
-            id=d.id, name=d.name, code=d.code, department_type=d.department_type, is_active=d.is_active
+            id=d.id, name=d.name, code=d.code, department_type=d.department_type, is_active=d.is_active, hod_user_id=d.hod_user_id
         ) for d in departments
     ]
     return APIResponse(success=True, data=data, error=None)
@@ -554,7 +554,7 @@ async def create_department(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Department with this name or code already exists")
         
-    new_dept = Department(name=req.name, code=req.code, department_type=req.department_type, is_active=req.is_active)
+    new_dept = Department(name=req.name, code=req.code, department_type=req.department_type, is_active=req.is_active, hod_user_id=req.hod_user_id)
     db.add(new_dept)
     
     try:
@@ -565,7 +565,7 @@ async def create_department(
         raise HTTPException(status_code=400, detail="Database error")
         
     return APIResponse(success=True, data=DepartmentResponse(
-        id=new_dept.id, name=new_dept.name, code=new_dept.code, department_type=new_dept.department_type, is_active=new_dept.is_active
+        id=new_dept.id, name=new_dept.name, code=new_dept.code, department_type=new_dept.department_type, is_active=new_dept.is_active, hod_user_id=new_dept.hod_user_id
     ), error=None)
 
 @router.patch(
@@ -595,6 +595,8 @@ async def update_department(
         dept.is_active = req.is_active
     if req.department_type is not None:
         dept.department_type = req.department_type
+    if req.hod_user_id is not None:
+        dept.hod_user_id = req.hod_user_id
         
     try:
         await db.commit()
@@ -604,7 +606,7 @@ async def update_department(
         raise HTTPException(status_code=400, detail="Database error or duplicate name/code")
         
     return APIResponse(success=True, data=DepartmentResponse(
-        id=dept.id, name=dept.name, code=dept.code, is_active=dept.is_active
+        id=dept.id, name=dept.name, code=dept.code, department_type=dept.department_type, is_active=dept.is_active, hod_user_id=dept.hod_user_id
     ), error=None)
 
 @router.delete(
