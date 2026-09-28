@@ -47,7 +47,7 @@ def check_and_create_buckets():
         for bucket_name, config in REQUIRED_BUCKETS.items():
             if bucket_name not in existing_buckets:
                 logger.info(f"Creating missing bucket: '{bucket_name}' (Public: {config['public']})")
-                supabase.storage.create_bucket(bucket_name, {"public": config["public"]})
+                supabase.storage.create_bucket(bucket_name, options={"public": config["public"]})
             else:
                 logger.info(f"✅ Bucket '{bucket_name}' exists.")
                 

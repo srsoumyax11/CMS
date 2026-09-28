@@ -20,19 +20,14 @@ export function Profile() {
   const [cropperOpen, setCropperOpen] = useState(false);
   const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isEditingName, setIsEditingName] = useState(false);
+  
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editNameValue, setEditNameValue] = useState('');
-  const [isSavingName, setIsSavingName] = useState(false);
-
-  const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [editEmailValue, setEditEmailValue] = useState('');
-  const [isSavingEmail, setIsSavingEmail] = useState(false);
-  
-  const [isEditingUserId, setIsEditingUserId] = useState(false);
   const [editUserIdValue, setEditUserIdValue] = useState('');
-  const [isSavingUserId, setIsSavingUserId] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [userIdError, setUserIdError] = useState<string | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Security Tab State
@@ -80,68 +75,61 @@ export function Profile() {
     }
   };
 
-  const handleUpdateName = async () => {
-    if (!editNameValue.trim() || editNameValue === user.name) {
-      setIsEditingName(false);
-      return;
-    }
-    setIsSavingName(true);
-    try {
-      await authApi.updateName({ name: editNameValue });
-      await refreshUser();
-      toast.success('Name updated successfully');
-      setIsEditingName(false);
-    } catch {
-      toast.error('Failed to update name');
-    } finally {
-      setIsSavingName(false);
-    }
-  };
-
-  const handleUpdateEmail = async () => {
-    if (!editEmailValue.trim() || editEmailValue === user.email) {
-      setIsEditingEmail(false);
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(editEmailValue)) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-    
-    setIsSavingEmail(true);
-    try {
-      await authApi.requestEmailUpdate({ new_email: editEmailValue });
-      toast.success('Verification email sent! Please check your new inbox.');
-      setIsEditingEmail(false);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error?.message || 'Failed to request email update');
-    } finally {
-      setIsSavingEmail(false);
-    }
-  };
-
-  const handleUpdateUserId = async () => {
-    if (!editUserIdValue.trim() || editUserIdValue === user.user_id) {
-      setIsEditingUserId(false);
-      setUserIdError(null);
-      return;
-    }
-    setIsSavingUserId(true);
+  const handleEditProfile = () => {
+    setEditNameValue(user.name || '');
+    setEditEmailValue(user.email || '');
+    setEditUserIdValue(user.user_id || '');
     setUserIdError(null);
+    setIsEditingProfile(true);
+  };
+
+  const handleSaveProfile = async () => {
+    setIsSavingProfile(true);
+    setUserIdError(null);
+    let success = true;
+
     try {
-      await authApi.updateUserId({ user_id: editUserIdValue });
-      await refreshUser();
-      toast.success('User ID updated successfully');
-      setIsEditingUserId(false);
-    } catch (err: any) {
-      if (err.response?.data?.error === "User ID is already taken") {
-        setUserIdError("User ID is already taken");
-      } else {
-        toast.error('Failed to update User ID');
+      // 1. Update Name
+      if (editNameValue.trim() !== user.name) {
+        await authApi.updateName({ name: editNameValue.trim() });
       }
+
+      // 2. Update Email
+      if (editEmailValue.trim() !== user.email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(editEmailValue)) {
+          toast.error('Please enter a valid email address');
+          success = false;
+        } else {
+          await authApi.requestEmailUpdate({ new_email: editEmailValue.trim() });
+          toast.success('Verification email sent! Please check your new inbox.');
+        }
+      }
+
+      // 3. Update User ID
+      if (editUserIdValue.trim() !== user.user_id) {
+        try {
+          await authApi.updateUserId({ user_id: editUserIdValue.trim() });
+        } catch (err: any) {
+          if (err.response?.data?.error === "User ID is already taken") {
+            setUserIdError("User ID is already taken");
+            success = false;
+          } else {
+            toast.error('Failed to update User ID');
+            success = false;
+          }
+        }
+      }
+
+      if (success) {
+        await refreshUser();
+        toast.success('Profile updated successfully');
+        setIsEditingProfile(false);
+      }
+    } catch (err) {
+      toast.error('An error occurred while saving profile');
     } finally {
-      setIsSavingUserId(false);
+      setIsSavingProfile(false);
     }
   };
 
@@ -257,9 +245,26 @@ export function Profile() {
 
               {/* Right Side: Account Details Grid */}
               <div className="flex-1 flex flex-col pl-0 md:pl-4">
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-foreground">Personal Information</h3>
-                  <p className="text-sm text-muted-foreground">Basic info, like your name and email.</p>
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">Personal Information</h3>
+                    <p className="text-sm text-muted-foreground">Basic info, like your name and email.</p>
+                  </div>
+                  {isEditingProfile ? (
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditingProfile(false)} disabled={isSavingProfile}>
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={handleSaveProfile} disabled={isSavingProfile} className="gap-2">
+                        {isSavingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        Save
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={handleEditProfile} className="gap-2">
+                      <Edit2 className="h-4 w-4" /> Edit Profile
+                    </Button>
+                  )}
                 </div>
                 
                 <div className="grid gap-6 border-b border-border pb-8">
@@ -267,29 +272,16 @@ export function Profile() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
                     <div className="text-sm font-medium text-muted-foreground">Full Name</div>
                     <div className="md:col-span-2">
-                      {isEditingName ? (
-                        <div className="flex items-center gap-2 max-w-sm">
-                          <Input 
-                            value={editNameValue} 
-                            onChange={(e) => setEditNameValue(e.target.value)} 
-                            className="h-9"
-                            placeholder="Enter your name"
-                            disabled={isSavingName}
-                          />
-                          <Button size="icon" variant="ghost" className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100" onClick={handleUpdateName} disabled={isSavingName}>
-                            {isSavingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-red-700 hover:bg-red-100" onClick={() => setIsEditingName(false)} disabled={isSavingName}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      {isEditingProfile ? (
+                        <Input 
+                          value={editNameValue} 
+                          onChange={(e) => setEditNameValue(e.target.value)} 
+                          className="h-9 max-w-sm"
+                          placeholder="Enter your name"
+                          disabled={isSavingProfile}
+                        />
                       ) : (
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-semibold text-foreground">{user.name || 'Not provided'}</span>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => { setEditNameValue(user.name || ''); setIsEditingName(true); }}>
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                        <span className="text-sm font-semibold text-foreground">{user.name || 'Not provided'}</span>
                       )}
                     </div>
                   </div>
@@ -298,30 +290,17 @@ export function Profile() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
                     <div className="text-sm font-medium text-muted-foreground">Email Address</div>
                     <div className="md:col-span-2">
-                      {isEditingEmail ? (
-                        <div className="flex items-center gap-2 max-w-sm">
-                          <Input 
-                            type="email"
-                            value={editEmailValue} 
-                            onChange={(e) => setEditEmailValue(e.target.value)} 
-                            className="h-9"
-                            placeholder="Enter your new email"
-                            disabled={isSavingEmail}
-                          />
-                          <Button size="icon" variant="ghost" className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100" onClick={handleUpdateEmail} disabled={isSavingEmail}>
-                            {isSavingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-red-700 hover:bg-red-100" onClick={() => setIsEditingEmail(false)} disabled={isSavingEmail}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      {isEditingProfile ? (
+                        <Input 
+                          type="email"
+                          value={editEmailValue} 
+                          onChange={(e) => setEditEmailValue(e.target.value)} 
+                          className="h-9 max-w-sm"
+                          placeholder="Enter your new email"
+                          disabled={isSavingProfile}
+                        />
                       ) : (
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-foreground">{user.email}</span>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => { setEditEmailValue(user.email); setIsEditingEmail(true); }}>
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                        <span className="text-sm text-foreground">{user.email}</span>
                       )}
                     </div>
                   </div>
@@ -337,34 +316,21 @@ export function Profile() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
                     <div className="text-sm font-medium text-muted-foreground">Registration / User ID</div>
                     <div className="md:col-span-2">
-                      {isEditingUserId ? (
+                      {isEditingProfile ? (
                         <div className="flex flex-col gap-1 max-w-sm">
-                          <div className="flex items-center gap-2">
-                            <Input 
-                              value={editUserIdValue} 
-                              onChange={(e) => { setEditUserIdValue(e.target.value); setUserIdError(null); }} 
-                              className={`h-9 font-mono text-sm ${userIdError ? 'border-red-500' : ''}`}
-                              placeholder="Enter User ID"
-                              disabled={isSavingUserId}
-                            />
-                            <Button size="icon" variant="ghost" className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 shrink-0" onClick={handleUpdateUserId} disabled={isSavingUserId}>
-                              {isSavingUserId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                            </Button>
-                            <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-red-700 hover:bg-red-100 shrink-0" onClick={() => { setIsEditingUserId(false); setUserIdError(null); }} disabled={isSavingUserId}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Input 
+                            value={editUserIdValue} 
+                            onChange={(e) => { setEditUserIdValue(e.target.value); setUserIdError(null); }} 
+                            className={`h-9 font-mono text-sm ${userIdError ? 'border-red-500' : ''}`}
+                            placeholder="Enter User ID"
+                            disabled={isSavingProfile}
+                          />
                           {userIdError && <span className="text-xs text-red-500">{userIdError}</span>}
                         </div>
                       ) : (
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-mono bg-muted px-2 py-1 rounded-md border text-muted-foreground">
-                            {user.user_id || 'Not Set'}
-                          </span>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => { setEditUserIdValue(user.user_id || ''); setIsEditingUserId(true); }}>
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                        <span className="text-sm font-mono bg-muted px-2 py-1 rounded-md border text-muted-foreground">
+                          {user.user_id || 'Not Set'}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -380,6 +346,8 @@ export function Profile() {
                     </div>
                   </div>
                 </div>
+
+
               </div>
             </CardContent>
           </Card>

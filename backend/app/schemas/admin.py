@@ -96,3 +96,14 @@ class AdminItemResponse(BaseModel):
     email: str
     account_status: AccountStatus
     status_note: Optional[str] = None
+
+class OnboardingTask(BaseModel):
+    id: str
+    title: str
+    description: str
+    is_completed: bool
+    action_url: str
+
+class OnboardingStatusResponse(BaseModel):
+    completion_percentage: int
+    tasks: List[OnboardingTask]

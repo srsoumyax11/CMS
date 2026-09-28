@@ -14,7 +14,8 @@ import type {
   SystemSettingUpdate,
   Department,
   DepartmentCreateRequest,
-  DepartmentUpdateRequest
+  DepartmentUpdateRequest,
+  OnboardingStatusResponse
 } from '@/types/api';
 
 export const adminApi = {
@@ -63,4 +64,8 @@ export const adminApi = {
 
   deleteDepartment: (id: string) =>
     client.delete<APIResponse<{message: string}>>(API_ROUTES.ADMIN_DEPARTMENT_DETAIL(id)),
+
+  // Onboarding
+  getOnboardingStatus: () =>
+    client.get<APIResponse<OnboardingStatusResponse>>(API_ROUTES.ADMIN_ONBOARDING_STATUS),
 };

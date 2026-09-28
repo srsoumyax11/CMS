@@ -543,3 +543,16 @@ export interface OutpassListParams extends PaginationParams {
 export interface StudentListParams extends PaginationParams {
   status?: AccountStatus | null;
 }
+
+export interface OnboardingTask {
+  id: string;
+  title: string;
+  description: string;
+  is_completed: boolean;
+  action_url: string;
+}
+
+export interface OnboardingStatusResponse {
+  completion_percentage: number;
+  tasks: OnboardingTask[];
+}

@@ -1,12 +1,6 @@
-# BPUT CMS
+# Local Development Setup Guide
 
-A modern, role-based Content Management System (CMS) for BPUT.
-
----
-
-## 🚀 Complete "Fresh Start" Setup Guide
-
-Follow this guide to tear everything down and set up the project completely from scratch.
+Follow this guide to set up the BPUT CMS project on your local machine for development from scratch.
 
 ### 1. Prerequisites
 
@@ -33,28 +27,32 @@ cd CMS
 The database runs locally using Docker containers managed by the Supabase CLI.
 
 ```bash
-cd backend
-
+# NOT MANDATORY
 # Stop any dangling containers from other projects (if you have port conflicts)
+
 docker ps -q | ForEach-Object { docker stop $_ }
+```
+
+```bash
+cd backend
 
 # Start the local Supabase environment (Postgres, Auth, Mailpit, etc.)
 supabase start
-
-# Apply all database migrations and seed default data
-supabase db reset
 ```
 
 *Note: You can view local outgoing emails in your browser at `http://localhost:54324/monitor`.*
 
 ### 4. Backend Setup (FastAPI)
 
-Set up your Python virtual environment and install dependencies.
+Set up your Python virtual environment, configure environment variables, and install dependencies.
 
 ```bash
-# Ensure you are still in the backend directory
+# Ensure you are in the backend directory
 cd backend  
 
+# IMPORTANT: Copy the environment variables template
+cp ../.env.example .env
+# (Then open .env and update any default values)
 # Create and activate virtual environment
 python -m venv venv
 .\venv\Scripts\activate   # (On Windows)
@@ -62,6 +60,9 @@ python -m venv venv
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Run the pre-start script (Verifies DB connection and auto-creates Supabase buckets!)
+python -m scripts.pre_start
 
 # Run database migrations to create all tables (CRITICAL STEP)
 alembic upgrade head
@@ -102,4 +103,4 @@ cd backend
 supabase stop --no-backup
 ```
 
-*(After this, you can just run `supabase start` and `supabase db reset` to rebuild a brand new database from the migration scripts!)*
+*(After this, you can just run `supabase start` and then `alembic upgrade head` in your Python environment to rebuild a brand new database from scratch!)*

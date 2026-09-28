@@ -58,7 +58,7 @@ FastAPI (Python)
 | **Database** | PostgreSQL |
 | **Authentication** | Custom JWT (Stateless) |
 | **Storage** | Supabase Storage |
-| **Deployment** | Render (API) / Vercel (UI) |
+| **Deployment** | Render (API) / Vercel (UI) / Supabase (DB & Storage) |
 
 ---
 
@@ -92,8 +92,8 @@ For detailed step-by-step instructions on setting up Docker, the Supabase CLI, a
 | --- | --- |
 | **[Setup Guide](./docs/SETUP.md)** | How to configure the project locally from scratch |
 | **[Deployment Guide](./docs/DEPLOYMENT.md)** | How to push the project to production (Render + Vercel) |
-| **[Architecture](./docs/ARCHITECTURE.md)** | System architecture and design choices (Coming Soon) |
-| **[API Docs](./docs/API.md)** | API endpoint documentation (Coming Soon) |
+| **[Architecture](./docs/ARCHITECTURE.md)** | System architecture and design choices |
+| **[API Docs](./docs/API.md)** | API endpoint documentation |
 
 ---
 

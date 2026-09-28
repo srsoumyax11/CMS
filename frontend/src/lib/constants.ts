@@ -98,6 +98,9 @@ export const API_ROUTES = {
   // Admin: Admins
   ADMIN_ADMINS: '/api/admin/admins',
 
+  // Admin: Onboarding
+  ADMIN_ONBOARDING_STATUS: '/api/admin/onboarding-status',
+
   // Admin: Departments
   ADMIN_DEPARTMENTS: '/api/admin/departments',
   ADMIN_DEPARTMENT_DETAIL: (id: string) => `/api/admin/departments/${id}`,

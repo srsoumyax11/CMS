@@ -9,7 +9,7 @@ Welcome to the BPUT CMS! If you have purchased this software and want to deploy 
 You should have received access to a Git repository or a `.zip` file containing the source code.
 
 ```bash
-git clone <your-private-repo-url>
+git clone https://github.com/srsoumyax11/CMS.git
 cd CMS
 ```
 
@@ -26,7 +26,9 @@ We use Supabase for the PostgreSQL database and file storage.
    - Choose **ORM** to get the Direct Connection String.
    - It will look like this: `postgresql://postgres:[YOUR-PASSWORD]@.../postgres`
    - **CRITICAL STEP for Python:** You must add `+asyncpg` after `postgresql` so our high-performance backend can connect to it. Your final `DATABASE_URL` must look like this:
-     `postgresql+asyncpg://postgres:[YOUR-PASSWORD]@.../postgres`
+   ```
+     postgresql+asyncpg://postgres:[YOUR-PASSWORD]@.../postgres
+   ```
 5. **Get Storage Credentials (URL and Key)**:
    - In the left sidebar, click the **Gear Icon ⚙️ (Project Settings)**, then click **API**.
    - Under **Project URL**, copy the URL. This will be your `SUPABASE_URL`.
@@ -46,13 +48,15 @@ We use [Render.com](https://render.com) to host the Python FastAPI backend.
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `bash start.sh`
 4. **Environment Variables**:
-   Add the following variables in the Render dashboard:
-   - `DATABASE_URL`: Your Supabase connection string (with `+asyncpg`)
-   - `SUPABASE_URL`: Your Supabase Project URL
-   - `SUPABASE_KEY`: Your Supabase secret `service_role` key
-   - `JWT_SECRET_KEY`: Generate a random long string (e.g., `openssl rand -hex 32`)
-   - `SUPERADMIN_EMAIL`: The email you want to use to log in as the owner
-   - `SUPERADMIN_PASSWORD`: Your desired admin password
+   Render has a "Secret Files" or bulk "Add from .env" feature. Copy the contents of your `.env.example` or use the block below to fill in your values in Render:
+   ```ini
+   DATABASE_URL="postgresql+asyncpg://postgres:[YOUR-PASSWORD]@.../postgres"
+   SUPABASE_URL="https://[YOUR-PROJECT-ID].supabase.co"
+   SUPABASE_KEY="sb_secret_your_service_role_key_here"
+   JWT_SECRET_KEY="generate-a-secure-random-string-here"
+   SUPERADMIN_EMAIL="admin@example.com"
+   SUPERADMIN_PASSWORD="secure_admin_password_123"
+   ```
 5. Click **Deploy**. Render will run your migrations automatically and give you a public URL (e.g., `https://cms-backend.onrender.com`).
 
 ---
@@ -66,8 +70,10 @@ We use [Vercel.com](https://vercel.com) to host the React UI.
 3. In the framework preset, select **Vite**.
 4. Set the Root Directory to `frontend`.
 5. **Environment Variables**:
-   Add the following variable:
-   - `VITE_API_URL`: Your Render backend URL (e.g., `https://cms-backend.onrender.com/api`)
+   Copy and paste the block below into Vercel's environment variables section:
+   ```ini
+   VITE_API_URL="https://your-backend-url.onrender.com/api"
+   ```
 6. Click **Deploy**. Vercel will give you a public URL (e.g., `https://cms-frontend.vercel.app`).
 
 ---

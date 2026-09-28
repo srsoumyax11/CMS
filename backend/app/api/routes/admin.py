@@ -19,7 +19,8 @@ from app.schemas.admin import (
     StudentStatusUpdateRequest, StudentItemResponse, StudentAdminUpdateRequest,
     FacultyCreateRequest, FacultyItemResponse,
     FacultyUpdateRequest, AdminItemResponse,
-    DepartmentResponse, DepartmentCreateRequest, DepartmentUpdateRequest
+    DepartmentResponse, DepartmentCreateRequest, DepartmentUpdateRequest,
+    OnboardingStatusResponse, OnboardingTask
 )
 
 router = APIRouter()
@@ -636,3 +637,75 @@ async def delete_department(
         raise HTTPException(status_code=400, detail="Database error")
         
     return APIResponse(success=True, data={"message": "Department deleted successfully"}, error=None)
+
+@router.get(
+    "/onboarding-status",
+    summary="Get Admin Onboarding Status",
+    description="Returns the setup progress percentage and a list of pending tasks.",
+    response_model=APIResponse[OnboardingStatusResponse]
+)
+async def get_onboarding_status(
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.SYSTEM_SETTING_MANAGE))
+):
+    from app.models.settings import SystemSetting
+    from sqlalchemy import func
+
+    tasks = []
+    
+    # 1. Check SMTP
+    smtp_setting = await db.scalar(select(SystemSetting).where(SystemSetting.key == "smtp_host"))
+    is_smtp_configured = smtp_setting is not None and smtp_setting.value != "127.0.0.1"
+    tasks.append(OnboardingTask(
+        id="smtp_setup",
+        title="Configure Email Server (SMTP)",
+        description="Connect a real SMTP server so the system can send password setup links to new users.",
+        is_completed=is_smtp_configured,
+        action_url="/admin/settings?tab=email"
+    ))
+    
+    # 2. Check Site URL
+    site_setting = await db.scalar(select(SystemSetting).where(SystemSetting.key == "site_url"))
+    is_site_configured = site_setting is not None and site_setting.value is not None and "localhost" not in site_setting.value.lower()
+    tasks.append(OnboardingTask(
+        id="site_url",
+        title="Set Live Domain URL",
+        description="Update the Site URL setting to your production domain.",
+        is_completed=is_site_configured,
+        action_url="/admin/settings?tab=general"
+    ))
+    
+    # 3. Check Departments
+    dept_count = await db.scalar(select(func.count(Department.id)))
+    is_dept_created = dept_count > 0
+    tasks.append(OnboardingTask(
+        id="departments",
+        title="Create First Department",
+        description="Set up at least one academic or administrative department.",
+        is_completed=is_dept_created,
+        action_url="/admin/departments"
+    ))
+    
+    # 4. Check Faculty
+    faculty_count = await db.scalar(select(func.count(User.id)).where(User.user_type == UserType.faculty))
+    is_faculty_onboarded = faculty_count > 0
+    tasks.append(OnboardingTask(
+        id="faculty",
+        title="Onboard Faculty",
+        description="Create at least one Faculty member account to test the role system.",
+        is_completed=is_faculty_onboarded,
+        action_url="/admin/users?role=faculty"
+    ))
+    
+    completed_count = sum(1 for t in tasks if t.is_completed)
+    percentage = int((completed_count / len(tasks)) * 100) if tasks else 0
+    
+    return APIResponse(
+        success=True,
+        message="Onboarding status retrieved",
+        data=OnboardingStatusResponse(
+            completion_percentage=percentage,
+            tasks=tasks
+        ),
+        error=None
+    )

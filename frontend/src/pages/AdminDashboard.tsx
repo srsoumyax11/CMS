@@ -5,6 +5,7 @@ import { complaintsApi } from '@/api/complaintsApi';
 import { outpassesApi } from '@/api/outpassesApi';
 import { adminApi } from '@/api/adminApi';
 import { StatCard } from '@/components/shared/StatCard';
+import { OnboardingWidget } from '@/components/admin/OnboardingWidget';
 import {
   Megaphone,
   ClipboardList,
@@ -95,6 +96,8 @@ export function AdminDashboard() {
           Real-time campus operational intelligence.
         </p>
       </div>
+
+      <OnboardingWidget />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Settings, Mail, ShieldAlert, Save } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import { adminApi } from '@/api/adminApi';
 import type { SystemSetting } from '@/types/api';
 
 export default function SystemSettings() {
+  const [searchParams] = useSearchParams();
   const [settings, setSettings] = useState<SystemSetting[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -82,6 +84,10 @@ export default function SystemSettings() {
   }, {} as Record<string, SystemSetting[]>);
 
   const categories = Object.keys(groupedSettings).sort();
+  
+  const initialTab = searchParams.get('tab')
+    ? categories.find(c => c.toLowerCase() === searchParams.get('tab')?.toLowerCase()) || categories[0]
+    : categories[0];
 
   const renderInput = (setting: SystemSetting) => {
     if (setting.data_type === 'boolean') {
@@ -120,7 +126,7 @@ export default function SystemSettings() {
       </div>
 
       {categories.length > 0 ? (
-        <Tabs defaultValue={categories[0]} className="space-y-4">
+        <Tabs defaultValue={initialTab} className="space-y-4">
           <TabsList>
             {categories.map(cat => (
               <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>
