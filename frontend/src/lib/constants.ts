@@ -14,6 +14,8 @@ export const API_ROUTES = {
   CHANGE_PASSWORD: '/api/users/me/password',
   CREATE_STUDENT_PROFILE: '/api/users/me/student-profile',
   UPDATE_PREFERENCES: '/api/users/me/preferences',
+  REQUEST_EMAIL_UPDATE: '/api/users/me/email/request',
+  VERIFY_EMAIL_UPDATE: '/api/users/me/email/verify',
 
   // Metadata
   COURSES: '/api/metadata/courses',

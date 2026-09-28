@@ -14,6 +14,8 @@ import type {
   UserIdUpdateRequest,
   StudentProfileCreateRequest,
   UserPreferencesUpdateRequest,
+  EmailUpdateRequest,
+  EmailVerifyRequest,
 } from '@/types/api';
 
 export const authApi = {
@@ -61,4 +63,10 @@ export const authApi = {
 
   updatePreferences: (data: UserPreferencesUpdateRequest) =>
     client.patch<APIResponse<{ email_notifications: boolean; in_app_alerts: boolean }>>(API_ROUTES.UPDATE_PREFERENCES, data),
+
+  requestEmailUpdate: (data: EmailUpdateRequest) =>
+    client.post<APIResponse<{ message: string }>>(API_ROUTES.REQUEST_EMAIL_UPDATE, data),
+
+  verifyEmailUpdate: (data: EmailVerifyRequest) =>
+    client.post<APIResponse<{ message: string }>>(API_ROUTES.VERIFY_EMAIL_UPDATE, data),
 };

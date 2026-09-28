@@ -253,3 +253,91 @@ async def update_preferences(
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Database Error")
+
+from app.schemas.auth import EmailUpdateRequest, EmailVerifyRequest
+from app.core.security import create_verification_token, decode_token
+from app.utils.email import send_email_background
+from fastapi import BackgroundTasks
+from sqlalchemy import select
+
+@router.post(
+    "/me/email/request",
+    summary="Request Email Update",
+    description="Generates an email verification token and sends it to the new email address.",
+    response_model=APIResponse[dict]
+)
+async def request_email_update(
+    data: EmailUpdateRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    # Check if the new email is already in use
+    stmt = select(User).where(User.email == data.new_email)
+    result = await db.execute(stmt)
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email is already registered by another account")
+        
+    token = create_verification_token(subject=current_user.id, new_email=data.new_email)
+    
+    # In a real app, this URL should be read from settings (e.g. settings.FRONTEND_URL)
+    # For now we use the Vite dev server default
+    frontend_url = "http://localhost:5173"
+    verify_link = f"{frontend_url}/verify-email?token={token}"
+    
+    # Send verification email
+    # (Assuming we create a template at templates/email/verify_email.html)
+    send_email_background(
+        background_tasks=background_tasks,
+        to_email=data.new_email,
+        subject="Verify your new email address",
+        template_name="verify_email.html",
+        context={
+            "name": current_user.name or "User",
+            "verify_link": verify_link,
+            "new_email": data.new_email
+        }
+    )
+    
+    return APIResponse(success=True, data={"message": "Verification email sent to new address"}, error=None)
+
+@router.post(
+    "/me/email/verify",
+    summary="Verify Email Update",
+    description="Verifies the token and updates the user's email address.",
+    response_model=APIResponse[dict]
+)
+async def verify_email_update(
+    data: EmailVerifyRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    payload = decode_token(data.token)
+    if not payload or payload.get("type") != "email_verification":
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+        
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid token payload")
+        
+    new_email = payload.get("new_email")
+    if not new_email:
+        raise HTTPException(status_code=400, detail="Invalid token payload")
+        
+    # Check again if email was taken in the meantime
+    stmt = select(User).where(User.email == new_email)
+    result = await db.execute(stmt)
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email is already registered by another account")
+        
+    try:
+        stmt = select(User).where(User.id == user_id)
+        result = await db.execute(stmt)
+        target_user = result.scalar_one_or_none()
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        target_user.email = new_email
+        await db.commit()
+        return APIResponse(success=True, data={"message": "Email updated successfully"}, error=None)
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Database error during email update")

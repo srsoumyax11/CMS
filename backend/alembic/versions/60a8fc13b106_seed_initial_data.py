@@ -242,18 +242,14 @@ def upgrade() -> None:
     """))
 
     new_settings = [
-        ('smtp_host', 'smtp.sendgrid.net', 'Email', 'string', 'SMTP server hostname.', 'false'),
-        ('smtp_port', '587', 'Email', 'number', 'SMTP server port.', 'false'),
-        ('smtp_user', 'apikey', 'Email', 'string', 'SMTP username.', 'false'),
-        ('smtp_password', 'SG.mock_password_123', 'Email', 'password', 'SMTP password or API key.', 'false'),
+        ('smtp_host', '127.0.0.1', 'Email', 'string', 'SMTP server hostname.', 'false'),
+        ('smtp_port', '54325', 'Email', 'number', 'SMTP server port.', 'false'),
+        ('smtp_user', 'mock', 'Email', 'string', 'SMTP username.', 'false'),
+        ('smtp_password', 'mock', 'Email', 'password', 'SMTP password or API key.', 'false'),
         ('smtp_from_address', 'noreply@cms.edu', 'Email', 'string', 'Default sender email address.', 'false'),
         ('site_name', 'BPUT CMS', 'General', 'string', 'Name of the institution/site.', 'true'),
+        ('site_url', 'http://localhost:3000', 'General', 'string', 'Public URL of the frontend.', 'true'),
         ('maintenance_mode', 'false', 'General', 'boolean', 'Enable maintenance mode to block non-admin users.', 'true'),
-        ('auth.password.min_length', '8', 'Security', 'number', 'Minimum password length.', 'true'),
-        ('auth.password.require_uppercase', 'true', 'Security', 'boolean', 'Require at least one uppercase letter.', 'true'),
-        ('auth.password.require_lowercase', 'true', 'Security', 'boolean', 'Require at least one lowercase letter.', 'true'),
-        ('auth.password.require_number', 'true', 'Security', 'boolean', 'Require at least one number.', 'true'),
-        ('auth.password.require_special', 'true', 'Security', 'boolean', 'Require at least one special character.', 'true'),
     ]
     
     for k, v, c, dt, desc, ip in new_settings:

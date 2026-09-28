@@ -23,7 +23,7 @@ def run_attendance_tests():
     
     fac2_email = f"fac2_{random_suffix}@example.com"
     requests.post(f"{BASE_URL}/admin/faculty", headers=admin_headers, json={
-        "email": fac2_email, "name": "Faculty Two", "department": "CSE", "designation": "Assistant Professor", "user_id": f"FAC2{random_suffix}", "password": FACULTY_PASSWORD
+        "email": fac2_email, "name": "Faculty Two", "department_id": state["department_id"], "designation": "Assistant Professor", "user_id": f"FAC2{random_suffix}", "password": FACULTY_PASSWORD
     })
     r_fac2_login = requests.post(f"{BASE_URL}/auth/login", json={"email": fac2_email, "password": FACULTY_PASSWORD})
     fac2_token = r_fac2_login.json()["data"]["access_token"]

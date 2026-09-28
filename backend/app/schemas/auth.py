@@ -69,3 +69,9 @@ class StudentProfileCreateRequest(BaseModel):
 class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str
+
+class EmailUpdateRequest(BaseModel):
+    new_email: EmailStr
+
+class EmailVerifyRequest(BaseModel):
+    token: str

@@ -53,9 +53,8 @@ async def list_students(
     for u in users:
         p = u.student_profile
         data.append(StudentItemResponse(
-            id=p.id if p else u.id,
+            id=u.id,
             user_id=u.user_id if u.user_id else str(u.id),
-            user_uuid=u.id,
             name=u.name,
             email=u.email,
             course_id=p.course_id if p else None,
@@ -95,9 +94,8 @@ async def get_student(
         
     p = u.student_profile
     data = StudentItemResponse(
-        id=p.id if p else u.id,
+        id=u.id,
         user_id=u.user_id if u.user_id else str(u.id),
-        user_uuid=u.id,
         name=u.name,
         email=u.email,
         course_name=p.course.name if p and p.course else "",
@@ -172,9 +170,8 @@ async def update_student_status(
         await db.refresh(p)
     
     data = StudentItemResponse(
-        id=p.id if p else u.id,
+        id=u.id,
         user_id=u.user_id if u.user_id else str(u.id),
-        user_uuid=u.id,
         name=u.name,
         email=u.email,
         course_id=p.course_id if p else None,
@@ -231,9 +228,8 @@ async def update_student_details(
         await db.refresh(p)
         
     data = StudentItemResponse(
-        id=p.id if p else u.id,
+        id=u.id,
         user_id=u.user_id if u.user_id else str(u.id),
-        user_uuid=u.id,
         name=u.name,
         email=u.email,
         course_id=p.course_id if p else None,
@@ -313,9 +309,8 @@ async def create_faculty(
     dept = res.scalar_one_or_none()
 
     data = FacultyItemResponse(
-        id=new_profile.id,
+        id=new_user.id,
         user_id=new_user.user_id if new_user.user_id else str(new_profile.user_id),
-        user_uuid=new_profile.user_id,
         name=new_user.name,
         email=new_user.email,
         department_id=new_profile.department_id,
@@ -351,9 +346,8 @@ async def list_faculty(
     data = []
     for p in profiles:
         data.append(FacultyItemResponse(
-            id=p.id,
+            id=p.user_id,
             user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
-            user_uuid=p.user_id,
             name=p.user.name if p.user else "",
             email=p.user.email if p.user else "",
             department_id=p.department_id,
@@ -378,7 +372,7 @@ async def update_faculty(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.FACULTY_PROFILE_EDIT))
 ):
-    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user), selectinload(FacultyProfile.department)).where(FacultyProfile.id == id)
+    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user), selectinload(FacultyProfile.department)).where((FacultyProfile.id == id) | (FacultyProfile.user_id == id))
     result = await db.execute(stmt)
     p = result.scalar_one_or_none()
     if not p:
@@ -410,9 +404,8 @@ async def update_faculty(
              dept_name = dept.name
 
     data = FacultyItemResponse(
-        id=p.id,
+        id=p.user_id,
         user_id=p.user.user_id if p.user.user_id else str(p.user_id),
-        user_uuid=p.user_id,
         name=p.user.name,
         email=p.user.email,
         department_id=p.department_id,

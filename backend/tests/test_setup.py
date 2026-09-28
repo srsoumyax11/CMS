@@ -19,13 +19,18 @@ def run_setup():
                 
                 res = await conn.execute(text("SELECT id FROM branches LIMIT 1"))
                 b_id = res.scalar()
-                return str(c_id), str(b_id)
                 
-        course_id, branch_id = asyncio.run(fetch_ids())
-        print(f"Found Course: {course_id} | Branch: {branch_id}")
+                res = await conn.execute(text("SELECT id FROM departments LIMIT 1"))
+                d_id = res.scalar()
+                
+                return str(c_id), str(b_id), str(d_id)
+                
+        course_id, branch_id, dept_id = asyncio.run(fetch_ids())
+        print(f"Found Course: {course_id} | Branch: {branch_id} | Dept: {dept_id}")
         
         state["course_id"] = course_id
         state["branch_id"] = branch_id
+        state["department_id"] = dept_id
         
     except Exception as e:
         print(f"Failed to connect to database for setup data: {e}")

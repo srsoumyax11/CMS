@@ -85,8 +85,8 @@ def run_rbac_tests():
     bad_fac_data = {
         "email": FACULTY_EMAIL,
         "password": FACULTY_PASSWORD,
-        "name": "Prof. Test",
-        "department": "CSE",
+        "name": "Prof. Soumya Ranjan Sahoo",
+        "department_id": state["department_id"],
         # missing designation
     }
     r = requests.post(f"{BASE_URL}/admin/faculty", headers=admin_headers, json=bad_fac_data)
@@ -97,9 +97,11 @@ def run_rbac_tests():
     fac_data = bad_fac_data.copy()
     fac_data["designation"] = "Assistant Professor"
     r = requests.post(f"{BASE_URL}/admin/faculty", headers=admin_headers, json=fac_data)
+    if r.status_code != 200:
+        print(f"FAILED TO CREATE FACULTY: {r.text}")
     assert r.status_code == 200
     res_json = r.json()
-    fac_id = res_json["data"]["user_uuid"]
+    fac_id = res_json["data"]["id"]
     state["faculty_uuid"] = fac_id
     print("✅ Faculty created successfully! It is active immediately.")
 
@@ -119,7 +121,7 @@ def run_rbac_tests():
     # ---------------------------------------------------------
     print_step("11. Create Second Student for Privacy Testing")
     student2_email = f"test_student2_{random_suffix}@example.com"
-    student2_password = "securepassword123"
+    student2_password = "Securepassword123!"
     register_s2_data = {
         "email": student2_email,
         "password": student2_password,

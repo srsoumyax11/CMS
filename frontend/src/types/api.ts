@@ -128,6 +128,14 @@ export interface UserPreferencesUpdateRequest {
   in_app_alerts?: boolean;
 }
 
+export interface EmailUpdateRequest {
+  new_email: string;
+}
+
+export interface EmailVerifyRequest {
+  token: string;
+}
+
 export interface NameUpdateRequest {
   name: string;
 }
@@ -388,7 +396,6 @@ export interface MessOptOutCreate {
 export interface StudentItemResponse {
   id: string;
   user_id: string;
-  user_uuid: string;
   name: string;
   email: string;
   course_id?: string | null;
@@ -413,7 +420,6 @@ export interface StudentStatusUpdateRequest {
 export interface AdminItemResponse {
   id: string;
   user_id: string;
-  user_uuid: string;
   name: string;
   email: string;
   account_status: AccountStatus;
@@ -423,7 +429,6 @@ export interface AdminItemResponse {
 export interface FacultyItemResponse {
   id: string;
   user_id: string;
-  user_uuid: string;
   name: string;
   email: string;
   department_id: string;

@@ -231,7 +231,9 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
             academic_status=current_user.student_profile.academic_status if current_user.student_profile else None,
             employment_status=current_user.faculty_profile.employment_status if current_user.faculty_profile else None,
             name=current_user.name,
-            photo_url=current_user.photo_url
+            photo_url=current_user.photo_url,
+            email_notifications=current_user.email_notifications,
+            in_app_alerts=current_user.in_app_alerts
         ),
         error=None
     )

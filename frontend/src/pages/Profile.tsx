@@ -23,6 +23,10 @@ export function Profile() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
+
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [editEmailValue, setEditEmailValue] = useState('');
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
   
   const [isEditingUserId, setIsEditingUserId] = useState(false);
   const [editUserIdValue, setEditUserIdValue] = useState('');
@@ -91,6 +95,29 @@ export function Profile() {
       toast.error('Failed to update name');
     } finally {
       setIsSavingName(false);
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    if (!editEmailValue.trim() || editEmailValue === user.email) {
+      setIsEditingEmail(false);
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editEmailValue)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    setIsSavingEmail(true);
+    try {
+      await authApi.requestEmailUpdate({ new_email: editEmailValue });
+      toast.success('Verification email sent! Please check your new inbox.');
+      setIsEditingEmail(false);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error?.message || 'Failed to request email update');
+    } finally {
+      setIsSavingEmail(false);
     }
   };
 
@@ -271,7 +298,31 @@ export function Profile() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
                     <div className="text-sm font-medium text-muted-foreground">Email Address</div>
                     <div className="md:col-span-2">
-                      <span className="text-sm text-foreground">{user.email}</span>
+                      {isEditingEmail ? (
+                        <div className="flex items-center gap-2 max-w-sm">
+                          <Input 
+                            type="email"
+                            value={editEmailValue} 
+                            onChange={(e) => setEditEmailValue(e.target.value)} 
+                            className="h-9"
+                            placeholder="Enter your new email"
+                            disabled={isSavingEmail}
+                          />
+                          <Button size="icon" variant="ghost" className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100" onClick={handleUpdateEmail} disabled={isSavingEmail}>
+                            {isSavingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-red-700 hover:bg-red-100" onClick={() => setIsEditingEmail(false)} disabled={isSavingEmail}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-foreground">{user.email}</span>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => { setEditEmailValue(user.email); setIsEditingEmail(true); }}>
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -315,17 +366,6 @@ export function Profile() {
                           </Button>
                         </div>
                       )}
-                    </div>
-                  </div>
-
-                  {/* UUID Field */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
-                    <div className="text-sm font-medium text-muted-foreground">System UUID</div>
-                    <div className="md:col-span-2 flex items-center gap-3">
-                      <span className="text-xs font-mono text-muted-foreground truncate max-w-[200px] sm:max-w-xs">{user.id}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyId} title="Copy UUID">
-                        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                      </Button>
                     </div>
                   </div>
 

@@ -11,7 +11,6 @@ class StudentStatusUpdateRequest(BaseModel):
 class StudentItemResponse(BaseModel):
     id: UUID4
     user_id: str
-    user_uuid: UUID4
     name: str
     email: str
     course_id: Optional[UUID4] = None
@@ -41,7 +40,6 @@ class FacultyCreateRequest(BaseModel):
 class FacultyItemResponse(BaseModel):
     id: UUID4
     user_id: str
-    user_uuid: UUID4
     name: str
     email: str
     department_id: UUID4
@@ -94,7 +92,6 @@ class SystemSettingUpdateRequest(BaseModel):
 class AdminItemResponse(BaseModel):
     id: UUID4
     user_id: str
-    user_uuid: UUID4
     name: str
     email: str
     account_status: AccountStatus
