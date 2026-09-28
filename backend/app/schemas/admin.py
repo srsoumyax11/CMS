@@ -1,5 +1,5 @@
 from pydantic import BaseModel, UUID4, EmailStr, Field
-from typing import Optional, List
+from typing import Optional, List, Literal
 from app.models.user import AccountStatus
 from app.models.profiles import AcademicStatus, EmploymentStatus
 
@@ -61,16 +61,19 @@ class DepartmentResponse(BaseModel):
     id: UUID4
     name: str
     code: str
+    department_type: Literal["academic", "administrative"]
     is_active: bool
 
 class DepartmentCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
     code: str = Field(..., min_length=2, max_length=50)
+    department_type: Literal["academic", "administrative"] = "academic"
     is_active: bool = True
 
 class DepartmentUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=255)
     code: Optional[str] = Field(None, min_length=2, max_length=50)
+    department_type: Optional[Literal["academic", "administrative"]] = None
     is_active: Optional[bool] = None
 
 class AnalyticsParams(BaseModel):

@@ -103,4 +103,17 @@ cd backend
 supabase stop --no-backup
 ```
 
-*(After this, you can just run `supabase start` and then `alembic upgrade head` in your Python environment to rebuild a brand new database from scratch!)*
+### 🏗️ Rebuilding from Scratch
+
+After wiping the database, you can rebuild a brand new instance from scratch by running the following commands in your Python virtual environment:
+
+```bash
+# 1. Start the fresh database containers
+supabase start
+
+# 2. Re-create the schema and seed default data
+alembic upgrade head
+
+# 3. Create storage buckets and run pre-flight checks
+python -m scripts.pre_start
+```

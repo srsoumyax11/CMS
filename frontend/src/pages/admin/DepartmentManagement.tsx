@@ -19,6 +19,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Edit2, Plus, Trash2, Loader2, Building2 } from 'lucide-react';
@@ -32,9 +45,15 @@ export function DepartmentManagement() {
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState<Department | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    code: string;
+    department_type: 'academic' | 'administrative';
+    is_active: boolean;
+  }>({
     name: '',
     code: '',
+    department_type: 'academic',
     is_active: true,
   });
 
@@ -49,7 +68,7 @@ export function DepartmentManagement() {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       toast.success('Department created successfully');
       setShowCreate(false);
-      setFormData({ name: '', code: '', is_active: true });
+      setFormData({ name: '', code: '', department_type: 'academic', is_active: true });
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || 'Failed to create department');
@@ -93,13 +112,19 @@ export function DepartmentManagement() {
       data: {
         name: formData.name,
         code: formData.code,
+        department_type: formData.department_type,
         is_active: formData.is_active,
       },
     });
   };
 
   const openEdit = (dept: Department) => {
-    setFormData({ name: dept.name, code: dept.code, is_active: dept.is_active });
+    setFormData({ 
+      name: dept.name, 
+      code: dept.code, 
+      department_type: dept.department_type || 'academic',
+      is_active: dept.is_active 
+    });
     setShowEdit(dept);
   };
 
@@ -116,6 +141,65 @@ export function DepartmentManagement() {
   }
 
   const departments = response?.data?.data || [];
+  const academicDepts = departments.filter((d: Department) => d.department_type === 'academic');
+  const adminDepts = departments.filter((d: Department) => d.department_type === 'administrative');
+
+  const renderTable = (depts: Department[], type: string) => (
+    <div className="border rounded-md bg-card">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Code</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {depts.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={4} className="h-24">
+                <EmptyState 
+                  icon={<Building2 className="h-6 w-6" />}
+                  title={`No ${type} departments found`}
+                  description="Get started by creating a new department."
+                />
+              </TableCell>
+            </TableRow>
+          ) : (
+            depts.map((dept) => (
+              <TableRow key={dept.id}>
+                <TableCell className="font-medium">{dept.name}</TableCell>
+                <TableCell>{dept.code}</TableCell>
+                <TableCell>
+                  <Badge variant={dept.is_active ? 'default' : 'secondary'}>
+                    {dept.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(dept)}>
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to delete ${dept.name}?`)) {
+                        deleteMutation.mutate(dept.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -124,69 +208,32 @@ export function DepartmentManagement() {
           <h1 className="text-3xl font-bold tracking-tight">Departments</h1>
           <p className="text-muted-foreground mt-1">Manage academic and administrative departments</p>
         </div>
-        <Button onClick={() => {
-          setFormData({ name: '', code: '', is_active: true });
-          setShowCreate(true);
-        }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Department
-        </Button>
       </div>
 
-      <div className="border rounded-md bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {departments.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="h-24">
-                  <EmptyState 
-                    icon={<Building2 className="h-6 w-6" />}
-                    title="No departments found"
-                    description="Get started by creating a new department."
-                  />
-                </TableCell>
-              </TableRow>
-            ) : (
-              departments.map((dept) => (
-                <TableRow key={dept.id}>
-                  <TableCell className="font-medium">{dept.name}</TableCell>
-                  <TableCell>{dept.code}</TableCell>
-                  <TableCell>
-                    <Badge variant={dept.is_active ? 'default' : 'secondary'}>
-                      {dept.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(dept)}>
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => {
-                        if (confirm(`Are you sure you want to delete ${dept.name}?`)) {
-                          deleteMutation.mutate(dept.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <Tabs defaultValue="academic" className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <TabsList>
+            <TabsTrigger value="academic">Academic Departments</TabsTrigger>
+            <TabsTrigger value="administrative">Administrative Departments</TabsTrigger>
+          </TabsList>
+
+          <Button onClick={() => {
+            setFormData({ name: '', code: '', department_type: 'academic', is_active: true });
+            setShowCreate(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Department
+          </Button>
+        </div>
+
+        <TabsContent value="academic" className="space-y-4">
+          {renderTable(academicDepts, 'academic')}
+        </TabsContent>
+
+        <TabsContent value="administrative" className="space-y-4">
+          {renderTable(adminDepts, 'administrative')}
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={showCreate || !!showEdit} onOpenChange={(open) => {
         if (!open) {
@@ -209,6 +256,7 @@ export function DepartmentManagement() {
                 required
               />
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="code">Code</Label>
               <Input
@@ -219,15 +267,33 @@ export function DepartmentManagement() {
                 required
               />
             </div>
-            <div className="flex items-center space-x-2">
+
+            <div className="space-y-2">
+              <Label>Department Type</Label>
+              <Select
+                value={formData.department_type}
+                onValueChange={(val: 'academic' | 'administrative') => setFormData({ ...formData, department_type: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="academic">Academic Department</SelectItem>
+                  <SelectItem value="administrative">Administrative Department</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center space-x-2 pt-2">
               <Checkbox
                 id="is_active"
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked as boolean })}
               />
-              <Label htmlFor="is_active">Active</Label>
+              <Label htmlFor="is_active">Active Status</Label>
             </div>
-            <DialogFooter>
+            
+            <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={() => {
                 setShowCreate(false);
                 setShowEdit(null);

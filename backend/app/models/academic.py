@@ -10,6 +10,11 @@ class Department(Base, UUIDMixin, TimestampMixin):
 
     name = Column(String, unique=True, nullable=False)
     code = Column(String, unique=True, nullable=False)
+    department_type = Column(
+        Enum('academic', 'administrative', name='departmenttype'),
+        nullable=False,
+        server_default='academic'
+    )
     is_active = Column(Boolean, default=True, nullable=False)
 
 class Course(Base, UUIDMixin, TimestampMixin):

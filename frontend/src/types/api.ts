@@ -20,18 +20,21 @@ export interface Department {
   id: string;
   name: string;
   code: string;
+  department_type: 'academic' | 'administrative';
   is_active: boolean;
 }
 
 export interface DepartmentCreateRequest {
   name: string;
   code: string;
+  department_type?: 'academic' | 'administrative';
   is_active?: boolean;
 }
 
 export interface DepartmentUpdateRequest {
   name?: string;
   code?: string;
+  department_type?: 'academic' | 'administrative';
   is_active?: boolean;
 }
 
