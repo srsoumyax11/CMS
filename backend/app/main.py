@@ -4,7 +4,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import text
+from contextlib import asynccontextmanager
 import traceback
+import sys
+
+from app.core.database import AsyncSessionLocal
 
 from app.core.config import settings
 from app.api.routes import (
@@ -65,6 +70,22 @@ tags_metadata = [
     }
 ]
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup DB health check
+    print("⏳ Checking database connection...", flush=True)
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+            print("✅ Database connection healthy!", flush=True)
+    except Exception as e:
+        print(f"❌ Database connection failed: {e}", flush=True)
+        sys.exit(1)
+        
+    yield
+    
+    print("🛑 Shutting down backend...", flush=True)
+
 app = FastAPI(
     title="Campus Management System API",
     description="""
@@ -75,6 +96,7 @@ This API uses a strict Role-Based Access Control (RBAC) engine.
 Routes are heavily guarded by `require_permission` capabilities and explicit row-level IDOR checks.
 """,
     version="1.0.0",
+    lifespan=lifespan,
     contact={
         "name": "Backend Team",
         "email": "admin@cms.com",
