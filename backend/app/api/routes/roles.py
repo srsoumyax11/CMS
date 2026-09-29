@@ -151,8 +151,8 @@ async def update_role(
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
         
-    if role.is_system_role:
-        raise HTTPException(status_code=400, detail="Cannot edit system role metadata")
+    if role.name == "SuperAdmin":
+        raise HTTPException(status_code=400, detail="The SuperAdmin role metadata cannot be modified")
         
     role.name = req.name
     role.description = req.description
@@ -192,8 +192,8 @@ async def update_role_permissions(
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
         
-    if role.is_system_role:
-        raise HTTPException(status_code=400, detail="Cannot edit system role via API")
+    if role.name == "SuperAdmin":
+        raise HTTPException(status_code=400, detail="The permissions of the SuperAdmin role cannot be modified to prevent system lockout")
         
     # Delete old permissions
     del_stmt = select(RolePermission).where(RolePermission.role_id == id)

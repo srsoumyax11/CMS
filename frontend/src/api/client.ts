@@ -51,7 +51,10 @@ client.interceptors.response.use(
   (response) => {
     // If the backend returns HTTP 200 OK but success === false, throw it as a real error!
     if (response.data && response.data.success === false) {
-      return Promise.reject(new Error(response.data.error || 'An error occurred'));
+      const serverError = response.data.error || response.data.detail || 'An error occurred';
+      const err = new Error(serverError) as Error & { response?: any };
+      err.response = response;
+      return Promise.reject(err);
     }
     return response;
   },
@@ -66,10 +69,9 @@ client.interceptors.response.use(
       originalRequest.url === API_ROUTES.LOGIN ||
       originalRequest.url === API_ROUTES.REGISTER
     ) {
-      const serverError = error.response?.data?.error || error.message || 'An error occurred';
-      const err = new Error(serverError) as Error & { status?: number };
-      err.status = error.response?.status;
-      return Promise.reject(err);
+      const serverError = error.response?.data?.error || error.response?.data?.detail || error.message || 'An error occurred';
+      error.message = serverError;
+      return Promise.reject(error);
     }
 
     if (originalRequest.url === API_ROUTES.REFRESH) {

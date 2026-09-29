@@ -17,6 +17,8 @@ interface AuthContextValue {
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  rbacRoles: string[];
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -78,6 +80,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.dispatchEvent(new CustomEvent(AUTH_EVENTS.LOGOUT));
   }, []);
 
+  const rbacRoles = user?.rbac_roles ?? [];
+  const permissions = user?.permissions ?? [];
+
+  const hasPermission = useCallback(
+    (permission: string) => {
+      return permissions.includes(permission);
+    },
+    [permissions]
+  );
+
   const value: AuthContextValue = {
     user,
     role: user?.user_type ?? null,
@@ -85,6 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     refreshUser: fetchUser,
+    rbacRoles,
+    hasPermission,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

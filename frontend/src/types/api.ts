@@ -146,6 +146,8 @@ export interface UserResponse {
   photo_url?: string | null;
   email_notifications: boolean;
   in_app_alerts: boolean;
+  rbac_roles?: string[];
+  permissions?: string[];
 }
 
 export interface UserPreferencesUpdateRequest {

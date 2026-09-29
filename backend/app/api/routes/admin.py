@@ -766,15 +766,15 @@ async def get_onboarding_status(
 # --- Course Management ---
 
 @router.get("/courses", response_model=APIResponse[List[CourseItemResponse]])
-async def list_courses(db: AsyncSession = Depends(get_db), profile = Depends(require_permission("admin:list"))):
+async def list_courses(db: AsyncSession = Depends(get_db), profile = Depends(require_permission(Perms.DEPARTMENT_MANAGE))):
     result = await db.execute(select(Course).order_by(Course.name))
-    return {"status": "success", "data": result.scalars().all()}
+    return APIResponse(success=True, data=result.scalars().all(), error=None)
 
 @router.post("/courses", response_model=APIResponse[CourseItemResponse])
 async def create_course(
     req: CourseCreateRequest, 
     db: AsyncSession = Depends(get_db), 
-    profile = Depends(require_permission("admin:create"))
+    profile = Depends(require_permission(Perms.DEPARTMENT_MANAGE))
 ):
     # Check if course exists
     existing = await db.execute(select(Course).where(Course.name == req.name))
@@ -785,14 +785,14 @@ async def create_course(
     db.add(course)
     await db.commit()
     await db.refresh(course)
-    return {"status": "success", "data": course}
+    return APIResponse(success=True, data=course, error=None)
 
 @router.patch("/courses/{course_id}", response_model=APIResponse[CourseItemResponse])
 async def update_course(
     course_id: UUID, 
     req: CourseUpdateRequest, 
     db: AsyncSession = Depends(get_db),
-    profile = Depends(require_permission("admin:update"))
+    profile = Depends(require_permission(Perms.DEPARTMENT_MANAGE))
 ):
     result = await db.execute(select(Course).where(Course.id == course_id))
     course = result.scalar_one_or_none()
@@ -812,13 +812,13 @@ async def update_course(
         
     await db.commit()
     await db.refresh(course)
-    return {"status": "success", "data": course}
+    return APIResponse(success=True, data=course, error=None)
 
 @router.delete("/courses/{course_id}")
 async def delete_course(
     course_id: UUID, 
     db: AsyncSession = Depends(get_db),
-    profile = Depends(require_permission("admin:delete"))
+    profile = Depends(require_permission(Perms.DEPARTMENT_MANAGE))
 ):
     result = await db.execute(select(Course).where(Course.id == course_id))
     course = result.scalar_one_or_none()
@@ -827,4 +827,4 @@ async def delete_course(
         
     await db.delete(course)
     await db.commit()
-    return {"status": "success", "data": {"message": "Course deleted successfully"}}
+    return APIResponse(success=True, data={"message": "Course deleted successfully"}, error=None)

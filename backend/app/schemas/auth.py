@@ -49,6 +49,8 @@ class UserResponse(BaseModel):
     photo_url: Optional[str] = None
     email_notifications: bool = True
     in_app_alerts: bool = True
+    rbac_roles: list[str] = Field(default_factory=list)
+    permissions: list[str] = Field(default_factory=list)
 
 class UserPreferencesUpdateRequest(BaseModel):
     email_notifications: Optional[bool] = None

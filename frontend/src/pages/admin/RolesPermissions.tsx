@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rolesApi } from '@/api/rolesApi';
+import { useAuth } from '@/context/AuthContext';
 import { QUERY_KEYS } from '@/lib/constants';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -73,6 +74,9 @@ const ACTION_DESCRIPTIONS: Record<string, string> = {
 
 export function RolesPermissions() {
   const queryClient = useQueryClient();
+  const { hasPermission } = useAuth();
+  const isSuperAdmin = hasPermission('role:edit');
+  
   const [selectedRoleId, setSelectedRoleId] = useState<string | undefined>(undefined);
   const [showCreate, setShowCreate] = useState(false);
   const [showAssign, setShowAssign] = useState<RoleResponse | null>(null);
@@ -135,7 +139,10 @@ export function RolesPermissions() {
       setNewRole({ name: '', description: '', permission_ids: [] });
       toast.success('Role created successfully');
     },
-    onError: () => toast.error('Failed to create role'),
+    onError: (error: any) => {
+      const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Failed to create role';
+      toast.error(msg);
+    },
   });
 
   const updateMutation = useMutation({
@@ -146,7 +153,10 @@ export function RolesPermissions() {
       setShowEdit(null);
       toast.success('Role updated successfully');
     },
-    onError: () => toast.error('Failed to update role'),
+    onError: (error: any) => {
+      const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Failed to update role';
+      toast.error(msg);
+    },
   });
 
   const savePermissionsMutation = useMutation({
@@ -157,7 +167,10 @@ export function RolesPermissions() {
       toast.success('Permissions updated');
       setDraftPermissions(null);
     },
-    onError: () => toast.error('Failed to update permissions'),
+    onError: (error: any) => {
+      const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Failed to update permissions';
+      toast.error(msg);
+    },
   });
 
   const assignMutation = useMutation({
@@ -169,7 +182,8 @@ export function RolesPermissions() {
       setAssignUserId('');
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.detail || 'Failed to assign role');
+      const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Failed to assign role';
+      toast.error(msg);
     },
   });
 
@@ -185,7 +199,8 @@ export function RolesPermissions() {
       }
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.detail || 'Failed to delete role');
+      const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Failed to delete role';
+      toast.error(msg);
       setShowDelete(null);
       setRoleToDeleteCount(null);
     },
@@ -214,7 +229,7 @@ export function RolesPermissions() {
   const activePermissions = draftPermissions !== null ? draftPermissions : currentPermissions;
 
   const togglePermission = (actionId: string, currentlyGranted: boolean) => {
-    if (selectedRoleData?.is_system_role) return;
+    if (selectedRoleData?.is_system_role && !isSuperAdmin) return;
     if (!matrix) return;
     
     // If we don't have a draft yet, initialize it with all currently granted permissions
@@ -315,12 +330,13 @@ export function RolesPermissions() {
                     <div className="flex items-start justify-between">
                       <p className="text-sm font-semibold text-foreground">{role.name}</p>
                       <div className="flex items-center gap-2">
-                        {role.is_system_role ? (
+                        {role.is_system_role && (
                           <Badge variant="secondary" className="text-xs shrink-0">
                             <Lock className="mr-1 h-3 w-3" />
                             System
                           </Badge>
-                        ) : (
+                        )}
+                        {(!role.is_system_role || isSuperAdmin) && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -343,21 +359,23 @@ export function RolesPermissions() {
                                 <Edit2 className="mr-2 h-4 w-4" />
                                 Edit Role
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                                disabled={isCheckingCount === role.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleCheckDelete(role);
-                                }}
-                              >
-                                {isCheckingCount === role.id ? (
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                )}
-                                Delete Role
-                              </DropdownMenuItem>
+                              {!role.is_system_role && (
+                                <DropdownMenuItem
+                                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                  disabled={isCheckingCount === role.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCheckDelete(role);
+                                  }}
+                                >
+                                  {isCheckingCount === role.id ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                  )}
+                                  Delete Role
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}
@@ -416,7 +434,7 @@ export function RolesPermissions() {
                   >
                     Discard
                   </Button>
-                  {selectedRoleData?.is_system_role ? (
+                  {selectedRoleData?.is_system_role && !isSuperAdmin ? (
                     <Button size="sm" disabled>
                       System Role Locked
                     </Button>
@@ -466,7 +484,7 @@ export function RolesPermissions() {
                                   id={action.id}
                                   checked={isChecked}
                                   onCheckedChange={() => togglePermission(action.id, action.granted)}
-                                  disabled={selectedRoleData?.is_system_role}
+                                  disabled={selectedRoleData?.is_system_role && !isSuperAdmin}
                                   className="mt-0.5 h-4 w-4"
                                 />
                                 <div className="space-y-1">

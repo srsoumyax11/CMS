@@ -219,6 +219,13 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
     Get current logged in user details. Doesn't require any RBAC permissions.
     Allows users with "pending" profiles to check their status.
     """
+    rbac_roles = [ur.role.name for ur in current_user.user_roles] if current_user.user_roles else []
+    permissions = list({
+        f"{perm.asset.name}:{perm.action.code}"
+        for ur in (current_user.user_roles or [])
+        for perm in ur.role.permissions
+    })
+
     return APIResponse(
         success=True,
         data=UserResponse(
@@ -233,7 +240,9 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
             name=current_user.name,
             photo_url=current_user.photo_url,
             email_notifications=current_user.email_notifications,
-            in_app_alerts=current_user.in_app_alerts
+            in_app_alerts=current_user.in_app_alerts,
+            rbac_roles=rbac_roles,
+            permissions=permissions
         ),
         error=None
     )

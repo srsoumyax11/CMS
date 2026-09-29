@@ -18,33 +18,24 @@ def authenticate():
     email = os.getenv("SUPERADMIN_EMAIL", "superadmin@cms.com")
     password = os.getenv("SUPERADMIN_PASSWORD", "Super+Admin@123")
     
-    ans = input(f"Logging in as {email}... (Y/n): ").strip().lower()
-    if ans == 'n':
-        return False
-        
+    print(f"Logging in as {email}...")
     return client.login(email, password)
 
 def main():
     if not authenticate():
         sys.exit(1)
         
-    while True:
-        print("\n=== Main Menu ===")
-        print("1. Academic Data Management (Courses, Departments)")
-        print("2. Profile Management (Avatar, Name)")
-        print("0. Exit")
-        
-        choice = input("Select an option: ")
-        
-        if choice == '1':
-            manage_academic.menu()
-        elif choice == '2':
-            manage_profile.menu()
-        elif choice == '0':
-            print("Exiting...")
-            break
-        else:
-            print("Invalid choice!")
+    print("\n=== Running All Automated Tests ===")
+    
+    # 1. Seed Academic Data
+    manage_academic.create_courses()
+    manage_academic.create_departments()
+    
+    # 2. Test Profile Management
+    manage_profile.update_profile_info()
+    manage_profile.update_profile_picture()
+    
+    print("\n=== All Tests Completed ===")
 
 if __name__ == "__main__":
     main()

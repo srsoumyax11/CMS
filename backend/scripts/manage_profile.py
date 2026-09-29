@@ -8,10 +8,7 @@ def get_current_profile():
     return None
 
 def update_profile_info():
-    ans = input("Test profile end point (Y/n): ").strip().lower()
-    if ans == 'n':
-        return
-
+    print("\n--- Automated Profile Test ---")
     profile = get_current_profile()
     if not profile:
         print("Failed to get profile.")
@@ -39,10 +36,6 @@ def update_profile_info():
         print("Failed to revert profile name:", resp.text)
 
 def update_profile_picture():
-    ans = input("Test avatar upload end point (Y/n): ").strip().lower()
-    if ans == 'n':
-        return
-        
     print("\n--- Update Profile Picture ---")
     # Automatically use the img.jpg in the scripts directory
     filepath = os.path.join(os.path.dirname(__file__), "img.jpg")

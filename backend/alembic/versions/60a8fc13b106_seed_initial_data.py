@@ -65,8 +65,10 @@ def upgrade() -> None:
         ('SuperAdmin', 'Unrestricted administrative access to all system modules.'),
         ('Admin', 'Administrative access excluding role management.'),
         ('HOD', 'Head of Department - administrative access within a specific department.'),
-        ('Student', 'Default role for all enrolled students'),
-        ('Faculty', 'Default role for all active faculty members')
+        ('Faculty', 'Default role for all active teaching staff members'),
+        ('Non-Teaching Staff', 'Role for administrative and technical support staff (e.g., Lab Assistants)'),
+        ('Support Staff', 'Role for maintenance, facilities, and general workers'),
+        ('Student', 'Default role for all enrolled students')
     ]
     
     for r_name, r_desc in system_roles:
