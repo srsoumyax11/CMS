@@ -15,7 +15,10 @@ import type {
   Department,
   DepartmentCreateRequest,
   DepartmentUpdateRequest,
-  OnboardingStatusResponse
+  OnboardingStatusResponse,
+  Course,
+  CourseCreateRequest,
+  CourseUpdateRequest
 } from '@/types/api';
 
 export const adminApi = {
@@ -51,6 +54,19 @@ export const adminApi = {
 
   updateSystemSetting: (key: string, data: SystemSettingUpdate) =>
     client.patch<APIResponse<SystemSetting>>(`${API_ROUTES.ADMIN_SETTINGS}/${key}`, data),
+
+  // Courses
+  listCourses: () =>
+    client.get<APIResponse<Course[]>>('/api/admin/courses'),
+
+  createCourse: (data: CourseCreateRequest) =>
+    client.post<APIResponse<Course>>('/api/admin/courses', data),
+
+  updateCourse: (id: string, data: CourseUpdateRequest) =>
+    client.patch<APIResponse<Course>>(`/api/admin/courses/${id}`, data),
+
+  deleteCourse: (id: string) =>
+    client.delete<APIResponse<{message: string}>>(`/api/admin/courses/${id}`),
 
   // Departments
   listDepartments: () =>

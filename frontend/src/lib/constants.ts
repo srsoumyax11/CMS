@@ -19,6 +19,8 @@ export const API_ROUTES = {
 
   // Metadata
   COURSES: '/api/metadata/courses',
+  DEPARTMENTS: '/api/metadata/departments',
+  METADATA_ROLES: '/api/metadata/roles',
   PUBLIC_SETTINGS: '/api/metadata/settings/public',
 
   // Complaints (Student/Public)

@@ -110,6 +110,7 @@ export const NAV_GROUPS: Record<UserRole, NavGroup[]> = {
         { label: 'User Management', to: '/admin/users', icon: Users },
         { label: 'Faculty', to: '/admin/faculty', icon: UserCog },
         { label: 'Roles', to: '/admin/permissions', icon: ShieldCheck },
+        { label: 'Courses', to: '/admin/courses', icon: BookOpen },
         { label: 'Departments', to: '/admin/departments', icon: Settings },
         { label: 'System Settings', to: '/admin/settings', icon: Settings },
       ]

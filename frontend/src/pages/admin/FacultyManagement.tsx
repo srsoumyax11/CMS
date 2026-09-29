@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/adminApi';
+import { useMetadata } from '@/hooks/useMetadata';
 import { QUERY_KEYS } from '@/lib/constants';
 import { DataTable } from '@/components/shared/DataTable';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -55,8 +57,10 @@ export function FacultyManagement() {
     email: '',
     password: '',
     name: '',
+    course_id: '',
     department_id: '',
     designation: '',
+    role_ids: [],
   });
   
   const [editForm, setEditForm] = useState<{
@@ -78,11 +82,8 @@ export function FacultyManagement() {
     queryFn: () => adminApi.listFaculty({ status: statusFilter as AccountStatus}),
   });
 
-  const { data: deptData } = useQuery({
-    queryKey: ['departments'],
-    queryFn: () => adminApi.listDepartments(),
-  });
-  const activeDepartments = deptData?.data?.data?.filter(d => d.is_active) ?? [];
+  const { courses, departments, roles, isLoading: metadataLoading } = useMetadata();
+  const activeDepartments = departments.filter(d => d.is_active);
 
   const faculty: FacultyItemResponse[] = data?.data?.data ?? [];
 
@@ -99,7 +100,7 @@ export function FacultyManagement() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FACULTY] });
       toast.success('Faculty member created');
       setShowCreate(false);
-      setForm({ email: '', password: '', name: '', department_id: '', designation: '' });
+      setForm({ email: '', password: '', name: '', course_id: '', department_id: '', designation: '', role_ids: [] });
     },
     onError: () => toast.error('Failed to create faculty member'),
   });
@@ -334,6 +335,23 @@ export function FacultyManagement() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="f-course">Course</Label>
+                <Select
+                  value={form.course_id}
+                  onValueChange={(val) => setForm({ ...form, course_id: val })}
+                  required
+                >
+                  <SelectTrigger id="f-course">
+                    <SelectValue placeholder="Select Course" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="f-dept">Department</Label>
                 <Select
                   value={form.department_id}
@@ -350,14 +368,39 @@ export function FacultyManagement() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="f-desig">Designation</Label>
-                <Input
-                  id="f-desig"
-                  value={form.designation}
-                  onChange={(e) => setForm({ ...form, designation: e.target.value })}
-                  required
-                />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="f-desig">Designation</Label>
+              <Input
+                id="f-desig"
+                value={form.designation}
+                onChange={(e) => setForm({ ...form, designation: e.target.value })}
+                required
+              />
+            </div>
+            
+            <div className="space-y-3">
+              <Label>Additional Roles</Label>
+              <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-32 overflow-y-auto">
+                {roles.filter(r => r.name !== 'Faculty').map((role) => (
+                  <div key={role.id} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`role-${role.id}`}
+                      checked={form.role_ids?.includes(role.id)}
+                      onCheckedChange={(checked) => {
+                        const current = form.role_ids || [];
+                        const updated = checked 
+                          ? [...current, role.id] 
+                          : current.filter(id => id !== role.id);
+                        setForm({ ...form, role_ids: updated });
+                      }}
+                    />
+                    <Label htmlFor={`role-${role.id}`} className="text-sm font-normal cursor-pointer">
+                      {role.name}
+                    </Label>
+                  </div>
+                ))}
               </div>
             </div>
             <DialogFooter>

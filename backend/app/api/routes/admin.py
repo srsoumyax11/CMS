@@ -14,13 +14,14 @@ from app.models.profiles import StudentProfile, FacultyProfile
 from app.models.rbac import Role, UserRole
 from app.schemas.common import APIResponse
 from app.utils.validation import validate_password
-from app.models.academic import Department
+from app.models.academic import Department, Course
 from app.schemas.admin import (
     StudentStatusUpdateRequest, StudentItemResponse, StudentAdminUpdateRequest,
     FacultyCreateRequest, FacultyItemResponse,
     FacultyUpdateRequest, AdminItemResponse,
     DepartmentResponse, DepartmentCreateRequest, DepartmentUpdateRequest,
-    OnboardingStatusResponse, OnboardingTask
+    OnboardingStatusResponse, OnboardingTask,
+    CourseCreateRequest, CourseUpdateRequest, CourseItemResponse
 )
 
 router = APIRouter()
@@ -303,12 +304,20 @@ async def create_faculty(
     )
     db.add(new_profile)
     
-    # Assign 'Faculty' role
+    # Assign 'Faculty' role and any requested roles
     role_stmt = select(Role).where(Role.name == "Faculty")
     role_res = await db.execute(role_stmt)
     fac_role = role_res.scalar_one_or_none()
+    
+    roles_to_assign = set()
     if fac_role:
-        new_ur = UserRole(user_id=new_user.id, role_id=fac_role.id)
+        roles_to_assign.add(fac_role.id)
+        
+    for r_id in req.role_ids:
+        roles_to_assign.add(r_id)
+        
+    for r_id in roles_to_assign:
+        new_ur = UserRole(user_id=new_user.id, role_id=r_id)
         db.add(new_ur)
         
     await db.commit()
@@ -753,3 +762,69 @@ async def get_onboarding_status(
         ),
         error=None
     )
+
+# --- Course Management ---
+
+@router.get("/courses", response_model=APIResponse[List[CourseItemResponse]])
+async def list_courses(db: AsyncSession = Depends(get_db), profile = Depends(require_permission("admin:list"))):
+    result = await db.execute(select(Course).order_by(Course.name))
+    return {"status": "success", "data": result.scalars().all()}
+
+@router.post("/courses", response_model=APIResponse[CourseItemResponse])
+async def create_course(
+    req: CourseCreateRequest, 
+    db: AsyncSession = Depends(get_db), 
+    profile = Depends(require_permission("admin:create"))
+):
+    # Check if course exists
+    existing = await db.execute(select(Course).where(Course.name == req.name))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Course already exists")
+        
+    course = Course(name=req.name, is_active=req.is_active)
+    db.add(course)
+    await db.commit()
+    await db.refresh(course)
+    return {"status": "success", "data": course}
+
+@router.patch("/courses/{course_id}", response_model=APIResponse[CourseItemResponse])
+async def update_course(
+    course_id: UUID, 
+    req: CourseUpdateRequest, 
+    db: AsyncSession = Depends(get_db),
+    profile = Depends(require_permission("admin:update"))
+):
+    result = await db.execute(select(Course).where(Course.id == course_id))
+    course = result.scalar_one_or_none()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+        
+    if req.name is not None:
+        # Check uniqueness
+        if req.name != course.name:
+            existing = await db.execute(select(Course).where(Course.name == req.name))
+            if existing.scalar_one_or_none():
+                raise HTTPException(status_code=400, detail="Course name already exists")
+        course.name = req.name
+        
+    if req.is_active is not None:
+        course.is_active = req.is_active
+        
+    await db.commit()
+    await db.refresh(course)
+    return {"status": "success", "data": course}
+
+@router.delete("/courses/{course_id}")
+async def delete_course(
+    course_id: UUID, 
+    db: AsyncSession = Depends(get_db),
+    profile = Depends(require_permission("admin:delete"))
+):
+    result = await db.execute(select(Course).where(Course.id == course_id))
+    course = result.scalar_one_or_none()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+        
+    await db.delete(course)
+    await db.commit()
+    return {"status": "success", "data": {"message": "Course deleted successfully"}}

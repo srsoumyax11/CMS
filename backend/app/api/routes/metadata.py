@@ -117,3 +117,17 @@ async def get_hierarchy(db: AsyncSession = Depends(get_db)):
         result_data.append(c_data)
         
     return APIResponse(success=True, data=result_data, error=None)
+
+@router.get(
+    "/roles",
+    summary="Get Roles Metadata",
+    description="Returns a lightweight list of roles for dropdowns.",
+    response_model=APIResponse
+)
+async def get_roles(db: AsyncSession = Depends(get_db)):
+    from app.models.rbac import Role
+    result = await db.execute(select(Role))
+    roles = result.scalars().all()
+    
+    data = [{"id": str(r.id), "name": r.name, "description": r.description} for r in roles]
+    return APIResponse(success=True, data=data, error=None)

@@ -3,6 +3,23 @@ from typing import Optional, List, Literal
 from app.models.user import AccountStatus
 from app.models.profiles import AcademicStatus, EmploymentStatus
 
+# --- Course Management ---
+class CourseCreateRequest(BaseModel):
+    name: str = Field(..., description="Name of the course (e.g., B.Tech, M.Tech)")
+    is_active: Optional[bool] = True
+
+class CourseUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class CourseItemResponse(BaseModel):
+    id: UUID4
+    name: str
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
 class StudentStatusUpdateRequest(BaseModel):
     account_status: Optional[AccountStatus] = None
     academic_status: Optional[AcademicStatus] = None
@@ -37,6 +54,7 @@ class FacultyCreateRequest(BaseModel):
     course_id: UUID4
     department_id: UUID4
     designation: str = Field(..., min_length=2, max_length=255)
+    role_ids: List[UUID4] = Field(default_factory=list)
 
 class FacultyItemResponse(BaseModel):
     id: UUID4

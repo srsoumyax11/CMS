@@ -24,6 +24,28 @@ export interface Department {
   is_active: boolean;
 }
 
+export interface Course {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
+export interface CourseCreateRequest {
+  name: string;
+  is_active?: boolean;
+}
+
+export interface CourseUpdateRequest {
+  name?: string;
+  is_active?: boolean;
+}
+
+export interface MetadataRole {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
 export interface DepartmentCreateRequest {
   name: string;
   code: string;
@@ -446,8 +468,10 @@ export interface FacultyCreateRequest {
   name: string;
   email: string;
   password?: string;
+  course_id: string;
   department_id: string;
   designation: string;
+  role_ids?: string[];
 }
 
 export interface FacultyUpdateRequest {

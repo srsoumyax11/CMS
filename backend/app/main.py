@@ -127,6 +127,13 @@ app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendanc
 app.include_router(mess.router, prefix="/api/mess", tags=["Mess"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 
+from fastapi.staticfiles import StaticFiles
+
+# Serve uploaded static files
+import os
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 # Exception Handlers
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

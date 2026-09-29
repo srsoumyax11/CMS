@@ -22,46 +22,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     conn = op.get_bind()
     
-    # ==========================================
-    # 1. ACADEMIC DATA
-    # ==========================================
-    conn.execute(text("""
-        INSERT INTO courses (id, name, is_active) VALUES 
-        ('13408608-0072-4669-bc98-87013c5252b0', 'B.Tech', true),
-        ('95f0113c-cc83-4c91-9e8c-8be94f576eec', 'M.Tech', true),
-        ('677cd2f7-bc6d-495d-ab9a-36bdf483b2bb', 'Ph.D', true)
-        ON CONFLICT (id) DO NOTHING;
-    """))
-
-
-    # ==========================================
-    # 1.5 DEPARTMENTS
-    # ==========================================
-    departments = [
-        ('Computer Science and Engineering', 'CSE', 'academic'),
-        ('Mechanical Engineering', 'ME', 'academic'),
-        ('Electrical Engineering', 'EE', 'academic'),
-        ('Civil Engineering', 'CE', 'academic'),
-        ('Information Technology', 'IT', 'academic'),
-        ('Electronics and Communication', 'ECE', 'academic'),
-        ('Chemical Engineering', 'ChemE', 'academic'),
-        ('Biotechnology', 'BioTech', 'academic'),
-        ('Administrative', 'Admin', 'administrative'),
-        ('Accounts', 'Accounts', 'administrative'),
-        ('Human Resources', 'HR', 'administrative'),
-        ('Library', 'Library', 'administrative'),
-        ('Mathematics', 'Math', 'academic'),
-        ('Physics', 'Physics', 'academic'),
-        ('Chemistry', 'Chemistry', 'academic'),
-        ('Humanities', 'Humanities', 'academic')
-    ]
-    
-    for d_name, d_code, d_type in departments:
-        conn.execute(text(f"""
-            INSERT INTO departments (id, name, code, department_type, is_active)
-            VALUES (gen_random_uuid(), '{d_name}', '{d_code}', '{d_type}', true)
-            ON CONFLICT (name) DO NOTHING;
-        """))
+    # Initial data for Courses and Departments has been moved to API scripts.
     # ==========================================
     # 2. RBAC ASSETS & ACTIONS
     # ==========================================

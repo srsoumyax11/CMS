@@ -47,6 +47,7 @@ import { OutpassManagement } from '@/pages/admin/OutpassManagement';
 import { MessManagement } from '@/pages/admin/MessManagement';
 import { RolesPermissions } from '@/pages/admin/RolesPermissions';
 import { DepartmentManagement } from '@/pages/admin/DepartmentManagement';
+import { CourseManagement } from '@/pages/admin/CourseManagement';
 
 import './App.css';
 
@@ -110,6 +111,7 @@ export function AdminRoutes() {
       <Route path="faculty" element={<FacultyManagement />} />
       <Route path="permissions" element={<RolesPermissions />} />
       <Route path="departments" element={<DepartmentManagement />} />
+      <Route path="courses" element={<CourseManagement />} />
       <Route path="settings" element={<SystemSettings />} />
       <Route path="profile" element={<Profile />} />
     </Routes>
