@@ -10,7 +10,7 @@ class NoticeResponse(BaseModel):
     author_id: UUID
     attachment_url: Optional[str] = None
     target_course_id: Optional[UUID] = None
-    target_branch_id: Optional[UUID] = None
+    target_department_id: Optional[UUID] = None
     target_year: Optional[int] = None
     target_hostel: Optional[str] = None
     target_user_types: Optional[str] = None

@@ -41,7 +41,7 @@ async def get_attendance_roster(
     # It also has the related User via relationship.
     stmt = select(StudentProfile).options(selectinload(StudentProfile.user)).where(
         StudentProfile.course_id == slot.course_id,
-        StudentProfile.branch_id == slot.branch_id,
+        StudentProfile.department_id == slot.department_id,
         StudentProfile.year == slot.year
     )
     students_res = await db.execute(stmt)
@@ -89,7 +89,7 @@ async def submit_attendance_batch(
     # 3. Roster Validation (Ghost Student Prevention)
     stmt = select(StudentProfile.user_id).where(
         StudentProfile.course_id == slot.course_id,
-        StudentProfile.branch_id == slot.branch_id,
+        StudentProfile.department_id == slot.department_id,
         StudentProfile.year == slot.year
     )
     valid_student_ids_res = await db.execute(stmt)

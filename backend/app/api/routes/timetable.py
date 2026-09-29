@@ -31,7 +31,7 @@ async def get_my_timetable(
         sp = current_user.student_profile[0]
         stmt = stmt.where(
             TimetableSlot.course_id == sp.course_id,
-            TimetableSlot.branch_id == sp.branch_id,
+            TimetableSlot.department_id == sp.department_id,
             TimetableSlot.year == sp.year
         )
     elif current_user.user_type == UserType.faculty:

@@ -62,7 +62,7 @@ class UserIdUpdateRequest(BaseModel):
 
 class StudentProfileCreateRequest(BaseModel):
     course_id: uuid.UUID
-    branch_id: uuid.UUID
+    department_id: uuid.UUID
     year: int = Field(..., ge=1990, le=2100)
     hostel: Optional[str] = None
 

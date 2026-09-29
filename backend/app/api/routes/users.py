@@ -43,7 +43,7 @@ from app.schemas.auth import NameUpdateRequest, PasswordChangeRequest, UserIdUpd
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from app.models.profiles import StudentProfile, AcademicStatus
-from app.models.academic import Branch
+from app.models.academic import Course, Department
 
 @router.get(
     "/me/student-profile",
@@ -65,7 +65,7 @@ async def get_my_student_profile(
     
     return APIResponse(success=True, data={
         "course_id": str(profile.course_id),
-        "branch_id": str(profile.branch_id),
+        "department_id": str(profile.department_id),
         "year": profile.year,
         "hostel": profile.hostel,
         "academic_status": profile.academic_status.value if profile.academic_status else None,
@@ -90,22 +90,18 @@ async def create_student_profile(
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Student profile already exists")
         
-    # Validate Course and Branch
-    branch_result = await db.execute(
-        select(Branch).where(
-            Branch.id == data.branch_id,
-            Branch.course_id == data.course_id,
-            Branch.is_active == True
-        )
-    )
-    if not branch_result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Invalid or inactive course and branch combination")
+    # Validate Course and Department
+    course_res = await db.execute(select(Course).where(Course.id == data.course_id, Course.is_active == True))
+    dept_res = await db.execute(select(Department).where(Department.id == data.department_id, Department.is_active == True))
+    
+    if not course_res.scalar_one_or_none() or not dept_res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Invalid or inactive course/department")
         
     try:
         profile = StudentProfile(
             user_id=current_user.id,
             course_id=data.course_id,
-            branch_id=data.branch_id,
+            department_id=data.department_id,
             year=data.year,
             hostel=data.hostel.strip().lower() if data.hostel else None,
             academic_status=AcademicStatus.enrolled
@@ -137,20 +133,16 @@ async def update_student_profile(
     if not profile:
         raise HTTPException(status_code=404, detail="Student profile not found. Use POST to create one.")
         
-    # Validate Course and Branch
-    branch_result = await db.execute(
-        select(Branch).where(
-            Branch.id == data.branch_id,
-            Branch.course_id == data.course_id,
-            Branch.is_active == True
-        )
-    )
-    if not branch_result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Invalid or inactive course and branch combination")
+    # Validate Course and Department
+    course_res = await db.execute(select(Course).where(Course.id == data.course_id, Course.is_active == True))
+    dept_res = await db.execute(select(Department).where(Department.id == data.department_id, Department.is_active == True))
+    
+    if not course_res.scalar_one_or_none() or not dept_res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Invalid or inactive course/department")
         
     try:
         profile.course_id = data.course_id
-        profile.branch_id = data.branch_id
+        profile.department_id = data.department_id
         profile.year = data.year
         profile.hostel = data.hostel.strip().lower() if data.hostel else None
         await db.commit()

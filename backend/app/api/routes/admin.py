@@ -40,7 +40,7 @@ async def list_students(
 ):
     stmt = select(User).outerjoin(StudentProfile, User.id == StudentProfile.user_id).options(
         selectinload(User.student_profile).selectinload(StudentProfile.course),
-        selectinload(User.student_profile).selectinload(StudentProfile.branch)
+        selectinload(User.student_profile).selectinload(StudentProfile.department)
     ).where(User.user_type == UserType.student)
     
     if status_filter:
@@ -60,8 +60,8 @@ async def list_students(
             email=u.email,
             course_id=p.course_id if p else None,
             course_name=p.course.name if p and p.course else "",
-            branch_id=p.branch_id if p else None,
-            branch_name=p.branch.name if p and p.branch else "",
+            department_id=p.department_id if p else None,
+            department_name=p.department.name if p and p.department else "",
             year=p.year if p else 0,
             hostel=p.hostel if p else None,
             account_status=u.account_status,
@@ -84,7 +84,7 @@ async def get_student(
 ):
     stmt = select(User).outerjoin(StudentProfile, User.id == StudentProfile.user_id).options(
         selectinload(User.student_profile).selectinload(StudentProfile.course),
-        selectinload(User.student_profile).selectinload(StudentProfile.branch)
+        selectinload(User.student_profile).selectinload(StudentProfile.department)
     ).where(User.user_type == UserType.student).where((User.id == id) | (StudentProfile.id == id))
     
     result = await db.execute(stmt)
@@ -100,7 +100,7 @@ async def get_student(
         name=u.name,
         email=u.email,
         course_name=p.course.name if p and p.course else "",
-        branch_name=p.branch.name if p and p.branch else "",
+        department_name=p.department.name if p and p.department else "",
         year=p.year if p else 0,
         account_status=u.account_status,
         academic_status=p.academic_status if p else None,
@@ -133,7 +133,7 @@ async def update_student_status(
 
     stmt = select(User).outerjoin(StudentProfile, User.id == StudentProfile.user_id).options(
         selectinload(User.student_profile).selectinload(StudentProfile.course),
-        selectinload(User.student_profile).selectinload(StudentProfile.branch)
+        selectinload(User.student_profile).selectinload(StudentProfile.department)
     ).where(User.user_type == UserType.student).where((User.id == id) | (StudentProfile.id == id))
     result = await db.execute(stmt)
     u = result.scalar_one_or_none()
@@ -177,8 +177,8 @@ async def update_student_status(
         email=u.email,
         course_id=p.course_id if p else None,
         course_name=p.course.name if p and p.course else "",
-        branch_id=p.branch_id if p else None,
-        branch_name=p.branch.name if p and p.branch else "",
+        department_id=p.department_id if p else None,
+        department_name=p.department.name if p and p.department else "",
         year=p.year if p else 0,
         hostel=p.hostel if p else None,
         account_status=u.account_status,
@@ -201,7 +201,7 @@ async def update_student_details(
 ):
     stmt = select(User).outerjoin(StudentProfile, User.id == StudentProfile.user_id).options(
         selectinload(User.student_profile).selectinload(StudentProfile.course),
-        selectinload(User.student_profile).selectinload(StudentProfile.branch)
+        selectinload(User.student_profile).selectinload(StudentProfile.department)
     ).where(User.user_type == UserType.student).where((User.id == id) | (StudentProfile.id == id))
     result = await db.execute(stmt)
     u = result.scalar_one_or_none()
@@ -216,8 +216,8 @@ async def update_student_details(
     if p:
         if req.course_id is not None:
             p.course_id = req.course_id
-        if req.branch_id is not None:
-            p.branch_id = req.branch_id
+        if req.department_id is not None:
+            p.department_id = req.department_id
         if req.year is not None:
             p.year = req.year
         if req.hostel is not None:
@@ -235,8 +235,8 @@ async def update_student_details(
         email=u.email,
         course_id=p.course_id if p else None,
         course_name=p.course.name if p and p.course else "",
-        branch_id=p.branch_id if p else None,
-        branch_name=p.branch.name if p and p.branch else "",
+        department_id=p.department_id if p else None,
+        department_name=p.department.name if p and p.department else "",
         year=p.year if p else 0,
         hostel=p.hostel if p else None,
         account_status=u.account_status,
@@ -259,10 +259,19 @@ async def create_faculty(
     # Validate password against system settings
     await validate_password(req.password, db)
 
-    # Check if email exists
     existing = await db.execute(select(User).where(User.email == req.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Validate Course and Department
+    from app.models.academic import Course
+    course_res = await db.execute(select(Course).where(Course.id == req.course_id, Course.is_active == True))
+    dept_res = await db.execute(select(Department).where(Department.id == req.department_id, Department.is_active == True))
+    
+    course_obj = course_res.scalar_one_or_none()
+    dept_obj = dept_res.scalar_one_or_none()
+    if not course_obj or not dept_obj:
+        raise HTTPException(status_code=400, detail="Invalid or inactive course/department")
 
     import random
     
@@ -287,6 +296,7 @@ async def create_faculty(
     from app.models.profiles import EmploymentStatus
     new_profile = FacultyProfile(
         user_id=new_user.id,
+        course_id=req.course_id,
         department_id=req.department_id,
         designation=req.designation,
         employment_status=EmploymentStatus.active
@@ -314,9 +324,12 @@ async def create_faculty(
         user_id=new_user.user_id if new_user.user_id else str(new_profile.user_id),
         name=new_user.name,
         email=new_user.email,
+        course_id=new_profile.course_id,
+        course_name=course_obj.name,
         department_id=new_profile.department_id,
-        department_name=dept.name if dept else "Unknown",
+        department_name=dept_obj.name,
         designation=new_profile.designation,
+        is_hod=(dept_obj.hod_user_id == new_user.id) if dept_obj else False,
         account_status=new_user.account_status,
         employment_status=new_profile.employment_status,
         status_note=new_user.status_note
@@ -336,7 +349,11 @@ async def list_faculty(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.FACULTY_PROFILE_LIST))
 ):
-    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user), selectinload(FacultyProfile.department))
+    stmt = select(FacultyProfile).options(
+        selectinload(FacultyProfile.user),
+        selectinload(FacultyProfile.course),
+        selectinload(FacultyProfile.department)
+    )
     if status_filter:
         stmt = stmt.join(User, FacultyProfile.user_id == User.id).where(User.account_status == status_filter)
     stmt = stmt.offset(skip).limit(limit)
@@ -351,9 +368,12 @@ async def list_faculty(
             user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
             name=p.user.name if p.user else "",
             email=p.user.email if p.user else "",
+            course_id=p.course_id,
+            course_name=p.course.name if p.course else "Unknown",
             department_id=p.department_id,
             department_name=p.department.name if p.department else "Unknown",
             designation=p.designation,
+            is_hod=(p.department.hod_user_id == p.user_id) if p.department else False,
             account_status=p.user.account_status if p.user else AccountStatus.pending,
             employment_status=p.employment_status,
             status_note=p.user.status_note if p.user else None
@@ -373,7 +393,11 @@ async def update_faculty(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.FACULTY_PROFILE_EDIT))
 ):
-    stmt = select(FacultyProfile).options(selectinload(FacultyProfile.user), selectinload(FacultyProfile.department)).where((FacultyProfile.id == id) | (FacultyProfile.user_id == id))
+    stmt = select(FacultyProfile).options(
+        selectinload(FacultyProfile.user), 
+        selectinload(FacultyProfile.course),
+        selectinload(FacultyProfile.department)
+    ).where((FacultyProfile.id == id) | (FacultyProfile.user_id == id))
     result = await db.execute(stmt)
     p = result.scalar_one_or_none()
     if not p:
@@ -383,6 +407,8 @@ async def update_faculty(
         p.user.name = req.name
     if req.email and p.user:
         p.user.email = req.email
+    if req.course_id is not None:
+        p.course_id = req.course_id
     if req.department_id is not None:
         p.department_id = req.department_id
     if req.designation is not None:
@@ -395,23 +421,37 @@ async def update_faculty(
     await db.commit()
     await db.refresh(p)
     
-    # Load department explicitly if changed
+    # Load course/department explicitly if changed
     dept_name = p.department.name if p.department else "Unknown"
+    is_hod = (p.department.hod_user_id == p.user_id) if p.department else False
     if req.department_id is not None:
          stmt = select(Department).where(Department.id == p.department_id)
          res = await db.execute(stmt)
          dept = res.scalar_one_or_none()
          if dept:
              dept_name = dept.name
+             is_hod = (dept.hod_user_id == p.user_id)
+             
+    course_name = p.course.name if p.course else "Unknown"
+    if req.course_id is not None:
+        from app.models.academic import Course
+        stmt = select(Course).where(Course.id == p.course_id)
+        res = await db.execute(stmt)
+        course = res.scalar_one_or_none()
+        if course:
+            course_name = course.name
 
     data = FacultyItemResponse(
         id=p.user_id,
         user_id=p.user.user_id if p.user.user_id else str(p.user_id),
         name=p.user.name,
         email=p.user.email,
+        course_id=p.course_id,
+        course_name=course_name,
         department_id=p.department_id,
         department_name=dept_name,
         designation=p.designation,
+        is_hod=is_hod,
         account_status=p.user.account_status,
         employment_status=p.employment_status,
         status_note=p.user.status_note

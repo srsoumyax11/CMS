@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
 from app.models.user import User, UserType, AccountStatus
 from app.models.profiles import StudentProfile, AcademicStatus
-from app.models.academic import Course, Branch
+from app.models.academic import Course
 from app.models.rbac import Role, UserRole
 from app.schemas.auth import (
     RegisterRequest, 

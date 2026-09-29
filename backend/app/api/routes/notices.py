@@ -29,7 +29,7 @@ async def create_notice(
     title: str = Form(...),
     content: str = Form(...),
     target_course_id: Optional[UUID] = Form(None),
-    target_branch_id: Optional[UUID] = Form(None),
+    target_department_id: Optional[UUID] = Form(None),
     target_year: Optional[int] = Form(None),
     target_hostel: Optional[str] = Form(None),
     target_user_types: Optional[str] = Form(None),
@@ -67,7 +67,7 @@ async def create_notice(
         author_id=current_user.id,
         attachment_url=attachment_url,
         target_course_id=target_course_id,
-        target_branch_id=target_branch_id,
+        target_department_id=target_department_id,
         target_year=target_year,
         target_hostel=target_hostel,
         target_user_types=target_user_types
@@ -114,7 +114,7 @@ async def list_notices(
                 Notice.target_user_types.contains("student")
             ),
             or_(Notice.target_course_id.is_(None), Notice.target_course_id == profile.course_id),
-            or_(Notice.target_branch_id.is_(None), Notice.target_branch_id == profile.branch_id),
+            or_(Notice.target_department_id.is_(None), Notice.target_department_id == profile.department_id),
             or_(Notice.target_year.is_(None), Notice.target_year == profile.year),
             or_(Notice.target_hostel.is_(None), Notice.target_hostel == profile.hostel)
         )
@@ -183,7 +183,7 @@ async def get_notice(
             can_view = False
         if notice.target_course_id and notice.target_course_id != profile.course_id:
             can_view = False
-        if notice.target_branch_id and notice.target_branch_id != profile.branch_id:
+        if notice.target_department_id and notice.target_department_id != profile.department_id:
             can_view = False
         if notice.target_year and notice.target_year != profile.year:
             can_view = False

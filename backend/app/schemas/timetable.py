@@ -5,7 +5,7 @@ from uuid import UUID
 
 class TimetableSlotBase(BaseModel):
     course_id: UUID
-    branch_id: UUID
+    department_id: UUID
     year: int
     subject_name: str
     faculty_id: UUID
@@ -23,7 +23,7 @@ class TimetableSlotCreate(TimetableSlotBase):
 
 class TimetableSlotUpdate(BaseModel):
     course_id: Optional[UUID] = None
-    branch_id: Optional[UUID] = None
+    department_id: Optional[UUID] = None
     year: Optional[int] = None
     subject_name: Optional[str] = None
     faculty_id: Optional[UUID] = None

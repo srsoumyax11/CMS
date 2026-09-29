@@ -32,36 +32,38 @@ def upgrade() -> None:
         ('677cd2f7-bc6d-495d-ab9a-36bdf483b2bb', 'Ph.D', true)
         ON CONFLICT (id) DO NOTHING;
     """))
+    
 
 
     # ==========================================
     # 1.5 DEPARTMENTS
     # ==========================================
     departments = [
-        ('Computer Science and Engineering', 'CSE', 'academic'),
-        ('Mechanical Engineering', 'ME', 'academic'),
-        ('Electrical Engineering', 'EE', 'academic'),
-        ('Civil Engineering', 'CE', 'academic'),
-        ('Information Technology', 'IT', 'academic'),
-        ('Electronics and Communication', 'ECE', 'academic'),
-        ('Chemical Engineering', 'ChemE', 'academic'),
-        ('Biotechnology', 'BioTech', 'academic'),
-        ('Administrative', 'Admin', 'administrative'),
-        ('Accounts', 'Accounts', 'administrative'),
-        ('Human Resources', 'HR', 'administrative'),
-        ('Library', 'Library', 'administrative'),
-        ('Mathematics', 'Math', 'academic'),
-        ('Physics', 'Physics', 'academic'),
-        ('Chemistry', 'Chemistry', 'academic'),
-        ('Humanities', 'Humanities', 'academic')
+        ('Computer Science and Engineering', 'CSE'),
+        ('Mechanical Engineering', 'ME'),
+        ('Electrical Engineering', 'EE'),
+        ('Civil Engineering', 'CE'),
+        ('Information Technology', 'IT'),
+        ('Electronics and Communication', 'ECE'),
+        ('Chemical Engineering', 'ChemE'),
+        ('Biotechnology', 'BioTech'),
+        ('Administrative', 'Admin'),
+        ('Accounts', 'Accounts'),
+        ('Human Resources', 'HR'),
+        ('Library', 'Library'),
+        ('Mathematics', 'Math'),
+        ('Physics', 'Physics'),
+        ('Chemistry', 'Chemistry'),
+        ('Humanities', 'Humanities')
     ]
     
-    for d_name, d_code, d_type in departments:
+    for d_name, d_code in departments:
         conn.execute(text(f"""
-            INSERT INTO departments (id, name, code, department_type, is_active)
-            VALUES (gen_random_uuid(), '{d_name}', '{d_code}', '{d_type}', true)
+            INSERT INTO departments (id, name, code, is_active)
+            VALUES (gen_random_uuid(), '{d_name}', '{d_code}', true)
             ON CONFLICT (name) DO NOTHING;
         """))
+
     # ==========================================
     # 2. RBAC ASSETS & ACTIONS
     # ==========================================

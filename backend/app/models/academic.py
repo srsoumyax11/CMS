@@ -26,24 +26,12 @@ class Course(Base, UUIDMixin, TimestampMixin):
     name = Column(String, unique=True, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
-    branches = relationship("Branch", back_populates="course")
-
-
-class Branch(Base, UUIDMixin, TimestampMixin):
-    __tablename__ = "branches"
-
-    name = Column(String, nullable=False)
-    course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False)
-
-    course = relationship("Course", back_populates="branches")
-
 
 class TimetableSlot(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "timetable_slots"
 
     course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
-    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="CASCADE"), nullable=False)
+    department_id = Column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="CASCADE"), nullable=False)
     year = Column(Integer, nullable=False)
     subject_name = Column(String, nullable=False)
     faculty_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)

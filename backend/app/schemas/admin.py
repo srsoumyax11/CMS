@@ -15,8 +15,8 @@ class StudentItemResponse(BaseModel):
     email: str
     course_id: Optional[UUID4] = None
     course_name: str
-    branch_id: Optional[UUID4] = None
-    branch_name: str
+    department_id: Optional[UUID4] = None
+    department_name: str
     year: int
     hostel: Optional[str] = None
     account_status: AccountStatus
@@ -26,7 +26,7 @@ class StudentItemResponse(BaseModel):
 class StudentAdminUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
     course_id: Optional[UUID4] = None
-    branch_id: Optional[UUID4] = None
+    department_id: Optional[UUID4] = None
     year: Optional[int] = Field(None, ge=1, le=5)
     hostel: Optional[str] = Field(None, max_length=100)
 
@@ -34,6 +34,7 @@ class FacultyCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     password: str = Field(..., min_length=8)
+    course_id: UUID4
     department_id: UUID4
     designation: str = Field(..., min_length=2, max_length=255)
 
@@ -42,9 +43,12 @@ class FacultyItemResponse(BaseModel):
     user_id: str
     name: str
     email: str
+    course_id: UUID4
+    course_name: str
     department_id: UUID4
     department_name: str
     designation: str
+    is_hod: bool
     account_status: AccountStatus
     employment_status: EmploymentStatus
     status_note: Optional[str] = None
@@ -52,6 +56,7 @@ class FacultyItemResponse(BaseModel):
 class FacultyUpdateRequest(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
+    course_id: Optional[UUID4] = None
     department_id: Optional[UUID4] = None
     designation: Optional[str] = None
     account_status: Optional[AccountStatus] = None
