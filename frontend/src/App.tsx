@@ -107,8 +107,8 @@ export function AdminRoutes() {
       <Route path="timetable" element={<TimetableView />} />
       <Route path="attendance" element={<AttendanceStats />} />
       <Route path="mess" element={<MessManagement />} />
-      <Route path="users" element={<StudentManagement />} />
-      <Route path="faculty" element={<FacultyManagement />} />
+      <Route path="students" element={<StudentManagement />} />
+      <Route path="users" element={<FacultyManagement />} />
       <Route path="permissions" element={<RolesPermissions />} />
       <Route path="departments" element={<DepartmentManagement />} />
       <Route path="courses" element={<CourseManagement />} />

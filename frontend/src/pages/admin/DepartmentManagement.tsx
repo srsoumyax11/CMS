@@ -12,6 +12,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -50,12 +60,22 @@ export function DepartmentManagement() {
     code: string;
     department_type: 'academic' | 'administrative';
     is_active: boolean;
+    hod_user_id: string | null;
   }>({
     name: '',
     code: '',
     department_type: 'academic',
     is_active: true,
+    hod_user_id: null,
   });
+
+  const [pendingUpdate, setPendingUpdate] = useState<{ id: string; data: DepartmentUpdateRequest } | null>(null);
+
+  const { data: facultyRes } = useQuery({
+    queryKey: ['admin_faculty'],
+    queryFn: () => adminApi.listFaculty(),
+  });
+  const facultyList = facultyRes?.data?.data || [];
 
   const { data: response, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['departments'],
@@ -66,9 +86,10 @@ export function DepartmentManagement() {
     mutationFn: (data: DepartmentCreateRequest) => adminApi.createDepartment(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
+      queryClient.invalidateQueries({ queryKey: ['metadata', 'departments'] });
       toast.success('Department created successfully');
       setShowCreate(false);
-      setFormData({ name: '', code: '', department_type: 'academic', is_active: true });
+      setFormData({ name: '', code: '', department_type: 'academic', is_active: true, hod_user_id: null });
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || 'Failed to create department');
@@ -80,6 +101,7 @@ export function DepartmentManagement() {
       adminApi.updateDepartment(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
+      queryClient.invalidateQueries({ queryKey: ['metadata', 'departments'] });
       toast.success('Department updated successfully');
       setShowEdit(null);
     },
@@ -92,6 +114,7 @@ export function DepartmentManagement() {
     mutationFn: (id: string) => adminApi.deleteDepartment(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
+      queryClient.invalidateQueries({ queryKey: ['metadata', 'departments'] });
       toast.success('Department deleted successfully');
     },
     onError: (err: any) => {
@@ -107,15 +130,28 @@ export function DepartmentManagement() {
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!showEdit) return;
-    updateMutation.mutate({
-      id: showEdit.id,
-      data: {
-        name: formData.name,
-        code: formData.code,
-        department_type: formData.department_type,
-        is_active: formData.is_active,
-      },
-    });
+
+    const data: DepartmentUpdateRequest = {
+      name: formData.name,
+      code: formData.code,
+      department_type: formData.department_type,
+      is_active: formData.is_active,
+      hod_user_id: formData.hod_user_id,
+    };
+
+    // If changing an existing HOD to a new person (or removing them), ask for confirmation
+    if (showEdit.hod_user_id && showEdit.hod_user_id !== formData.hod_user_id) {
+       setPendingUpdate({ id: showEdit.id, data });
+    } else {
+       updateMutation.mutate({ id: showEdit.id, data });
+    }
+  };
+
+  const confirmUpdate = () => {
+    if (pendingUpdate) {
+      updateMutation.mutate(pendingUpdate);
+      setPendingUpdate(null);
+    }
   };
 
   const openEdit = (dept: Department) => {
@@ -123,7 +159,8 @@ export function DepartmentManagement() {
       name: dept.name, 
       code: dept.code, 
       department_type: dept.department_type || 'academic',
-      is_active: dept.is_active 
+      is_active: dept.is_active,
+      hod_user_id: dept.hod_user_id || null
     });
     setShowEdit(dept);
   };
@@ -218,7 +255,7 @@ export function DepartmentManagement() {
           </TabsList>
 
           <Button onClick={() => {
-            setFormData({ name: '', code: '', department_type: 'academic', is_active: true });
+            setFormData({ name: '', code: '', department_type: 'academic', is_active: true, hod_user_id: null });
             setShowCreate(true);
           }}>
             <Plus className="h-4 w-4 mr-2" />
@@ -284,6 +321,24 @@ export function DepartmentManagement() {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label>Head of Department</Label>
+              <Select
+                value={formData.hod_user_id || 'none'}
+                onValueChange={(val) => setFormData({ ...formData, hod_user_id: val === 'none' ? null : val })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select HOD" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {facultyList.map(f => (
+                    <SelectItem key={f.id} value={f.id}>{f.name} ({f.email})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex items-center space-x-2 pt-2">
               <Checkbox
                 id="is_active"
@@ -310,6 +365,24 @@ export function DepartmentManagement() {
           </form>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={!!pendingUpdate} onOpenChange={(open) => !open && setPendingUpdate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Head of Department?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This department already has an assigned Head of Department. 
+              Assigning a new person will automatically remove the "HOD" role from the current head and assign it to the new one. 
+              Are you sure you want to proceed with this replacement?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmUpdate} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Confirm Replacement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

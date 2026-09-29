@@ -25,6 +25,7 @@ class Course(Base, UUIDMixin, TimestampMixin):
 
     name = Column(String, unique=True, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    duration_years = Column(Integer, default=4, nullable=False)
 
 
 class TimetableSlot(Base, UUIDMixin, TimestampMixin):

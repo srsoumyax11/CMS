@@ -35,9 +35,11 @@ export function CourseManagement() {
   const [formData, setFormData] = useState<{
     name: string;
     is_active: boolean;
+    duration_years: number;
   }>({
     name: '',
     is_active: true,
+    duration_years: 4,
   });
 
   const { data: response, isLoading, isError, error, refetch } = useQuery({
@@ -53,7 +55,7 @@ export function CourseManagement() {
       queryClient.invalidateQueries({ queryKey: ['metadata', 'courses'] });
       toast.success('Course created successfully');
       setShowCreate(false);
-      setFormData({ name: '', is_active: true });
+      setFormData({ name: '', is_active: true, duration_years: 4 });
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.detail || 'Failed to create course');
@@ -99,6 +101,7 @@ export function CourseManagement() {
       data: {
         name: formData.name,
         is_active: formData.is_active,
+        duration_years: formData.duration_years,
       },
     });
   };
@@ -106,7 +109,8 @@ export function CourseManagement() {
   const openEdit = (course: Course) => {
     setFormData({ 
       name: course.name, 
-      is_active: course.is_active 
+      is_active: course.is_active,
+      duration_years: course.duration_years || 4
     });
     setShowEdit(course);
   };
@@ -133,7 +137,7 @@ export function CourseManagement() {
           <p className="text-muted-foreground mt-1">Manage degree programs and courses</p>
         </div>
         <Button onClick={() => {
-          setFormData({ name: '', is_active: true });
+          setFormData({ name: '', is_active: true, duration_years: 4 });
           setShowCreate(true);
         }}>
           <Plus className="h-4 w-4 mr-2" />
@@ -146,6 +150,7 @@ export function CourseManagement() {
           <TableHeader>
             <TableRow>
               <TableHead>Course Name</TableHead>
+              <TableHead>Duration (Years)</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -153,7 +158,7 @@ export function CourseManagement() {
           <TableBody>
             {courses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="h-24">
+                <TableCell colSpan={4} className="h-24">
                   <EmptyState 
                     icon={<BookOpen className="h-6 w-6" />}
                     title="No courses found"
@@ -165,6 +170,7 @@ export function CourseManagement() {
               courses.map((course: Course) => (
                 <TableRow key={course.id}>
                   <TableCell className="font-medium">{course.name}</TableCell>
+                  <TableCell>{course.duration_years}</TableCell>
                   <TableCell>
                     <Badge variant={course.is_active ? 'default' : 'secondary'}>
                       {course.is_active ? 'Active' : 'Inactive'}
@@ -212,6 +218,19 @@ export function CourseManagement() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g. B.Tech"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="duration_years">Duration (Years)</Label>
+              <Input
+                id="duration_years"
+                type="number"
+                min="1"
+                max="7"
+                value={formData.duration_years}
+                onChange={(e) => setFormData({ ...formData, duration_years: parseInt(e.target.value) || 4 })}
                 required
               />
             </div>

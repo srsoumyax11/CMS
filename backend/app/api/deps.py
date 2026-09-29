@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.user import User, UserType
-from app.models.rbac import UserRole, Role, Permission, Asset, Action
+from app.models.rbac import Role, Permission, Asset, Action
 from app.models.complaint import Complaint, ComplaintVisibility
 from app.models.outpass import Outpass
 from app.models.academic import TimetableSlot
@@ -76,8 +76,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     stmt = select(User).options(
         selectinload(User.student_profile),
         selectinload(User.faculty_profile),
-        selectinload(User.user_roles).selectinload(UserRole.role).selectinload(Role.permissions).selectinload(Permission.asset),
-        selectinload(User.user_roles).selectinload(UserRole.role).selectinload(Role.permissions).selectinload(Permission.action)
+        selectinload(User.role).selectinload(Role.permissions).selectinload(Permission.asset),
+        selectinload(User.role).selectinload(Role.permissions).selectinload(Permission.action)
     ).where(User.id == user_id)
     
     result = await db.execute(stmt)
@@ -89,9 +89,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
 
 async def get_user_permissions(current_user: User = Depends(get_current_user)) -> Set[str]:
     permissions = set()
-    for user_role in current_user.user_roles:
-        role = user_role.role
-        for perm in role.permissions:
+    if current_user.role:
+        for perm in current_user.role.permissions:
             perm_str = f"{perm.asset.name}:{perm.action.code}"
             permissions.add(perm_str)
     return permissions

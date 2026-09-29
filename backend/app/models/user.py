@@ -1,5 +1,7 @@
 import enum
-from sqlalchemy import String, Boolean, Enum
+import uuid
+from sqlalchemy import String, Boolean, Enum, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -34,5 +36,6 @@ class User(Base, UUIDMixin, TimestampMixin):
 
     student_profile: Mapped[Optional["StudentProfile"]] = relationship("StudentProfile", back_populates="user", cascade="all, delete-orphan", uselist=False)
     faculty_profile: Mapped[Optional["FacultyProfile"]] = relationship("FacultyProfile", back_populates="user", cascade="all, delete-orphan", uselist=False)
-    user_roles: Mapped[list["UserRole"]] = relationship("UserRole", cascade="all, delete-orphan")
+    role_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
+    role: Mapped[Optional["Role"]] = relationship("Role")
     notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="user", cascade="all, delete-orphan")

@@ -7,15 +7,18 @@ from app.models.profiles import AcademicStatus, EmploymentStatus
 class CourseCreateRequest(BaseModel):
     name: str = Field(..., description="Name of the course (e.g., B.Tech, M.Tech)")
     is_active: Optional[bool] = True
+    duration_years: int = Field(default=4, ge=1, le=7, description="Duration of the course in years")
 
 class CourseUpdateRequest(BaseModel):
     name: Optional[str] = None
     is_active: Optional[bool] = None
+    duration_years: Optional[int] = Field(None, ge=1, le=7)
 
 class CourseItemResponse(BaseModel):
     id: UUID4
     name: str
     is_active: bool
+    duration_years: int
 
     class Config:
         from_attributes = True
@@ -54,7 +57,7 @@ class FacultyCreateRequest(BaseModel):
     course_id: UUID4
     department_id: UUID4
     designation: str = Field(..., min_length=2, max_length=255)
-    role_ids: List[UUID4] = Field(default_factory=list)
+    role_id: Optional[UUID4] = None
 
 class FacultyItemResponse(BaseModel):
     id: UUID4

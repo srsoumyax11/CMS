@@ -11,7 +11,7 @@ from app.core.permissions import Perms
 from app.core.security import hash_password
 from app.models.user import User, UserType, AccountStatus
 from app.models.profiles import StudentProfile, FacultyProfile
-from app.models.rbac import Role, UserRole
+from app.models.rbac import Role
 from app.schemas.common import APIResponse
 from app.utils.validation import validate_password
 from app.models.academic import Department, Course
@@ -156,12 +156,8 @@ async def update_student_status(
             role_stmt = select(Role).where(Role.name == "Student")
             role_res = await db.execute(role_stmt)
             student_role = role_res.scalar_one_or_none()
-            if student_role:
-                # Check if already has role
-                ur_stmt = select(UserRole).where(UserRole.user_id == u.id, UserRole.role_id == student_role.id)
-                ur_res = await db.execute(ur_stmt)
-                if not ur_res.scalar_one_or_none():
-                    db.add(UserRole(user_id=u.id, role_id=student_role.id))
+            if student_role and u.role_id != student_role.id:
+                u.role_id = student_role.id
 
     if req.status_note is not None:
         u.status_note = req.status_note
@@ -305,20 +301,22 @@ async def create_faculty(
     db.add(new_profile)
     
     # Assign 'Faculty' role and any requested roles
-    role_stmt = select(Role).where(Role.name == "Faculty")
-    role_res = await db.execute(role_stmt)
-    fac_role = role_res.scalar_one_or_none()
-    
-    roles_to_assign = set()
-    if fac_role:
-        roles_to_assign.add(fac_role.id)
+    assigned_role_id = None
+    if req.role_id:
+        req_role = await db.get(Role, req.role_id)
+        if req_role:
+            if req_role.name in ["Student", "SuperAdmin"]:
+                raise HTTPException(status_code=400, detail="Cannot assign Student or SuperAdmin role to a faculty member")
+            assigned_role_id = req_role.id
+            if req_role.name == "Admin":
+                new_user.user_type = UserType.admin
+                
+    if not assigned_role_id:
+        role_stmt = select(Role).where(Role.name == "Faculty")
+        fac_role = (await db.execute(role_stmt)).scalar_one_or_none()
+        assigned_role_id = fac_role.id if fac_role else None
         
-    for r_id in req.role_ids:
-        roles_to_assign.add(r_id)
-        
-    for r_id in roles_to_assign:
-        new_ur = UserRole(user_id=new_user.id, role_id=r_id)
-        db.add(new_ur)
+    new_user.role_id = assigned_role_id
         
     await db.commit()
     await db.refresh(new_profile)
@@ -364,7 +362,13 @@ async def list_faculty(
         selectinload(FacultyProfile.department)
     )
     if status_filter:
-        stmt = stmt.join(User, FacultyProfile.user_id == User.id).where(User.account_status == status_filter)
+        stmt = stmt.join(User, FacultyProfile.user_id == User.id).where(
+            (User.account_status == status_filter) & (~User.role.has(Role.name == 'SuperAdmin'))
+        )
+    else:
+        stmt = stmt.join(User, FacultyProfile.user_id == User.id).where(
+            ~User.role.has(Role.name == 'SuperAdmin')
+        )
     stmt = stmt.offset(skip).limit(limit)
     
     result = await db.execute(stmt)
@@ -411,6 +415,9 @@ async def update_faculty(
     p = result.scalar_one_or_none()
     if not p:
         raise HTTPException(status_code=404, detail="Faculty profile not found")
+        
+    if p.user and getattr(p.user.role, "name", "") == "SuperAdmin":
+        raise HTTPException(status_code=403, detail="Cannot modify SuperAdmin account")
         
     if req.name and p.user:
         p.user.name = req.name
@@ -480,7 +487,10 @@ async def list_admins(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.FACULTY_PROFILE_LIST))
 ):
-    stmt = select(User).where(User.user_type == UserType.admin)
+    stmt = select(User).where(
+        (User.user_type == UserType.admin) &
+        (~User.role.has(Role.name == 'SuperAdmin'))
+    )
     if status_filter:
         stmt = stmt.where(User.account_status == status_filter)
     stmt = stmt.offset(skip).limit(limit)
@@ -636,16 +646,38 @@ async def update_department(
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
         
-    if req.name is not None:
-        dept.name = req.name
-    if req.code is not None:
-        dept.code = req.code
-    if req.is_active is not None:
-        dept.is_active = req.is_active
-    if req.department_type is not None:
-        dept.department_type = req.department_type
-    if req.hod_user_id is not None:
-        dept.hod_user_id = req.hod_user_id
+    update_data = req.model_dump(exclude_unset=True)
+    
+    if "name" in update_data:
+        dept.name = update_data["name"]
+    if "code" in update_data:
+        dept.code = update_data["code"]
+    if "is_active" in update_data:
+        dept.is_active = update_data["is_active"]
+    if "department_type" in update_data:
+        dept.department_type = update_data["department_type"]
+        
+    if "hod_user_id" in update_data:
+        new_hod_id = update_data["hod_user_id"]
+        old_hod_id = dept.hod_user_id
+        
+        if new_hod_id != old_hod_id:
+            role_stmt = select(Role).where(Role.name == "HOD")
+            hod_role = (await db.execute(role_stmt)).scalar_one_or_none()
+            
+            if hod_role:
+                if old_hod_id:
+                    old_hod = await db.get(User, old_hod_id)
+                    fac_role = (await db.execute(select(Role).where(Role.name == "Faculty"))).scalar_one_or_none()
+                    if old_hod and fac_role:
+                        old_hod.role_id = fac_role.id
+                        
+                if new_hod_id:
+                    new_hod = await db.get(User, new_hod_id)
+                    if new_hod:
+                        new_hod.role_id = hod_role.id
+                        
+        dept.hod_user_id = new_hod_id
         
     try:
         await db.commit()
@@ -781,7 +813,7 @@ async def create_course(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Course already exists")
         
-    course = Course(name=req.name, is_active=req.is_active)
+    course = Course(name=req.name, is_active=req.is_active, duration_years=req.duration_years)
     db.add(course)
     await db.commit()
     await db.refresh(course)
@@ -809,6 +841,9 @@ async def update_course(
         
     if req.is_active is not None:
         course.is_active = req.is_active
+        
+    if req.duration_years is not None:
+        course.duration_years = req.duration_years
         
     await db.commit()
     await db.refresh(course)

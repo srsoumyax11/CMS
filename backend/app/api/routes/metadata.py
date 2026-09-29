@@ -38,7 +38,15 @@ async def get_courses(db: AsyncSession = Depends(get_db)):
     )
     courses = result.scalars().all()
     
-    data = [{"id": str(course.id), "name": course.name} for course in courses]
+    data = [
+        {
+            "id": str(course.id), 
+            "name": course.name,
+            "is_active": course.is_active,
+            "duration_years": course.duration_years
+        } 
+        for course in courses
+    ]
     return APIResponse(success=True, data=data, error=None)
 
 @router.get(
@@ -53,7 +61,17 @@ async def get_departments(db: AsyncSession = Depends(get_db)):
     )
     departments = result.scalars().all()
     
-    data = [{"id": str(d.id), "name": d.name, "code": d.code, "department_type": d.department_type} for d in departments]
+    data = [
+        {
+            "id": str(d.id), 
+            "name": d.name, 
+            "code": d.code, 
+            "department_type": d.department_type,
+            "is_active": d.is_active,
+            "hod_user_id": str(d.hod_user_id) if d.hod_user_id else None
+        } 
+        for d in departments
+    ]
     return APIResponse(success=True, data=data, error=None)
 
 @router.get(

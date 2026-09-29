@@ -52,6 +52,7 @@ export function FacultyManagement() {
   const [showEdit, setShowEdit] = useState<FacultyItemResponse | null>(null);
   const [showDetails, setShowDetails] = useState<FacultyItemResponse | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [roleTab, setRoleTab] = useState<string>('faculty');
 
   const [form, setForm] = useState<Omit<FacultyCreateRequest, 'user_id'>>({
     email: '',
@@ -60,7 +61,7 @@ export function FacultyManagement() {
     course_id: '',
     department_id: '',
     designation: '',
-    role_ids: [],
+    role_id: undefined,
   });
   
   const [editForm, setEditForm] = useState<{
@@ -100,7 +101,7 @@ export function FacultyManagement() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FACULTY] });
       toast.success('Faculty member created');
       setShowCreate(false);
-      setForm({ email: '', password: '', name: '', course_id: '', department_id: '', designation: '', role_ids: [] });
+      setForm({ email: '', password: '', name: '', course_id: '', department_id: '', designation: '', role_id: undefined });
     },
     onError: () => toast.error('Failed to create faculty member'),
   });
@@ -248,26 +249,34 @@ export function FacultyManagement() {
         </Button>
       </div>
 
-      <Tabs value={statusFilter ?? 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? undefined : v)}>
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="suspended">Suspended</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <Tabs value={roleTab} onValueChange={setRoleTab} className="w-full sm:w-auto">
+          <TabsList>
+            <TabsTrigger value="faculty">Faculty</TabsTrigger>
+            <TabsTrigger value="hod">HODs</TabsTrigger>
+            <TabsTrigger value="admin">Administrators</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
+        <Select value={statusFilter ?? 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? undefined : v)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="suspended">Suspended</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-      <Tabs defaultValue="faculty" className="w-full mt-2">
-        <TabsList className="mb-4">
-          <TabsTrigger value="faculty">Faculty Directory</TabsTrigger>
-          <TabsTrigger value="admins">Administrators</TabsTrigger>
-        </TabsList>
-
+      <Tabs value={roleTab === 'admin' ? 'admins' : 'faculty'} className="w-full mt-2">
         <TabsContent value="faculty">
           <DataTable
             columns={columns}
-            data={faculty}
+            data={faculty?.filter(f => roleTab === 'hod' ? f.is_hod : !f.is_hod) ?? []}
             isLoading={isLoading}
             rowKey={(row) => row.id}
             onRowClick={(row) => setShowDetails(row)}
@@ -381,27 +390,21 @@ export function FacultyManagement() {
             </div>
             
             <div className="space-y-3">
-              <Label>Additional Roles</Label>
-              <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-32 overflow-y-auto">
-                {roles.filter(r => r.name !== 'Faculty').map((role) => (
-                  <div key={role.id} className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`role-${role.id}`}
-                      checked={form.role_ids?.includes(role.id)}
-                      onCheckedChange={(checked) => {
-                        const current = form.role_ids || [];
-                        const updated = checked 
-                          ? [...current, role.id] 
-                          : current.filter(id => id !== role.id);
-                        setForm({ ...form, role_ids: updated });
-                      }}
-                    />
-                    <Label htmlFor={`role-${role.id}`} className="text-sm font-normal cursor-pointer">
-                      {role.name}
-                    </Label>
-                  </div>
-                ))}
-              </div>
+              <Label>System Role</Label>
+              <Select
+                value={form.role_id || 'default'}
+                onValueChange={(value) => setForm({ ...form, role_id: value === 'default' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role (Defaults to Faculty)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Default (Faculty)</SelectItem>
+                  {roles.filter(r => r.name !== 'Faculty' && r.name !== 'SuperAdmin' && r.name !== 'Student').map((role) => (
+                    <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>

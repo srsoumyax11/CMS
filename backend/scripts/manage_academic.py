@@ -17,22 +17,22 @@ def create_courses():
 
 def create_departments():
     departments = [
-        {'name': 'Computer Science and Engineering', 'code': 'CSE', 'department_type': 'academic'},
+        # Academic
+        {'name': 'Computer Science & Engineering', 'code': 'CSE', 'department_type': 'academic'},
         {'name': 'Mechanical Engineering', 'code': 'ME', 'department_type': 'academic'},
+        {'name': 'Electrical & Electronics Engineering', 'code': 'EEE', 'department_type': 'academic'},
         {'name': 'Electrical Engineering', 'code': 'EE', 'department_type': 'academic'},
         {'name': 'Civil Engineering', 'code': 'CE', 'department_type': 'academic'},
-        {'name': 'Information Technology', 'code': 'IT', 'department_type': 'academic'},
-        {'name': 'Electronics and Communication', 'code': 'ECE', 'department_type': 'academic'},
-        {'name': 'Chemical Engineering', 'code': 'ChemE', 'department_type': 'academic'},
-        {'name': 'Biotechnology', 'code': 'BioTech', 'department_type': 'academic'},
-        {'name': 'Administrative', 'code': 'Admin', 'department_type': 'administrative'},
-        {'name': 'Accounts', 'code': 'Accounts', 'department_type': 'administrative'},
-        {'name': 'Human Resources', 'code': 'HR', 'department_type': 'administrative'},
-        {'name': 'Library', 'code': 'Library', 'department_type': 'administrative'},
-        {'name': 'Mathematics', 'code': 'Math', 'department_type': 'academic'},
-        {'name': 'Physics', 'code': 'Physics', 'department_type': 'academic'},
-        {'name': 'Chemistry', 'code': 'Chemistry', 'department_type': 'academic'},
-        {'name': 'Humanities', 'code': 'Humanities', 'department_type': 'academic'}
+        {'name': 'Electronics & Telecommunication Engineering', 'code': 'ETC', 'department_type': 'academic'},
+        {'name': 'Basic Science & Humanities', 'code': 'BSH', 'department_type': 'academic'},
+        # Administrative
+        {'name': 'Main Administrative Office', 'code': 'Admin', 'department_type': 'administrative'},
+        {'name': 'Accounts & Finance Section', 'code': 'Accounts', 'department_type': 'administrative'},
+        {'name': 'Admissions & Student Welfare Cell', 'code': 'Admissions', 'department_type': 'administrative'},
+        {'name': 'Examination Section', 'code': 'Exams', 'department_type': 'administrative'},
+        {'name': 'Training & Placement (T&P) Cell', 'code': 'T&P', 'department_type': 'administrative'},
+        {'name': 'Central Library & Information Division', 'code': 'Library', 'department_type': 'administrative'},
+        {'name': 'Campus Maintenance & Hostel Management', 'code': 'Maintenance', 'department_type': 'administrative'}
     ]
     print("\n--- Creating Departments ---")
     for d in departments:

@@ -149,6 +149,23 @@ def upgrade() -> None:
                 ON CONFLICT DO NOTHING;
             """))
 
+    # HOD Permissions (Faculty Perms + Department Management)
+    hod_perms = faculty_perms + [
+        ("department", ["manage", "view"])
+    ]
+    
+    for asset, acts in hod_perms:
+        for act in acts:
+            conn.execute(text(f"""
+                INSERT INTO role_permissions (role_id, permission_id)
+                SELECT r.id, p.id 
+                FROM roles r, permissions p
+                JOIN assets ast ON p.asset_id = ast.id
+                JOIN actions a ON p.action_id = a.id
+                WHERE r.name = 'HOD' AND ast.name = '{asset}' AND a.code = '{act}'
+                ON CONFLICT DO NOTHING;
+            """))
+
     # ==========================================
     # 5. DEFAULT SUPER ADMIN USER
     # ==========================================
@@ -157,22 +174,40 @@ def upgrade() -> None:
     
     conn.execute(
         text("""
-            INSERT INTO users (id, email, hashed_password, account_status, user_type, name, user_id, email_notifications, in_app_alerts)
-            VALUES (gen_random_uuid(), :email, :password, 'active', 'admin', 'Super Admin', 'superadmin', true, true)
-            ON CONFLICT (email) DO UPDATE SET user_id = 'superadmin', hashed_password = :password;
+            INSERT INTO users (id, email, hashed_password, account_status, user_type, name, user_id, email_notifications, in_app_alerts, role_id)
+            SELECT gen_random_uuid(), :email, :password, 'active', 'admin', 'Super Admin', 'superadmin', true, true, r.id
+            FROM roles r WHERE r.name = 'SuperAdmin'
+            ON CONFLICT (email) DO UPDATE SET user_id = 'superadmin', hashed_password = :password, role_id = EXCLUDED.role_id;
         """),
         {"email": super_email, "password": super_password}
     )
+
+    # ==========================================
+    # 5.5 DEPARTMENTS (Academic and Administrative)
+    # ==========================================
+    departments = [
+        # Academic
+        ('Computer Science & Engineering (CSE)', 'CSE', 'academic'),
+        ('Mechanical Engineering (ME)', 'ME', 'academic'),
+        ('Electrical Engineering (EE) / Electrical & Electronics Engineering (EEE)', 'EEE', 'academic'),
+        ('Civil Engineering (CE)', 'CE', 'academic'),
+        ('Electronics & Telecommunication Engineering (ETC)', 'ETC', 'academic'),
+        ('Basic Science & Humanities (BSH)', 'BSH', 'academic'),
+        # Administrative
+        ('Main Administrative Office', 'ADMIN', 'administrative'),
+        ('Accounts & Finance Section', 'FIN', 'administrative'),
+        ('Admissions & Student Welfare Cell', 'ADMISSION', 'administrative')
+    ]
     
-    conn.execute(
-        text("""
-            INSERT INTO user_roles (user_id, role_id)
-            SELECT u.id, r.id FROM users u, roles r
-            WHERE u.email = :email AND r.name = 'SuperAdmin'
-            ON CONFLICT DO NOTHING;
-        """),
-        {"email": super_email}
-    )
+    for d_name, d_code, d_type in departments:
+        conn.execute(
+            text("""
+                INSERT INTO departments (id, name, code, department_type, is_active) 
+                VALUES (gen_random_uuid(), :name, :code, :type, true)
+                ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, department_type = EXCLUDED.department_type;
+            """),
+            {"name": d_name, "code": d_code, "type": d_type}
+        )
 
     # ==========================================
     # 6. SYSTEM SETTINGS

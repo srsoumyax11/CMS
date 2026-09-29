@@ -107,8 +107,8 @@ export const NAV_GROUPS: Record<UserRole, NavGroup[]> = {
     {
       name: 'Administration',
       items: [
-        { label: 'User Management', to: '/admin/users', icon: Users },
-        { label: 'Faculty', to: '/admin/faculty', icon: UserCog },
+        { label: 'Students', to: '/admin/students', icon: Users },
+        { label: 'Users', to: '/admin/users', icon: UserCog },
         { label: 'Roles', to: '/admin/permissions', icon: ShieldCheck },
         { label: 'Courses', to: '/admin/courses', icon: BookOpen },
         { label: 'Departments', to: '/admin/departments', icon: Settings },
@@ -140,7 +140,8 @@ export const BREADCRUMB_CONFIG: Record<string, string> = {
   'mess': 'Mess Menu',
   'attendance': 'Attendance',
   
-  'users': 'User Management',
+  'students': 'Students',
+  'users': 'Users',
   'permissions': 'Roles & Permissions',
   'profile': 'Profile',
 };

@@ -9,8 +9,8 @@ from pydantic import BaseModel
 from app.core.database import get_db
 from app.api.deps import require_permission
 from app.core.permissions import Perms
-from app.models.rbac import Role, Permission, Asset, Action, RolePermission, UserRole
-from app.models.user import User
+from app.models.rbac import Role, Permission, Asset, Action, RolePermission
+from app.models.user import User, UserType
 from app.schemas.common import APIResponse
 from app.schemas.roles import (
     RoleCreateRequest, RoleUpdateRequest, RoleResponse, PermissionMatrixResponse,
@@ -30,8 +30,8 @@ async def list_roles(
     _ = Depends(require_permission(Perms.ROLE_VIEW))
 ):
     stmt = (
-        select(Role, func.count(UserRole.user_id).label("assignment_count"))
-        .outerjoin(UserRole, Role.id == UserRole.role_id)
+        select(Role, func.count(User.id).label("assignment_count"))
+        .outerjoin(User, Role.id == User.role_id)
         .group_by(Role.id)
     )
     result = await db.execute(stmt)
@@ -161,7 +161,7 @@ async def update_role(
     await db.refresh(role)
     
     # Calculate assignment count
-    count_stmt = select(func.count(UserRole.user_id)).where(UserRole.role_id == id)
+    count_stmt = select(func.count(User.id)).where(User.role_id == id)
     assignment_count = (await db.execute(count_stmt)).scalar() or 0
     
     data = RoleResponse(
@@ -232,15 +232,19 @@ async def assign_role(
         raise HTTPException(status_code=404, detail="User not found")
         
     # Check if already assigned
-    ur_stmt = select(UserRole).where(
-        UserRole.user_id == req.user_id,
-        UserRole.role_id == id,
-    )
-    if (await db.execute(ur_stmt)).scalar_one_or_none():
+    if user.role_id == id:
         raise HTTPException(status_code=400, detail="Role already assigned to user")
         
-    new_ur = UserRole(user_id=req.user_id, role_id=id)
-    db.add(new_ur)
+    user.role_id = id
+    
+    # Sync user_type with role to prevent scattered data
+    if role.name == "Admin" or role.name == "SuperAdmin":
+        user.user_type = UserType.admin
+    elif role.name == "Student":
+        user.user_type = UserType.student
+    else:
+        user.user_type = UserType.faculty
+        
     await db.commit()
     
     return APIResponse(success=True, data=True, error=None)
@@ -256,7 +260,7 @@ async def get_assignment_count(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.ROLE_VIEW))
 ):
-    stmt = select(func.count(UserRole.user_id)).where(UserRole.role_id == id)
+    stmt = select(func.count(User.id)).where(User.role_id == id)
     count = (await db.execute(stmt)).scalar() or 0
     return APIResponse(success=True, data=count, error=None)
 
@@ -281,16 +285,16 @@ async def delete_role(
         
     if not force:
         # Check if assigned to any users
-        ur_stmt = select(UserRole).where(UserRole.role_id == id).limit(1)
-        if (await db.execute(ur_stmt)).scalar_one_or_none():
+        stmt = select(User).where(User.role_id == id).limit(1)
+        if (await db.execute(stmt)).scalar_one_or_none():
             raise HTTPException(status_code=400, detail="Cannot delete role: It is currently assigned to one or more users")
             
     if force:
-        # Delete user assignments
-        del_ur_stmt = select(UserRole).where(UserRole.role_id == id)
-        user_roles = (await db.execute(del_ur_stmt)).scalars().all()
-        for ur in user_roles:
-            await db.delete(ur)
+        # Unassign users by setting role_id to null
+        upd_stmt = select(User).where(User.role_id == id)
+        users = (await db.execute(upd_stmt)).scalars().all()
+        for u in users:
+            u.role_id = None
             
     # Delete permissions first (if not cascade)
     rp_stmt = select(RolePermission).where(RolePermission.role_id == id)

@@ -22,22 +22,26 @@ export interface Department {
   code: string;
   department_type: 'academic' | 'administrative';
   is_active: boolean;
+  hod_user_id: string | null;
 }
 
 export interface Course {
   id: string;
   name: string;
   is_active: boolean;
+  duration_years: number;
 }
 
 export interface CourseCreateRequest {
   name: string;
   is_active?: boolean;
+  duration_years?: number;
 }
 
 export interface CourseUpdateRequest {
   name?: string;
   is_active?: boolean;
+  duration_years?: number;
 }
 
 export interface MetadataRole {
@@ -51,6 +55,7 @@ export interface DepartmentCreateRequest {
   code: string;
   department_type?: 'academic' | 'administrative';
   is_active?: boolean;
+  hod_user_id?: string | null;
 }
 
 export interface DepartmentUpdateRequest {
@@ -58,6 +63,7 @@ export interface DepartmentUpdateRequest {
   code?: string;
   department_type?: 'academic' | 'administrative';
   is_active?: boolean;
+  hod_user_id?: string | null;
 }
 
 export type ComplaintStatus =
@@ -458,9 +464,12 @@ export interface FacultyItemResponse {
   user_id: string;
   name: string;
   email: string;
+  course_id: string;
+  course_name: string;
   department_id: string;
   department_name: string;
   designation: string;
+  is_hod: boolean;
   account_status: AccountStatus;
   employment_status: EmploymentStatus;
   status_note?: string | null;
@@ -473,7 +482,7 @@ export interface FacultyCreateRequest {
   course_id: string;
   department_id: string;
   designation: string;
-  role_ids?: string[];
+  role_id?: string;
 }
 
 export interface FacultyUpdateRequest {

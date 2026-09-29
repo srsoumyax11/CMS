@@ -11,7 +11,7 @@ from app.core.security import hash_password, verify_password, create_access_toke
 from app.models.user import User, UserType, AccountStatus
 from app.models.profiles import StudentProfile, AcademicStatus
 from app.models.academic import Course
-from app.models.rbac import Role, UserRole
+from app.models.rbac import Role
 from app.schemas.auth import (
     RegisterRequest, 
     LoginRequest, 
@@ -219,11 +219,10 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
     Get current logged in user details. Doesn't require any RBAC permissions.
     Allows users with "pending" profiles to check their status.
     """
-    rbac_roles = [ur.role.name for ur in current_user.user_roles] if current_user.user_roles else []
+    rbac_roles = [current_user.role.name] if current_user.role else []
     permissions = list({
         f"{perm.asset.name}:{perm.action.code}"
-        for ur in (current_user.user_roles or [])
-        for perm in ur.role.permissions
+        for perm in getattr(current_user.role, "permissions", [])
     })
 
     return APIResponse(
