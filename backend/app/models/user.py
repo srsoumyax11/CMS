@@ -3,8 +3,13 @@ import uuid
 from sqlalchemy import String, Boolean, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from app.models.base import Base, TimestampMixin, UUIDMixin
+
+if TYPE_CHECKING:
+    from app.models.profiles import StudentProfile, FacultyProfile
+    from app.models.rbac import Role
+    from app.models.notice import Notification
 
 class UserType(str, enum.Enum):
     student = "student"

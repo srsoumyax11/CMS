@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '@/components/ui/input-otp';
 import { Camera, Mail, Shield, Edit2, Loader2, Check, X, Copy, Key, ShieldCheck, LogOut, Bell, Smartphone, Eye, EyeOff } from 'lucide-react';
 import { ROLE_LABELS } from '@/lib/navigation';
 import { toast } from 'sonner';
@@ -27,6 +28,11 @@ export function Profile() {
   const [editUserIdValue, setEditUserIdValue] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [userIdError, setUserIdError] = useState<string | null>(null);
+  
+  // OTP State
+  const [otpSessionToken, setOtpSessionToken] = useState<string | null>(null);
+  const [otpValue, setOtpValue] = useState('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,6 +93,7 @@ export function Profile() {
     setIsSavingProfile(true);
     setUserIdError(null);
     let success = true;
+    let emailUpdateRequested = false;
 
     try {
       // 1. Update Name
@@ -94,19 +101,7 @@ export function Profile() {
         await authApi.updateName({ name: editNameValue.trim() });
       }
 
-      // 2. Update Email
-      if (editEmailValue.trim() !== user.email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(editEmailValue)) {
-          toast.error('Please enter a valid email address');
-          success = false;
-        } else {
-          await authApi.requestEmailUpdate({ new_email: editEmailValue.trim() });
-          toast.success('Verification email sent! Please check your new inbox.');
-        }
-      }
-
-      // 3. Update User ID
+      // 2. Update User ID
       if (editUserIdValue.trim() !== user.user_id) {
         try {
           await authApi.updateUserId({ user_id: editUserIdValue.trim() });
@@ -121,7 +116,28 @@ export function Profile() {
         }
       }
 
-      if (success) {
+      // 3. Update Email
+      if (editEmailValue.trim() !== user.email && success) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(editEmailValue)) {
+          toast.error('Please enter a valid email address');
+          success = false;
+        } else {
+          try {
+            const res = await authApi.requestEmailUpdate({ new_email: editEmailValue.trim() });
+            if (res.data.data?.session_token) {
+              setOtpSessionToken(res.data.data.session_token);
+              emailUpdateRequested = true;
+              toast.success(`Verification code sent to ${editEmailValue.trim()}`);
+            }
+          } catch (err: any) {
+            toast.error(err.response?.data?.detail || 'Failed to request email update');
+            success = false;
+          }
+        }
+      }
+
+      if (success && !emailUpdateRequested) {
         await refreshUser();
         toast.success('Profile updated successfully');
         setIsEditingProfile(false);
@@ -130,6 +146,24 @@ export function Profile() {
       toast.error('An error occurred while saving profile');
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpValue.length !== 6 || !otpSessionToken) return;
+    
+    setIsVerifyingOtp(true);
+    try {
+      await authApi.verifyEmailUpdate({ otp: otpValue, session_token: otpSessionToken });
+      toast.success('Email updated successfully');
+      setOtpSessionToken(null);
+      setOtpValue('');
+      await refreshUser();
+      setIsEditingProfile(false);
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Invalid verification code');
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -245,12 +279,54 @@ export function Profile() {
 
               {/* Right Side: Account Details Grid */}
               <div className="flex-1 flex flex-col pl-0 md:pl-4">
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground">Personal Information</h3>
-                    <p className="text-sm text-muted-foreground">Basic info, like your name and email.</p>
+                {otpSessionToken ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <Mail className="h-12 w-12 text-primary mb-4" />
+                    <h3 className="text-xl font-bold text-foreground mb-2">Verify Email Change</h3>
+                    <p className="text-sm text-muted-foreground text-center mb-6 max-w-sm">
+                      We've sent a 6-digit verification code to <strong>{editEmailValue}</strong>. 
+                      Please enter it below to confirm your new email address.
+                    </p>
+                    
+                    <div className="mb-6">
+                      <InputOTP 
+                        maxLength={6} 
+                        value={otpValue} 
+                        onChange={setOtpValue}
+                        disabled={isVerifyingOtp}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                        </InputOTPGroup>
+                        <InputOTPSeparator />
+                        <InputOTPGroup>
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <Button variant="outline" onClick={() => { setOtpSessionToken(null); setIsEditingProfile(true); }} disabled={isVerifyingOtp}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleVerifyOtp} disabled={otpValue.length !== 6 || isVerifyingOtp}>
+                        {isVerifyingOtp ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                        Verify & Update
+                      </Button>
+                    </div>
                   </div>
-                  {isEditingProfile ? (
+                ) : (
+                  <>
+                    <div className="mb-6 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-foreground">Personal Information</h3>
+                        <p className="text-sm text-muted-foreground">Basic info, like your name and email.</p>
+                      </div>
+                      {isEditingProfile ? (
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="sm" onClick={() => setIsEditingProfile(false)} disabled={isSavingProfile}>
                         Cancel
@@ -346,8 +422,8 @@ export function Profile() {
                     </div>
                   </div>
                 </div>
-
-
+                </>
+              )}
               </div>
             </CardContent>
           </Card>

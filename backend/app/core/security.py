@@ -37,13 +37,17 @@ def create_access_token(subject: str | Any, expires_delta: Optional[timedelta] =
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 
-def create_verification_token(subject: str | Any, new_email: str, expires_delta: Optional[timedelta] = None) -> str:
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(hours=2)
+def create_otp_session_token(subject: str | Any, new_email: str, otp_hash: str) -> str:
+    # 10 minutes expiry for OTP
+    expire = datetime.now(timezone.utc) + timedelta(minutes=10)
     
-    to_encode = {"exp": expire, "sub": str(subject), "type": "email_verification", "new_email": new_email}
+    to_encode = {
+        "exp": expire, 
+        "sub": str(subject), 
+        "type": "email_otp", 
+        "new_email": new_email,
+        "otp_hash": otp_hash
+    }
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 

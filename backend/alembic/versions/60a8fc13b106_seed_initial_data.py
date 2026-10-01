@@ -182,32 +182,7 @@ def upgrade() -> None:
         {"email": super_email, "password": super_password}
     )
 
-    # ==========================================
-    # 5.5 DEPARTMENTS (Academic and Administrative)
-    # ==========================================
-    departments = [
-        # Academic
-        ('Computer Science & Engineering (CSE)', 'CSE', 'academic'),
-        ('Mechanical Engineering (ME)', 'ME', 'academic'),
-        ('Electrical Engineering (EE) / Electrical & Electronics Engineering (EEE)', 'EEE', 'academic'),
-        ('Civil Engineering (CE)', 'CE', 'academic'),
-        ('Electronics & Telecommunication Engineering (ETC)', 'ETC', 'academic'),
-        ('Basic Science & Humanities (BSH)', 'BSH', 'academic'),
-        # Administrative
-        ('Main Administrative Office', 'ADMIN', 'administrative'),
-        ('Accounts & Finance Section', 'FIN', 'administrative'),
-        ('Admissions & Student Welfare Cell', 'ADMISSION', 'administrative')
-    ]
-    
-    for d_name, d_code, d_type in departments:
-        conn.execute(
-            text("""
-                INSERT INTO departments (id, name, code, department_type, is_active) 
-                VALUES (gen_random_uuid(), :name, :code, :type, true)
-                ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, department_type = EXCLUDED.department_type;
-            """),
-            {"name": d_name, "code": d_code, "type": d_type}
-        )
+
 
     # ==========================================
     # 6. SYSTEM SETTINGS

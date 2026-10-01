@@ -66,11 +66,16 @@ async def _send_email_worker(to_email: str, subject: str, template_name: str, co
         password = smtp_config.get("smtp_password")
         from_address = smtp_config.get("smtp_from_address", "noreply@synergyinstitute.net")
         
-        if not all([host, port_str, user, password]):
-            logger.error("Incomplete SMTP settings in database. Cannot send email.")
+        if not all([host, port_str]):
+            logger.error("Incomplete SMTP settings (host or port missing). Cannot send email.")
             return
             
         port = int(port_str)
+        
+        # Treat "mock" or empty as no authentication needed (useful for local Mailpit)
+        if not user or user.lower() == "mock":
+            user = None
+            password = None
         
         # 2. Render Template
         template = env.get_template(template_name)
@@ -87,15 +92,18 @@ async def _send_email_worker(to_email: str, subject: str, template_name: str, co
         use_tls = (port == 465)
         start_tls = (port == 587)
         
-        await aiosmtplib.send(
-            msg,
-            hostname=host,
-            port=port,
-            username=user,
-            password=password,
-            use_tls=use_tls,
-            start_tls=start_tls
-        )
+        # Only include auth credentials if they are present
+        send_kwargs = {
+            "hostname": host,
+            "port": port,
+            "use_tls": use_tls,
+            "start_tls": start_tls
+        }
+        if user and password:
+            send_kwargs["username"] = user
+            send_kwargs["password"] = password
+            
+        await aiosmtplib.send(msg, **send_kwargs)
         logger.info(f"Successfully sent email '{subject}' to {to_email}")
         
     except Exception as e:

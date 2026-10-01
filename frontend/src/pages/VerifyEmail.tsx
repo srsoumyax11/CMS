@@ -23,7 +23,7 @@ export function VerifyEmail() {
 
     const verify = async () => {
       try {
-        await authApi.verifyEmailUpdate({ token });
+        await authApi.verifyEmailUpdate({ token } as any);
         setStatus('success');
         setMessage('Email address updated successfully!');
         

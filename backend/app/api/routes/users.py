@@ -1,10 +1,16 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+import random
+import jwt
+from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import get_current_user, verify_password, hash_password
+from app.core.security import get_current_user, verify_password, hash_password, create_otp_session_token
 from app.core.storage import upload_avatar
 from app.models.user import User, UserType
 from app.schemas.common import APIResponse
+from app.schemas.auth import EmailUpdateRequest, EmailVerifyOTPRequest
+from app.utils.email import send_email_background
 
 router = APIRouter()
 
@@ -246,11 +252,6 @@ async def update_preferences(
         await db.rollback()
         raise HTTPException(status_code=400, detail="Database Error")
 
-from app.schemas.auth import EmailUpdateRequest, EmailVerifyRequest
-from app.core.security import create_verification_token, decode_token
-from app.utils.email import send_email_background
-from fastapi import BackgroundTasks
-from sqlalchemy import select
 
 @router.post(
     "/me/email/request",
@@ -270,50 +271,62 @@ async def request_email_update(
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email is already registered by another account")
         
-    token = create_verification_token(subject=current_user.id, new_email=data.new_email)
+    # Generate OTP
+    otp_code = str(random.randint(100000, 999999))
+    otp_hash = hash_password(otp_code)
     
-    # In a real app, this URL should be read from settings (e.g. settings.FRONTEND_URL)
-    # For now we use the Vite dev server default
-    frontend_url = "http://localhost:5173"
-    verify_link = f"{frontend_url}/verify-email?token={token}"
+    # Create the stateless session token
+    session_token = create_otp_session_token(subject=current_user.id, new_email=data.new_email, otp_hash=otp_hash)
     
     # Send verification email
-    # (Assuming we create a template at templates/email/verify_email.html)
     send_email_background(
         background_tasks=background_tasks,
         to_email=data.new_email,
-        subject="Verify your new email address",
-        template_name="verify_email.html",
+        subject="Your Email Verification Code",
+        template_name="email_update_otp.html",
         context={
             "name": current_user.name or "User",
-            "verify_link": verify_link,
+            "otp_code": otp_code,
             "new_email": data.new_email
         }
     )
     
-    return APIResponse(success=True, data={"message": "Verification email sent to new address"}, error=None)
+    return APIResponse(success=True, data={"message": "OTP sent to new address", "session_token": session_token}, error=None)
 
 @router.post(
     "/me/email/verify",
-    summary="Verify Email Update",
-    description="Verifies the token and updates the user's email address.",
+    summary="Verify Email OTP",
+    description="Verifies the OTP and updates the user's email address.",
     response_model=APIResponse[dict]
 )
 async def verify_email_update(
-    data: EmailVerifyRequest,
+    data: EmailVerifyOTPRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    payload = decode_token(data.token)
-    if not payload or payload.get("type") != "email_verification":
-        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+    try:
+        payload = jwt.decode(data.session_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="OTP session expired. Please request a new code.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Invalid OTP session token")
+
+    if payload.get("type") != "email_otp":
+        raise HTTPException(status_code=400, detail="Invalid token type")
         
     user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="Invalid token payload")
+    if not user_id or str(current_user.id) != user_id:
+        raise HTTPException(status_code=400, detail="Token mismatch")
         
     new_email = payload.get("new_email")
-    if not new_email:
+    otp_hash = payload.get("otp_hash")
+    
+    if not new_email or not otp_hash:
         raise HTTPException(status_code=400, detail="Invalid token payload")
+        
+    # Verify OTP
+    if not verify_password(data.otp, otp_hash):
+        raise HTTPException(status_code=400, detail="Incorrect verification code")
         
     # Check again if email was taken in the meantime
     stmt = select(User).where(User.email == new_email)
@@ -322,13 +335,9 @@ async def verify_email_update(
         raise HTTPException(status_code=400, detail="Email is already registered by another account")
         
     try:
-        stmt = select(User).where(User.id == user_id)
-        result = await db.execute(stmt)
-        target_user = result.scalar_one_or_none()
-        if not target_user:
-            raise HTTPException(status_code=404, detail="User not found")
-        target_user.email = new_email
+        current_user.email = new_email
         await db.commit()
+        await db.refresh(current_user)
         return APIResponse(success=True, data={"message": "Email updated successfully"}, error=None)
     except Exception:
         await db.rollback()

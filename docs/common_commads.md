@@ -23,6 +23,23 @@ cd .\frontend\
 npm run dev
 ```
 
+### Find Errors in Frontend
+Runs TypeScript type checking and ESLint to find issues in your React/TS code.
+```bash
+cd .\frontend\
+npm run typecheck
+npm run lint
+```
+
+### Find Errors in Backend
+We recommend using `mypy` for static type checking in Python to catch issues before runtime.
+```bash
+cd .\backend\
+.\venv\Scripts\activate
+pip install mypy
+mypy app/
+```
+
 ### TEST FRONTEND APIs
 ```bash
 cd .\backend\

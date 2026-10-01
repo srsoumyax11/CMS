@@ -64,9 +64,9 @@ export const authApi = {
   updatePreferences: (data: UserPreferencesUpdateRequest) =>
     client.patch<APIResponse<{ email_notifications: boolean; in_app_alerts: boolean }>>(API_ROUTES.UPDATE_PREFERENCES, data),
 
-  requestEmailUpdate: (data: EmailUpdateRequest) =>
-    client.post<APIResponse<{ message: string }>>(API_ROUTES.REQUEST_EMAIL_UPDATE, data),
+  requestEmailUpdate: (data: { new_email: string }) =>
+    client.post<APIResponse<{ message: string, session_token: string }>>(API_ROUTES.REQUEST_EMAIL_UPDATE, data),
 
-  verifyEmailUpdate: (data: EmailVerifyRequest) =>
+  verifyEmailUpdate: (data: { otp: string, session_token: string }) =>
     client.post<APIResponse<{ message: string }>>(API_ROUTES.VERIFY_EMAIL_UPDATE, data),
 };

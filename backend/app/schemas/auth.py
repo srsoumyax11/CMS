@@ -75,5 +75,6 @@ class PasswordChangeRequest(BaseModel):
 class EmailUpdateRequest(BaseModel):
     new_email: EmailStr
 
-class EmailVerifyRequest(BaseModel):
-    token: str
+class EmailVerifyOTPRequest(BaseModel):
+    otp: str
+    session_token: str

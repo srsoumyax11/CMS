@@ -4,6 +4,11 @@ from sqlalchemy import String, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, UUIDMixin
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.models.academic import Course, Department
 
 class AcademicStatus(str, enum.Enum):
     enrolled = "enrolled"
