@@ -93,7 +93,7 @@ async def list_notices(
     notices, total = await service.get_feed_for_user(current_user.id, current_user.user_type, profile, skip, limit)
     
     items = []
-    for notice, is_read in result.all():
+    for notice, is_read in notices:
         data = NoticeResponse.model_validate(notice)
         data.is_read = is_read
         items.append(data)
