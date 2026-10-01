@@ -342,3 +342,73 @@ async def verify_email_update(
     except Exception:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Database error during email update")
+
+# 2FA Endpoints
+
+@router.post("/me/2fa/enable-request", summary="Request 2FA Enablement", response_model=APIResponse[dict])
+async def request_2fa_enable(
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.is_2fa_enabled:
+        raise HTTPException(status_code=400, detail="2FA is already enabled")
+        
+    otp_code = str(random.randint(100000, 999999))
+    otp_hash = hash_password(otp_code)
+    
+    session_token = create_otp_session_token(subject=current_user.id, new_email=current_user.email, otp_hash=otp_hash)
+    
+    send_email_background(
+        background_tasks=background_tasks,
+        to_email=current_user.email,
+        subject="Enable Two-Factor Authentication",
+        template_name="2fa_enable_otp.html",
+        context={"name": current_user.name or "User", "otp_code": otp_code}
+    )
+    return APIResponse(success=True, data={"message": "OTP sent", "session_token": session_token}, error=None)
+
+@router.post("/me/2fa/enable-verify", summary="Verify and Enable 2FA", response_model=APIResponse[dict])
+async def verify_2fa_enable(
+    data: EmailVerifyOTPRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        payload = jwt.decode(data.session_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="OTP session expired.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Invalid OTP session token")
+
+    if payload.get("type") != "email_otp":
+        raise HTTPException(status_code=400, detail="Invalid token type")
+        
+    user_id = payload.get("sub")
+    if not user_id or str(current_user.id) != user_id:
+        raise HTTPException(status_code=400, detail="Token mismatch")
+        
+    otp_hash = payload.get("otp_hash")
+    
+    if not verify_password(data.otp, otp_hash):
+        raise HTTPException(status_code=400, detail="Incorrect verification code")
+        
+    try:
+        current_user.is_2fa_enabled = True
+        await db.commit()
+        return APIResponse(success=True, data={"message": "2FA successfully enabled"}, error=None)
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Database error")
+
+@router.post("/me/2fa/disable", summary="Disable 2FA", response_model=APIResponse[dict])
+async def disable_2fa(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        current_user.is_2fa_enabled = False
+        await db.commit()
+        return APIResponse(success=True, data={"message": "2FA disabled"}, error=None)
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Database error")

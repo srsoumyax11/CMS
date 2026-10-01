@@ -14,7 +14,8 @@ interface AuthContextValue {
   user: UserResponse | null;
   role: UserRole | null;
   isLoading: boolean;
-  login: (credentials: LoginRequest) => Promise<void>;
+  login: (credentials: LoginRequest) => Promise<any>;
+  finishLogin: (access_token: string, refresh_token: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   rbacRoles: string[];
@@ -65,10 +66,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await authApi.login(credentials);
     const tokenData = response.data.data;
     if (!tokenData) throw new Error('No token data received');
-    const { access_token, refresh_token } = tokenData;
+    
+    if ('requires_2fa' in tokenData && tokenData.requires_2fa) {
+      return tokenData;
+    }
+
+    const { access_token, refresh_token } = tokenData as any;
     localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access_token);
     localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh_token);
 
+    const userResponse = await authApi.me();
+    setUser(userResponse.data.data);
+    return tokenData;
+  }, []);
+
+  const finishLogin = useCallback(async (access_token: string, refresh_token: string) => {
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access_token);
+    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh_token);
     const userResponse = await authApi.me();
     setUser(userResponse.data.data);
   }, []);
@@ -95,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role: user?.user_type ?? null,
     isLoading,
     login,
+    finishLogin,
     logout,
     refreshUser: fetchUser,
     rbacRoles,

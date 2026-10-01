@@ -38,6 +38,7 @@ class User(Base, UUIDMixin, TimestampMixin):
     # Preferences
     email_notifications: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     in_app_alerts: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_2fa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     student_profile: Mapped[Optional["StudentProfile"]] = relationship("StudentProfile", back_populates="user", cascade="all, delete-orphan", uselist=False)
     faculty_profile: Mapped[Optional["FacultyProfile"]] = relationship("FacultyProfile", back_populates="user", cascade="all, delete-orphan", uselist=False)

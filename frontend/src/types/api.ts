@@ -105,10 +105,20 @@ export interface LoginRequest {
 export interface TokenResponse {
   access_token: string;
   refresh_token: string;
-  token_type: string;
+  token_type?: string;
   user_type: UserType;
-  status: string;
+  account_status: AccountStatus;
+  academic_status?: AcademicStatus | null;
+  employment_status?: EmploymentStatus | null;
 }
+
+export interface Requires2FAResponse {
+  requires_2fa: boolean;
+  session_token: string;
+  email: string;
+}
+
+export type LoginResponseData = TokenResponse | Requires2FAResponse;
 
 export interface RefreshTokenRequest {
   refresh_token: string;
@@ -152,6 +162,7 @@ export interface UserResponse {
   photo_url?: string | null;
   email_notifications: boolean;
   in_app_alerts: boolean;
+  is_2fa_enabled: boolean;
   rbac_roles?: string[];
   permissions?: string[];
 }

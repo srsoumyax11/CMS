@@ -16,11 +16,12 @@ import type {
   UserPreferencesUpdateRequest,
   EmailUpdateRequest,
   EmailVerifyRequest,
+  LoginResponseData
 } from '@/types/api';
 
 export const authApi = {
   login: (data: LoginRequest) =>
-    client.post<APIResponse<TokenResponse>>(API_ROUTES.LOGIN, data),
+    client.post<APIResponse<LoginResponseData>>(API_ROUTES.LOGIN, data),
 
   refresh: (data: RefreshTokenRequest) =>
     client.post<APIResponse<RefreshTokenResponse>>(API_ROUTES.REFRESH, data),
@@ -69,4 +70,17 @@ export const authApi = {
 
   verifyEmailUpdate: (data: { otp: string, session_token: string }) =>
     client.post<APIResponse<{ message: string }>>(API_ROUTES.VERIFY_EMAIL_UPDATE, data),
+
+  // 2FA Endpoints
+  verify2FA: (data: { session_token: string; otp: string }) =>
+    client.post<APIResponse<TokenResponse>>('/api/auth/login/verify-2fa', data),
+
+  enable2FARequest: () =>
+    client.post<APIResponse<{ message: string, session_token: string }>>('/api/users/me/2fa/enable-request', {}),
+
+  enable2FAVerify: (data: { session_token: string; otp: string }) =>
+    client.post<APIResponse<{ message: string }>>('/api/users/me/2fa/enable-verify', data),
+
+  disable2FA: () =>
+    client.post<APIResponse<{ message: string }>>('/api/users/me/2fa/disable', {}),
 };

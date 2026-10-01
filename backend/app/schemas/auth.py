@@ -49,6 +49,7 @@ class UserResponse(BaseModel):
     photo_url: Optional[str] = None
     email_notifications: bool = True
     in_app_alerts: bool = True
+    is_2fa_enabled: bool = False
     rbac_roles: list[str] = Field(default_factory=list)
     permissions: list[str] = Field(default_factory=list)
 

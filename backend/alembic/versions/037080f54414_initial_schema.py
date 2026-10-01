@@ -33,6 +33,7 @@ def upgrade() -> None:
     sa.Column('photo_url', sa.String(length=255), nullable=True),
     sa.Column('email_notifications', sa.Boolean(), nullable=False),
     sa.Column('in_app_alerts', sa.Boolean(), nullable=False),
+    sa.Column('is_2fa_enabled', sa.Boolean(), server_default=sa.text('false'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),

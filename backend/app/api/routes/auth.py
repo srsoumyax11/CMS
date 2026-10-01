@@ -19,7 +19,8 @@ from app.schemas.auth import (
     RefreshTokenRequest, 
     RefreshTokenResponse,
     RegisterResponseData,
-    UserResponse
+    UserResponse,
+    EmailVerifyOTPRequest
 )
 from app.schemas.common import APIResponse
 from app.utils.email import send_email_background
@@ -133,10 +134,14 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     "/login", 
     summary="User Login", 
     description="Authenticates a user with email and password, returning access and refresh JWTs.",
-    response_model=APIResponse[TokenResponse],
+    response_model=APIResponse[dict],
     dependencies=[Depends(RateLimiter(times=100, minutes=1))]
 )
-async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(
+    data: LoginRequest, 
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db)
+):
     result = await db.execute(
         select(User).options(
             selectinload(User.student_profile),
@@ -151,8 +156,30 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
             detail="Invalid email or password"
         )
         
-    # User is authenticated. We allow all account statuses so the frontend can route them to appropriate status pages.
-    
+    # User is authenticated.
+    if user.is_2fa_enabled:
+        import random
+        from app.core.security import create_otp_session_token, hash_password
+        from app.utils.email import send_email_background
+        
+        otp_code = str(random.randint(100000, 999999))
+        otp_hash = hash_password(otp_code)
+        
+        session_token = create_otp_session_token(subject=str(user.id), new_email=user.email, otp_hash=otp_hash)
+        
+        send_email_background(
+            background_tasks=background_tasks,
+            to_email=user.email,
+            subject="Your Login Security Code",
+            template_name="2fa_login_otp.html",
+            context={"name": user.name or "User", "otp_code": otp_code}
+        )
+        return APIResponse(
+            success=True, 
+            data={"requires_2fa": True, "session_token": session_token, "email": user.email},
+            error=None
+        )
+
     academic_status = None
     employment_status = None
     if user.user_type == UserType.student and user.student_profile:
@@ -166,14 +193,76 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     
     return APIResponse(
         success=True, 
-        data=TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            user_type=user.user_type,
-            account_status=user.account_status,
-            academic_status=academic_status,
-            employment_status=employment_status
-        ), 
+        data={
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "user_type": user.user_type,
+            "account_status": user.account_status,
+            "academic_status": academic_status,
+            "employment_status": employment_status
+        }, 
+        error=None
+    )
+
+
+@router.post(
+    "/login/verify-2fa",
+    summary="Verify 2FA Login",
+    description="Exchanges the 2FA session token and OTP for access tokens.",
+    response_model=APIResponse[dict],
+    dependencies=[Depends(RateLimiter(times=5, minutes=1))]
+)
+async def verify_2fa_login(
+    data: EmailVerifyOTPRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        from app.core.config import settings
+        import jwt
+        payload = jwt.decode(data.session_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="OTP session expired. Please log in again.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Invalid session token.")
+        
+    user_id = payload.get("sub")
+    otp_hash = payload.get("otp_hash")
+    
+    from app.core.security import verify_password
+    if not verify_password(data.otp, otp_hash):
+        raise HTTPException(status_code=400, detail="Incorrect 2FA code.")
+        
+    result = await db.execute(
+        select(User).options(
+            selectinload(User.student_profile),
+            selectinload(User.faculty_profile)
+        ).where(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found")
+        
+    academic_status = None
+    employment_status = None
+    if user.user_type == UserType.student and user.student_profile:
+        academic_status = user.student_profile.academic_status.value
+    elif user.user_type == UserType.faculty and user.faculty_profile:
+        employment_status = user.faculty_profile.employment_status.value
+
+    from app.core.security import create_access_token, create_refresh_token
+    access_token = create_access_token(subject=str(user.id))
+    refresh_token = create_refresh_token(subject=str(user.id))
+    
+    return APIResponse(
+        success=True, 
+        data={
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "user_type": user.user_type,
+            "account_status": user.account_status,
+            "academic_status": academic_status,
+            "employment_status": employment_status
+        }, 
         error=None
     )
 
@@ -240,6 +329,7 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
             photo_url=current_user.photo_url,
             email_notifications=current_user.email_notifications,
             in_app_alerts=current_user.in_app_alerts,
+            is_2fa_enabled=current_user.is_2fa_enabled,
             rbac_roles=rbac_roles,
             permissions=permissions
         ),

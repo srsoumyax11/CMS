@@ -8,11 +8,21 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '@/components/ui/input-otp';
-import { Camera, Mail, Shield, Edit2, Loader2, Check, X, Copy, Key, ShieldCheck, LogOut, Bell, Smartphone, Eye, EyeOff } from 'lucide-react';
+import { Camera, Mail, Shield, Edit2, Loader2, Check, X, Copy, Key, ShieldCheck, LogOut, Bell, Smartphone, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { ROLE_LABELS } from '@/lib/navigation';
 import { toast } from 'sonner';
 import { ProfilePhotoCropper } from '@/components/shared/ProfilePhotoCropper';
 import { PasswordRequirements } from '@/components/shared/PasswordRequirements';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function Profile() {
   const { user, role, refreshUser, logout } = useAuth();
@@ -42,7 +52,12 @@ export function Profile() {
   const [newPassword, setNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+  
+  const [is2FAEnabled, setIs2FAEnabled] = useState(user?.is_2fa_enabled ?? false);
+  const [twoFaSessionToken, setTwoFaSessionToken] = useState<string | null>(null);
+  const [twoFaOtpValue, setTwoFaOtpValue] = useState('');
+  const [isVerifyingTwoFaOtp, setIsVerifyingTwoFaOtp] = useState(false);
+  const [isDisableModalOpen, setIsDisableModalOpen] = useState(false);
 
   // Preferences Tab State
   const [emailNotifs, setEmailNotifs] = useState(user?.email_notifications ?? true);
@@ -52,6 +67,7 @@ export function Profile() {
     if (user) {
       setEmailNotifs(user.email_notifications ?? true);
       setAppNotifs(user.in_app_alerts ?? true);
+      setIs2FAEnabled(user.is_2fa_enabled ?? false);
     }
   }, [user]);
 
@@ -194,6 +210,49 @@ export function Profile() {
       toast.error(errorMsg);
     } finally {
       setIsChangingPassword(false);
+    }
+  };
+
+  const handleToggle2FA = async (enable: boolean) => {
+    if (enable) {
+      try {
+        const response = await authApi.enable2FARequest();
+        if (response.data.data?.session_token) {
+          setTwoFaSessionToken(response.data.data.session_token);
+          toast.success('Verification code sent to your email');
+        }
+      } catch (err: any) {
+        toast.error(err.response?.data?.detail || 'Failed to request 2FA enablement');
+      }
+    } else {
+      setIsDisableModalOpen(true);
+    }
+  };
+
+  const executeDisable2FA = async () => {
+    try {
+      await authApi.disable2FA();
+      await refreshUser();
+      toast.success('Two-Factor Authentication disabled');
+      setIsDisableModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to disable 2FA');
+    }
+  };
+
+  const handleVerify2FA = async () => {
+    if (twoFaOtpValue.length !== 6 || !twoFaSessionToken) return;
+    setIsVerifyingTwoFaOtp(true);
+    try {
+      await authApi.enable2FAVerify({ otp: twoFaOtpValue, session_token: twoFaSessionToken });
+      setTwoFaSessionToken(null);
+      setTwoFaOtpValue('');
+      await refreshUser();
+      toast.success('Two-Factor Authentication enabled successfully');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Invalid verification code');
+    } finally {
+      setIsVerifyingTwoFaOtp(false);
     }
   };
 
@@ -511,18 +570,66 @@ export function Profile() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Two-Factor Authentication (2FA)</p>
-                  <p className="text-xs text-muted-foreground">Protect your account with an authenticator app.</p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Two-Factor Authentication (2FA)</p>
+                    <p className="text-xs text-muted-foreground">Protect your account with an email OTP code.</p>
+                  </div>
+                  <Switch 
+                    checked={is2FAEnabled}
+                    onCheckedChange={(val) => {
+                      if (!twoFaSessionToken) {
+                        handleToggle2FA(val);
+                      }
+                    }}
+                    disabled={!!twoFaSessionToken}
+                  />
                 </div>
-                <Switch 
-                  checked={is2FAEnabled}
-                  onCheckedChange={(val) => {
-                    if (val) mockAction('Two-Factor Authentication');
-                    setIs2FAEnabled(false);
-                  }}
-                />
+                
+                {twoFaSessionToken && (
+                  <div className="bg-muted p-4 rounded-md space-y-4">
+                    <p className="text-sm text-foreground">Enter the 6-digit code sent to your email to enable 2FA:</p>
+                    <div className="flex flex-col items-center gap-4">
+                      <InputOTP 
+                        maxLength={6} 
+                        value={twoFaOtpValue}
+                        onChange={(val) => setTwoFaOtpValue(val)}
+                        disabled={isVerifyingTwoFaOtp}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => {
+                            setTwoFaSessionToken(null);
+                            setTwoFaOtpValue('');
+                          }}
+                          disabled={isVerifyingTwoFaOtp}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          size="sm"
+                          disabled={twoFaOtpValue.length !== 6 || isVerifyingTwoFaOtp}
+                          onClick={handleVerify2FA}
+                        >
+                          {isVerifyingTwoFaOtp ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                          Verify & Enable
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="flex items-center justify-between border-t pt-6">
@@ -600,6 +707,38 @@ export function Profile() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={isDisableModalOpen} onOpenChange={setIsDisableModalOpen}>
+        <AlertDialogContent className="border-destructive/20">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              Disable Two-Factor Authentication?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="pt-3">
+              <div className="rounded-md border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive-foreground">
+                <p className="text-muted-foreground">
+                  Disabling 2FA will make your account significantly less secure. You will only need your password to sign in, exposing your account to greater risk of unauthorized access.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel disabled={isSavingProfile}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={(e) => {
+                e.preventDefault();
+                executeDisable2FA();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Yes, disable 2FA
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
