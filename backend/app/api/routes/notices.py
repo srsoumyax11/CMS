@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, and_, desc
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 from typing import Optional, List
 
-from app.core.database import get_db
+from app.core.uow import UnitOfWork
 from app.models.user import User, UserType
 from app.models.notice import Notice, NoticeRead
 from app.models.profiles import StudentProfile
 from app.schemas.notice import NoticeResponse, NoticeListResponse
 from app.schemas.common import APIResponse
-from app.api.deps import require_permission, get_current_user, get_user_permissions
+from app.api.deps import require_permission, get_current_user, get_user_permissions, get_uow
+from app.services.notice_service import NoticeService
 from app.core.permissions import Perms
 from app.core.storage import upload_notice_attachment
 from app.utils.validation import validate_upload_file
@@ -35,9 +35,10 @@ async def create_notice(
     target_hostel: Optional[str] = Form(None),
     target_user_types: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     current_user: User = Depends(require_permission(Perms.NOTICE_CREATE))
 ):
+    service = NoticeService(uow)
     attachment_url = None
     if file:
         ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
@@ -61,9 +62,7 @@ async def create_notice(
         target_user_types=target_user_types
     )
     
-    db.add(notice)
-    await db.commit()
-    await db.refresh(notice)
+    notice = await service.create_notice(notice)
     
     return APIResponse(success=True, data=NoticeResponse.model_validate(notice))
 
@@ -77,46 +76,21 @@ async def create_notice(
 async def list_notices(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     current_user: User = Depends(require_permission(Perms.NOTICE_LIST)),
     permissions: set = Depends(get_user_permissions)
 ):
-    read_exists = select(NoticeRead.id).where(
-        and_(NoticeRead.notice_id == Notice.id, NoticeRead.user_id == current_user.id)
-    ).exists()
+    service = NoticeService(uow)
     
-    stmt = select(Notice, read_exists.label("is_read")).order_by(Notice.created_at.desc())
-    
-    # Apply filtering based on user type
+    profile = None
     if current_user.user_type == UserType.student:
         profile_stmt = select(StudentProfile).where(StudentProfile.user_id == current_user.id)
-        profile_result = await db.execute(profile_stmt)
+        profile_result = await uow.db.execute(profile_stmt)
         profile = profile_result.scalar_one_or_none()
-        
         if not profile:
             raise HTTPException(status_code=404, detail="Student profile not found")
             
-        stmt = stmt.where(
-            or_(
-                Notice.target_user_types.is_(None),
-                Notice.target_user_types.contains("student")
-            ),
-            or_(Notice.target_course_id.is_(None), Notice.target_course_id == profile.course_id),
-            or_(Notice.target_department_id.is_(None), Notice.target_department_id == profile.department_id),
-            or_(Notice.target_year.is_(None), Notice.target_year == profile.year),
-            or_(Notice.target_hostel.is_(None), Notice.target_hostel == profile.hostel)
-        )
-    elif current_user.user_type == UserType.faculty:
-        stmt = stmt.where(
-            or_(
-                Notice.target_user_types.is_(None),
-                Notice.target_user_types.contains("faculty")
-            )
-        )
-    # Admin can see all notices
-    
-    stmt = stmt.offset(skip).limit(limit)
-    result = await db.execute(stmt)
+    notices, total = await service.get_feed_for_user(current_user.id, current_user.user_type, profile, skip, limit)
     
     items = []
     for notice, is_read in result.all():
@@ -140,50 +114,27 @@ async def list_notices(
 )
 async def get_notice(
     id: UUID,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     current_user: User = Depends(require_permission(Perms.NOTICE_VIEW)),
     permissions: set = Depends(get_user_permissions)
 ):
-    read_exists = select(NoticeRead.id).where(
-        and_(NoticeRead.notice_id == Notice.id, NoticeRead.user_id == current_user.id)
-    ).exists()
+    service = NoticeService(uow)
     
-    stmt = select(Notice, read_exists.label("is_read")).where(Notice.id == id)
-    result = await db.execute(stmt)
-    row = result.first()
-    
+    profile = None
+    if current_user.user_type == UserType.student:
+        profile_stmt = select(StudentProfile).where(StudentProfile.user_id == current_user.id)
+        profile_result = await uow.db.execute(profile_stmt)
+        profile = profile_result.scalar_one_or_none()
+
+    try:
+        row = await service.get_notice(id, current_user.id, current_user.user_type, profile)
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+        
     if not row:
         raise HTTPException(status_code=404, detail="Notice not found")
         
     notice, is_read = row
-    
-    # Apply viewing logic
-    if current_user.user_type == UserType.student:
-        profile_stmt = select(StudentProfile).where(StudentProfile.user_id == current_user.id)
-        profile_result = await db.execute(profile_stmt)
-        profile = profile_result.scalar_one_or_none()
-        
-        if not profile:
-            raise HTTPException(status_code=404, detail="Student profile not found")
-            
-        can_view = True
-        if notice.target_user_types and "student" not in notice.target_user_types:
-            can_view = False
-        if notice.target_course_id and notice.target_course_id != profile.course_id:
-            can_view = False
-        if notice.target_department_id and notice.target_department_id != profile.department_id:
-            can_view = False
-        if notice.target_year and notice.target_year != profile.year:
-            can_view = False
-        if notice.target_hostel and notice.target_hostel != profile.hostel:
-            can_view = False
-            
-        if not can_view:
-            raise HTTPException(status_code=403, detail="You do not have access to this notice")
-            
-    elif current_user.user_type == UserType.faculty:
-        if notice.target_user_types and "faculty" not in notice.target_user_types:
-            raise HTTPException(status_code=403, detail="You do not have access to this notice")
 
     response_data = NoticeResponse.model_validate(notice)
     response_data.is_read = is_read
@@ -197,25 +148,13 @@ async def get_notice(
 )
 async def mark_notice_read(
     id: UUID,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     current_user: User = Depends(require_permission(Perms.NOTICE_VIEW))
 ):
-    stmt = select(Notice).where(Notice.id == id)
-    notice = (await db.execute(stmt)).scalar_one_or_none()
-    if not notice:
-        raise HTTPException(status_code=404, detail="Notice not found")
-        
-    notice_read = NoticeRead(
-        notice_id=id,
-        user_id=current_user.id
-    )
-    
+    service = NoticeService(uow)
     try:
-        db.add(notice_read)
-        await db.commit()
+        await service.mark_as_read(id, current_user.id)
     except IntegrityError:
-        await db.rollback()
-        # Already marked as read
         pass
         
     return APIResponse(success=True, data=True)
@@ -228,23 +167,18 @@ async def mark_notice_read(
 )
 async def delete_notice(
     id: UUID,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     current_user: User = Depends(get_current_user), # Using get_current_user because we'll check manually
     permissions: set = Depends(get_user_permissions)
 ):
-    stmt = select(Notice).where(Notice.id == id)
-    result = await db.execute(stmt)
-    notice = result.scalar_one_or_none()
-    
-    if not notice:
-        raise HTTPException(status_code=404, detail="Notice not found")
-        
-    # RBAC logic without hardcoding is_superadmin
-    if notice.author_id != current_user.id and Perms.NOTICE_DELETE not in permissions:
-        raise HTTPException(status_code=403, detail="Cannot modify someone else's notice")
-        
-    await db.delete(notice)
-    await db.commit()
+    service = NoticeService(uow)
+    has_perm = Perms.NOTICE_DELETE in permissions
+    try:
+        notice = await service.delete_notice(id, current_user.id, has_perm)
+        if not notice:
+            raise HTTPException(status_code=404, detail="Notice not found")
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     
     return APIResponse(success=True, data=NoticeResponse.model_validate(notice))
 
@@ -258,25 +192,22 @@ async def update_notice(
     id: UUID,
     title: Optional[str] = Form(None),
     content: Optional[str] = Form(None),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     current_user: User = Depends(get_current_user),
     permissions: set = Depends(get_user_permissions)
 ):
-    stmt = select(Notice).where(Notice.id == id)
-    result = await db.execute(stmt)
-    notice = result.scalar_one_or_none()
-    
-    if not notice:
-        raise HTTPException(status_code=404, detail="Notice not found")
-        
-    if notice.author_id != current_user.id and Perms.NOTICE_CREATE not in permissions:
-        raise HTTPException(status_code=403, detail="Cannot modify someone else's notice")
-        
+    service = NoticeService(uow)
+    has_perm = Perms.NOTICE_CREATE in permissions
+    update_data = {}
     if title is not None:
-        notice.title = title
+        update_data["title"] = title
     if content is not None:
-        notice.content = content
+        update_data["content"] = content
         
-    await db.commit()
-    await db.refresh(notice)
+    try:
+        notice = await service.update_notice(id, current_user.id, has_perm, update_data)
+        if not notice:
+            raise HTTPException(status_code=404, detail="Notice not found")
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     return APIResponse(success=True, data=NoticeResponse.model_validate(notice))
