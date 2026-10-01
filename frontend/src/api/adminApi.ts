@@ -3,6 +3,7 @@ import { API_ROUTES } from '@/lib/constants';
 import type {
   APIResponse,
   StudentItemResponse,
+  StudentCreateRequest,
   StudentStatusUpdateRequest,
   FacultyItemResponse,
   FacultyCreateRequest,
@@ -26,6 +27,9 @@ export const adminApi = {
   listStudents: (params?: StudentListParams) =>
     client.get<APIResponse<StudentItemResponse[]>>(API_ROUTES.ADMIN_STUDENTS, { params }),
 
+  createStudent: (data: StudentCreateRequest) =>
+    client.post<APIResponse<StudentItemResponse>>(API_ROUTES.ADMIN_STUDENTS, data),
+
   getStudent: (id: string) =>
     client.get<APIResponse<StudentItemResponse>>(API_ROUTES.ADMIN_STUDENT_DETAIL(id)),
 
@@ -44,6 +48,16 @@ export const adminApi = {
 
   updateFaculty: (id: string, data: FacultyUpdateRequest) =>
     client.patch<APIResponse<FacultyItemResponse>>(API_ROUTES.ADMIN_FACULTY_DETAIL(id), data),
+
+  uploadUserPhoto: (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return client.post<APIResponse<{ photo_url: string }>>(`/api/admin/users/${id}/photo`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 
   listAdmins: (params?: StudentListParams) =>
     client.get<APIResponse<AdminItemResponse[]>>(API_ROUTES.ADMIN_ADMINS, { params }),

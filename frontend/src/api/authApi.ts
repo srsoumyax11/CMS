@@ -28,6 +28,9 @@ export const authApi = {
 
   me: () => client.get<APIResponse<UserResponse>>(API_ROUTES.ME),
 
+  checkEmail: (email: string) => 
+    client.get<APIResponse<boolean>>(API_ROUTES.CHECK_EMAIL, { params: { email } }),
+
   register: (data: RegisterRequest) =>
     client.post<APIResponse<TokenResponse>>(API_ROUTES.REGISTER, data),
 

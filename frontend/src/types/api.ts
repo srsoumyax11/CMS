@@ -136,6 +136,16 @@ export interface RegisterRequest {
   user_id: string;
 }
 
+export interface StudentCreateRequest {
+  name: string;
+  email: string;
+  password?: string;
+  course_id: string;
+  department_id: string;
+  year: number;
+  hostel?: string;
+}
+
 export interface StudentProfileCreateRequest {
   course_id: string;
   branch_id: string;
@@ -475,6 +485,7 @@ export interface FacultyItemResponse {
   user_id: string;
   name: string;
   email: string;
+  photo_url?: string | null;
   course_id: string;
   course_name: string;
   department_id: string;
@@ -499,6 +510,8 @@ export interface FacultyCreateRequest {
 export interface FacultyUpdateRequest {
   name?: string;
   email?: string;
+  user_id?: string;
+  photo_url?: string;
   department_id?: string;
   designation?: string;
   account_status?: AccountStatus;

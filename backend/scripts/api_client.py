@@ -12,13 +12,12 @@ class APIClient:
     def login(self, email, password):
         print(f"Logging in as {email}...")
         resp = self.session.post(
-            f"{BASE_URL}/auth/login",
-            json={"email": email, "password": password}
+            f"{BASE_URL}/auth/token",
+            data={"username": email, "password": password}
         )
         if resp.status_code == 200:
             data = resp.json()
-            # The token is returned inside a standard APIResponse payload: data['data']['access_token']
-            self.token = data.get("data", {}).get("access_token")
+            self.token = data.get("access_token")
             self.session.headers.update({"Authorization": f"Bearer {self.token}"})
             print("Login successful!")
             return True

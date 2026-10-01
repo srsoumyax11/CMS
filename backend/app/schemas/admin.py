@@ -23,6 +23,15 @@ class CourseItemResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class StudentCreateRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    course_id: UUID4
+    department_id: UUID4
+    year: int = Field(default=1, ge=1, le=7)
+    hostel: Optional[str] = None
+
 class StudentStatusUpdateRequest(BaseModel):
     account_status: Optional[AccountStatus] = None
     academic_status: Optional[AcademicStatus] = None
@@ -64,6 +73,7 @@ class FacultyItemResponse(BaseModel):
     user_id: str
     name: str
     email: str
+    photo_url: Optional[str] = None
     course_id: UUID4
     course_name: str
     department_id: UUID4
@@ -77,6 +87,8 @@ class FacultyItemResponse(BaseModel):
 class FacultyUpdateRequest(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
+    user_id: Optional[str] = None
+    photo_url: Optional[str] = None
     course_id: Optional[UUID4] = None
     department_id: Optional[UUID4] = None
     designation: Optional[str] = None

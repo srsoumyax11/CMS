@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -14,9 +14,11 @@ from app.models.profiles import StudentProfile, FacultyProfile
 from app.models.rbac import Role
 from app.schemas.common import APIResponse
 from app.utils.validation import validate_password
+from app.core.storage import upload_avatar
 from app.models.academic import Department, Course
 from app.schemas.admin import (
     StudentStatusUpdateRequest, StudentItemResponse, StudentAdminUpdateRequest,
+    StudentCreateRequest,
     FacultyCreateRequest, FacultyItemResponse,
     FacultyUpdateRequest, AdminItemResponse,
     DepartmentResponse, DepartmentCreateRequest, DepartmentUpdateRequest,
@@ -47,6 +49,7 @@ async def list_students(
     if status_filter:
         stmt = stmt.where(User.account_status == status_filter)
     
+    stmt = stmt.order_by(User.name.asc())
     stmt = stmt.offset(skip).limit(limit)
     result = await db.execute(stmt)
     users = result.scalars().all()
@@ -70,6 +73,86 @@ async def list_students(
             status_note=u.status_note
         ))
         
+    return APIResponse(success=True, data=data, error=None)
+
+@router.post(
+    "/students", 
+    summary="Create Student", 
+    description="Creates a new student user and profile. **Requires:** `student_profile:create`",
+    response_model=APIResponse[StudentItemResponse]
+)
+async def create_student(
+    req: StudentCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.STUDENT_PROFILE_CREATE))
+):
+    await validate_password(req.password, db)
+
+    existing = await db.execute(select(User).where(User.email == req.email))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    from app.models.academic import Course
+    course_res = await db.execute(select(Course).where(Course.id == req.course_id, Course.is_active == True))
+    dept_res = await db.execute(select(Department).where(Department.id == req.department_id, Department.is_active == True))
+    
+    course_obj = course_res.scalar_one_or_none()
+    dept_obj = dept_res.scalar_one_or_none()
+    if not course_obj or not dept_obj:
+        raise HTTPException(status_code=400, detail="Invalid or inactive course/department")
+
+    import random
+    while True:
+        candidate_id = str(random.randint(100000, 999999))
+        existing_id = await db.execute(select(User).where(User.user_id == candidate_id))
+        if not existing_id.scalar_one_or_none():
+            break
+
+    role_stmt = select(Role).where(Role.name == "Student")
+    student_role = (await db.execute(role_stmt)).scalar_one_or_none()
+    assigned_role_id = student_role.id if student_role else None
+
+    new_user = User(
+        email=req.email,
+        hashed_password=hash_password(req.password),
+        user_type=UserType.student,
+        name=req.name,
+        user_id=candidate_id,
+        account_status=AccountStatus.active,
+        role_id=assigned_role_id
+    )
+    db.add(new_user)
+    await db.flush()
+    
+    from app.models.profiles import AcademicStatus
+    new_profile = StudentProfile(
+        user_id=new_user.id,
+        course_id=req.course_id,
+        department_id=req.department_id,
+        year=req.year,
+        hostel=req.hostel.strip().lower() if req.hostel else None,
+        academic_status=AcademicStatus.active
+    )
+    db.add(new_profile)
+    
+    await db.commit()
+    await db.refresh(new_profile)
+    
+    data = StudentItemResponse(
+        id=new_user.id,
+        user_id=new_user.user_id,
+        name=new_user.name,
+        email=new_user.email,
+        course_id=new_profile.course_id,
+        course_name=course_obj.name,
+        department_id=new_profile.department_id,
+        department_name=dept_obj.name,
+        year=new_profile.year,
+        hostel=new_profile.hostel,
+        account_status=new_user.account_status,
+        academic_status=new_profile.academic_status,
+        status_note=new_user.status_note
+    )
     return APIResponse(success=True, data=data, error=None)
 
 @router.get(
@@ -331,6 +414,7 @@ async def create_faculty(
         user_id=new_user.user_id if new_user.user_id else str(new_profile.user_id),
         name=new_user.name,
         email=new_user.email,
+        photo_url=new_user.photo_url,
         course_id=new_profile.course_id,
         course_name=course_obj.name,
         department_id=new_profile.department_id,
@@ -369,6 +453,7 @@ async def list_faculty(
         stmt = stmt.join(User, FacultyProfile.user_id == User.id).where(
             ~User.role.has(Role.name == 'SuperAdmin')
         )
+    stmt = stmt.order_by(User.name.asc())
     stmt = stmt.offset(skip).limit(limit)
     
     result = await db.execute(stmt)
@@ -381,6 +466,7 @@ async def list_faculty(
             user_id=p.user.user_id if p.user and p.user.user_id else str(p.user_id),
             name=p.user.name if p.user else "",
             email=p.user.email if p.user else "",
+            photo_url=p.user.photo_url if p.user else None,
             course_id=p.course_id,
             course_name=p.course.name if p.course else "Unknown",
             department_id=p.department_id,
@@ -407,7 +493,7 @@ async def update_faculty(
     _ = Depends(require_permission(Perms.FACULTY_PROFILE_EDIT))
 ):
     stmt = select(FacultyProfile).options(
-        selectinload(FacultyProfile.user), 
+        selectinload(FacultyProfile.user).selectinload(User.role), 
         selectinload(FacultyProfile.course),
         selectinload(FacultyProfile.department)
     ).where((FacultyProfile.id == id) | (FacultyProfile.user_id == id))
@@ -419,10 +505,14 @@ async def update_faculty(
     if p.user and getattr(p.user.role, "name", "") == "SuperAdmin":
         raise HTTPException(status_code=403, detail="Cannot modify SuperAdmin account")
         
-    if req.name and p.user:
+    if req.name is not None and p.user:
         p.user.name = req.name
-    if req.email and p.user:
+    if req.email is not None and p.user:
         p.user.email = req.email
+    if req.user_id is not None and p.user:
+        p.user.user_id = req.user_id
+    if req.photo_url is not None and p.user:
+        p.user.photo_url = req.photo_url
     if req.course_id is not None:
         p.course_id = req.course_id
     if req.department_id is not None:
@@ -462,6 +552,7 @@ async def update_faculty(
         user_id=p.user.user_id if p.user.user_id else str(p.user_id),
         name=p.user.name,
         email=p.user.email,
+        photo_url=p.user.photo_url if p.user else None,
         course_id=p.course_id,
         course_name=course_name,
         department_id=p.department_id,
@@ -473,6 +564,39 @@ async def update_faculty(
         status_note=p.user.status_note
     )
     return APIResponse(success=True, data=data, error=None)
+
+@router.post(
+    "/users/{id}/photo",
+    summary="Admin Upload User Photo",
+    description="Uploads a photo for any user directly to storage and updates their photo URL.",
+    response_model=APIResponse[dict]
+)
+async def admin_upload_user_photo(
+    id: UUID,
+    photo: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_permission(Perms.FACULTY_PROFILE_EDIT))
+):
+    stmt = select(User).where(User.id == id)
+    res = await db.execute(stmt)
+    u = res.scalar_one_or_none()
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    try:
+        if photo.size and photo.size > 1024 * 1024 * 2:
+            raise HTTPException(status_code=400, detail="File size must be under 2MB")
+            
+        photo_url = await upload_avatar(photo, str(u.id))
+        
+        u.photo_url = photo_url
+        await db.commit()
+        return APIResponse(success=True, data={"photo_url": photo_url}, error=None)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Admin photo upload error: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to upload photo")
 
 @router.get(
     "/admins",
@@ -493,6 +617,7 @@ async def list_admins(
     )
     if status_filter:
         stmt = stmt.where(User.account_status == status_filter)
+    stmt = stmt.order_by(User.name.asc())
     stmt = stmt.offset(skip).limit(limit)
     
     result = await db.execute(stmt)

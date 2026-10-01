@@ -39,6 +39,17 @@ async def check_username(user_id: str, db: AsyncSession = Depends(get_db)):
     user = result.scalar_one_or_none()
     return APIResponse(success=True, data=(user is None), error=None)
 
+@router.get(
+    "/check-email",
+    summary="Check Email Availability",
+    description="Checks if an email is already registered.",
+    response_model=APIResponse[bool]
+)
+async def check_email(email: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+    return APIResponse(success=True, data=(user is None), error=None)
+
 @router.post(
     "/register", 
     summary="Register Student", 

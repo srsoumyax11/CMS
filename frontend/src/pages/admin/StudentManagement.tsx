@@ -33,9 +33,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
-import { Check, X, Users, MoreVertical, Edit2 } from 'lucide-react';
+import { Check, X, Users, MoreVertical, Edit2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import type { StudentItemResponse, AccountStatus, AcademicStatus, Course } from '@/types/api';
+import type { StudentItemResponse, AccountStatus, AcademicStatus, Course, Department, StudentCreateRequest } from '@/types/api';
 
 const accountStatusConfig: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pending', className: 'bg-amber-100 text-amber-700 border-amber-200' },
@@ -57,6 +57,9 @@ export function StudentManagement() {
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [showDetails, setShowDetails] = useState<StudentItemResponse | null>(null);
   
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<Partial<StudentCreateRequest>>({ name: '', email: '', password: '', course_id: '', department_id: '', year: 1, hostel: '' });
+
   const [updateAction, setUpdateAction] = useState<{
     id: string;
     payload: { account_status?: AccountStatus; academic_status?: AcademicStatus; status_note?: string };
@@ -66,7 +69,7 @@ export function StudentManagement() {
   
   const [editAction, setEditAction] = useState<{
     id: string;
-    payload: { name: string; course_id: string; branch_id: string; year: number; hostel: string };
+    payload: { name: string; course_id: string; department_id: string; year: number; hostel: string };
   } | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -78,12 +81,27 @@ export function StudentManagement() {
     queryKey: [QUERY_KEYS.COURSES],
     queryFn: () => metadataApi.getCourses(),
   });
+  
+  const { data: deptsResponse } = useQuery({
+    queryKey: [QUERY_KEYS.DEPARTMENTS],
+    queryFn: () => metadataApi.getDepartments(),
+  });
 
   const courses: Course[] = coursesResponse?.data?.data ?? [];
-  const selectedCourse = courses.find((c) => c.id === editAction?.payload.course_id);
-  const branches = selectedCourse?.branches ?? [];
+  const departments: Department[] = deptsResponse?.data?.data ?? [];
 
   const students: StudentItemResponse[] = data?.data?.data ?? [];
+
+  const createMutation = useMutation({
+    mutationFn: (data: StudentCreateRequest) => adminApi.createStudent(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
+      toast.success('Student created successfully');
+      setIsCreateOpen(false);
+      setCreateForm({ name: '', email: '', password: '', course_id: '', department_id: '', year: 1, hostel: '' });
+    },
+    onError: (error: any) => toast.error(error.response?.data?.detail || 'Failed to create student'),
+  });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: any }) =>
@@ -127,7 +145,7 @@ export function StudentManagement() {
       header: 'Course',
       render: (row: StudentItemResponse) => (
         <span className="text-sm text-foreground">
-          {row.course_name} · {row.branch_name} ({row.year})
+          {row.course_name} · {row.department_name} ({row.year})
         </span>
       ),
     },
@@ -215,7 +233,7 @@ export function StudentManagement() {
                 payload: {
                   name: row.name,
                   course_id: row.course_id || '',
-                  branch_id: row.branch_id || '',
+                  department_id: row.department_id || '',
                   year: row.year,
                   hostel: row.hostel || ''
                 }
@@ -277,11 +295,16 @@ export function StudentManagement() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-foreground">Student Management</h2>
-        <p className="text-sm text-muted-foreground">
-          Manage student accounts and academic lifecycles
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Student Management</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage student accounts and academic lifecycles
+          </p>
+        </div>
+        <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+          <Plus className="w-4 h-4" /> Add Student
+        </Button>
       </div>
 
       <Tabs value={statusFilter ?? 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? undefined : v)}>
@@ -352,6 +375,109 @@ export function StudentManagement() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Student</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input
+                value={createForm.name}
+                onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                placeholder="e.g., John Doe"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={createForm.email}
+                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                placeholder="e.g., john@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Password</Label>
+              <Input
+                type="password"
+                value={createForm.password}
+                onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                placeholder="Minimum 8 characters"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Course</Label>
+              <Select
+                value={createForm.course_id}
+                onValueChange={(val) => setCreateForm({ ...createForm, course_id: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select course" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Department</Label>
+              <Select
+                value={createForm.department_id}
+                onValueChange={(val) => setCreateForm({ ...createForm, department_id: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.short_name} - {d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Year</Label>
+                <Select
+                  value={String(createForm.year)}
+                  onValueChange={(val) => setCreateForm({ ...createForm, year: parseInt(val) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map((y) => (
+                      <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Hostel (Optional)</Label>
+                <Input
+                  value={createForm.hostel}
+                  onChange={(e) => setCreateForm({ ...createForm, hostel: e.target.value })}
+                  placeholder="e.g., A101"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={() => createMutation.mutate(createForm as StudentCreateRequest)}
+              disabled={!createForm.name || !createForm.email || !createForm.password || !createForm.course_id || !createForm.department_id || createMutation.isPending}
+            >
+              {createMutation.isPending ? 'Creating...' : 'Create Student'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!editAction} onOpenChange={(open) => !open && setEditAction(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -371,7 +497,7 @@ export function StudentManagement() {
                 <Label>Course</Label>
                 <Select
                   value={editAction.payload.course_id}
-                  onValueChange={(val) => setEditAction({ ...editAction, payload: { ...editAction.payload, course_id: val, branch_id: '' } })}
+                  onValueChange={(val) => setEditAction({ ...editAction, payload: { ...editAction.payload, course_id: val } })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select course" />
@@ -384,18 +510,17 @@ export function StudentManagement() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Branch</Label>
+                <Label>Department</Label>
                 <Select
-                  value={editAction.payload.branch_id}
-                  onValueChange={(val) => setEditAction({ ...editAction, payload: { ...editAction.payload, branch_id: val } })}
-                  disabled={!editAction.payload.course_id}
+                  value={editAction.payload.department_id}
+                  onValueChange={(val) => setEditAction({ ...editAction, payload: { ...editAction.payload, department_id: val } })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select branch" />
+                    <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.short_name} - {d.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

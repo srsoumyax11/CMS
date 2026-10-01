@@ -6,6 +6,7 @@ export const API_ROUTES = {
   REGISTER: '/api/auth/register',
   TOKEN: '/api/auth/token',
   CHECK_USERNAME: '/api/auth/check-username',
+  CHECK_EMAIL: '/api/auth/check-email',
 
   // Profile
   UPLOAD_PHOTO: '/api/users/me/photo',
