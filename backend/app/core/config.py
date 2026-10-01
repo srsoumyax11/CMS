@@ -13,6 +13,25 @@ class Settings(BaseSettings):
     SUPABASE_KEY: str
     SUPERADMIN_EMAIL: str
     SUPERADMIN_PASSWORD: str
+    
+    # Rate Limiting
+    COMPLAINT_RATE_LIMIT_PER_HOUR: int = 3
+    LOGIN_RATE_LIMIT_PER_MINUTE: int = 100
+    GENERAL_RATE_LIMIT_PER_MINUTE: int = 1000
+    
+    # File Upload
+    MAX_UPLOAD_FILE_SIZE_MB: int = 5
+    ALLOWED_FILE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp"]
+    
+    # Expiry Times
+    OTP_EXPIRY_MINUTES: int = 10
+    SIGNED_URL_EXPIRY_SECONDS: int = 900
+    
+    # Business Logic
+    MESS_OPTOUT_CUTOFF_HOUR: int = 10
+    
+    # Cache / Redis
+    REDIS_URL: str = "redis://localhost:6379"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

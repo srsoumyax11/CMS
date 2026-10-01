@@ -1,25 +1,24 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, timedelta, timezone
 
 from app.core.database import get_db
+from app.core.uow import UnitOfWork
 from app.core.security import get_current_user
-from app.api.deps import require_permission, get_user_permissions, can_view_complaint_detail, RateLimiter
+from app.api.deps import require_permission, get_user_permissions, can_view_complaint_detail, RateLimiter, get_uow
 from app.core.permissions import Perms
 from app.core.storage import upload_complaint_photo, get_signed_url
+from app.services.complaint_service import ComplaintService
 from app.models.user import User, UserType
 from app.models.complaint import Complaint, ComplaintStatusLog, ComplaintCategory, ComplaintVisibility, ComplaintStatus
 from app.schemas.common import APIResponse
 from app.schemas.complaint import ComplaintResponse, ComplaintListResponse, ComplaintStatusUpdateRequest, ComplaintAssignRequest, RecurringIssueResponse, AgeingComplaintResponse
+from app.utils.validation import validate_upload_file
 
 router = APIRouter()
-
-MAX_FILE_SIZE = 5 * 1024 * 1024 # 5 MB
-ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
 @router.post(
     "", 
@@ -36,15 +35,17 @@ async def create_complaint(
     visibility: ComplaintVisibility = Form(ComplaintVisibility.public),
     photo: Optional[UploadFile] = File(None),
     current_user: User = Depends(require_permission(Perms.COMPLAINT_CREATE)),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
+    service = ComplaintService(uow)
+    
     # Rate Limiting check
     one_hour_ago = datetime.utcnow() - timedelta(hours=1)
     stmt = select(func.count(Complaint.id)).where(
         Complaint.raised_by == current_user.id,
         Complaint.created_at >= one_hour_ago
     )
-    result = await db.execute(stmt)
+    result = await uow.db.execute(stmt)
     count = result.scalar()
     
     if count >= 3:
@@ -52,15 +53,7 @@ async def create_complaint(
 
     photo_path = None
     if photo:
-        if photo.content_type not in ALLOWED_CONTENT_TYPES:
-            raise HTTPException(status_code=400, detail="Invalid file type. Only JPEG, PNG, and WEBP are allowed.")
-            
-        file_bytes = await photo.read()
-        if len(file_bytes) > MAX_FILE_SIZE:
-            raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB.")
-            
-        # Reset file pointer after reading length
-        await photo.seek(0)
+        await validate_upload_file(photo)
         
         try:
             photo_path = await upload_complaint_photo(photo, str(current_user.id))
@@ -80,18 +73,8 @@ async def create_complaint(
         photo_url=photo_path,
         status=ComplaintStatus.open
     )
-    db.add(complaint)
-    await db.flush() # To get complaint.id
     
-    status_log = ComplaintStatusLog(
-        complaint_id=complaint.id,
-        status=ComplaintStatus.open,
-        changed_by=current_user.id,
-        note="Complaint raised."
-    )
-    db.add(status_log)
-    await db.commit()
-    await db.refresh(complaint)
+    complaint = await service.create_complaint(complaint, changed_by=current_user.id)
         
     # Re-fetch for response mapping if needed, or construct response
     response_data = ComplaintResponse.model_validate(complaint)
@@ -110,14 +93,10 @@ async def get_my_complaints(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     current_user: User = Depends(require_permission(Perms.COMPLAINT_VIEW)),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
-    stmt = select(Complaint).where(Complaint.raised_by == current_user.id).order_by(Complaint.created_at.desc()).offset(skip).limit(limit)
-    result = await db.execute(stmt)
-    complaints = result.scalars().all()
-    
-    count_stmt = select(func.count(Complaint.id)).where(Complaint.raised_by == current_user.id)
-    total = (await db.execute(count_stmt)).scalar()
+    service = ComplaintService(uow)
+    complaints, total = await service.get_user_complaints(current_user.id, skip, limit)
     
     items = []
     for c in complaints:
@@ -138,14 +117,10 @@ async def get_public_complaints(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     _: User = Depends(require_permission(Perms.COMPLAINT_VIEW)),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
-    stmt = select(Complaint).where(Complaint.visibility == ComplaintVisibility.public).order_by(Complaint.created_at.desc()).offset(skip).limit(limit)
-    result = await db.execute(stmt)
-    complaints = result.scalars().all()
-    
-    count_stmt = select(func.count(Complaint.id)).where(Complaint.visibility == ComplaintVisibility.public)
-    total = (await db.execute(count_stmt)).scalar()
+    service = ComplaintService(uow)
+    complaints, total = await service.get_public_complaints(skip, limit)
     
     items = []
     for c in complaints:
@@ -169,32 +144,18 @@ async def list_all_complaints(
     hostel: Optional[str] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     _ = Depends(require_permission(Perms.COMPLAINT_LIST)),
     user_permissions: set = Depends(get_user_permissions)
 ):
-    stmt = select(Complaint)
-    
-    if status_filter:
-        stmt = stmt.where(Complaint.status == status_filter)
-    if category:
-        stmt = stmt.where(Complaint.category == category)
-    if hostel:
-        stmt = stmt.where(Complaint.location_hostel == hostel)
-        
-    stmt = stmt.order_by(Complaint.created_at.desc()).offset(skip).limit(limit)
-    result = await db.execute(stmt)
-    complaints = result.scalars().all()
-    
-    count_stmt = select(func.count(Complaint.id))
-    if status_filter:
-        count_stmt = count_stmt.where(Complaint.status == status_filter)
-    if category:
-        count_stmt = count_stmt.where(Complaint.category == category)
-    if hostel:
-        count_stmt = count_stmt.where(Complaint.location_hostel == hostel)
-        
-    total = (await db.execute(count_stmt)).scalar()
+    service = ComplaintService(uow)
+    complaints, total = await service.get_all_complaints(
+        status=status_filter,
+        category=category,
+        hostel=hostel,
+        skip=skip,
+        limit=limit
+    )
     
     items = []
     can_view_private = Perms.COMPLAINT_VIEW_PRIVATE in user_permissions
@@ -239,27 +200,19 @@ async def list_all_complaints(
 async def update_complaint_status(
     id: UUID,
     req: ComplaintStatusUpdateRequest,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     current_user: User = Depends(require_permission(Perms.COMPLAINT_RESOLVE))
 ):
-    stmt = select(Complaint).where(Complaint.id == id)
-    result = await db.execute(stmt)
-    complaint = result.scalar_one_or_none()
+    service = ComplaintService(uow)
+    complaint = await service.update_status(
+        id=id, 
+        new_status=req.status, 
+        changed_by=current_user.id, 
+        note=req.note
+    )
     
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
-        
-    complaint.status = req.status
-    
-    status_log = ComplaintStatusLog(
-        complaint_id=complaint.id,
-        status=req.status,
-        changed_by=current_user.id,
-        note=req.note
-    )
-    db.add(status_log)
-    await db.commit()
-    await db.refresh(complaint)
         
     response_data = ComplaintResponse.model_validate(complaint)
     if complaint.photo_url:
@@ -277,19 +230,17 @@ async def update_complaint_status(
 async def assign_complaint(
     id: UUID,
     req: ComplaintAssignRequest,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     current_user: User = Depends(require_permission(Perms.COMPLAINT_ASSIGN))
 ):
-    stmt = select(Complaint).where(Complaint.id == id)
-    result = await db.execute(stmt)
-    complaint = result.scalar_one_or_none()
-    
+    service = ComplaintService(uow)
+    complaint = await service.get_complaint(id)
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
         
     # Verify assignee is Faculty or SuperAdmin
     assignee_stmt = select(User).where(User.id == req.assigned_to)
-    assignee = (await db.execute(assignee_stmt)).scalar_one_or_none()
+    assignee = (await uow.db.execute(assignee_stmt)).scalar_one_or_none()
     
     if not assignee:
         raise HTTPException(status_code=404, detail="Assignee user not found")
@@ -300,9 +251,7 @@ async def assign_complaint(
             detail="Cannot assign complaint to a non-staff user. Target user must be Faculty or SuperAdmin."
         )
         
-    complaint.assigned_to = req.assigned_to
-    await db.commit()
-    await db.refresh(complaint)
+    complaint = await service.assign_complaint(id, req.assigned_to)
         
     response_data = ComplaintResponse.model_validate(complaint)
     if complaint.photo_url:
@@ -319,30 +268,11 @@ async def assign_complaint(
 )
 async def get_recurring_analytics(
     days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     _ = Depends(require_permission(Perms.COMPLAINT_LIST))
 ):
-    window_start = datetime.now(timezone.utc) - timedelta(days=days)
-    
-    stmt = (
-        select(Complaint.category, Complaint.location_hostel, func.count(Complaint.id).label("count"))
-        .where(Complaint.created_at >= window_start)
-        .group_by(Complaint.category, Complaint.location_hostel)
-        .order_by(func.count(Complaint.id).desc())
-    )
-    
-    result = await db.execute(stmt)
-    rows = result.all()
-    
-    items = []
-    for row in rows:
-        items.append(RecurringIssueResponse(
-            category=row.category,
-            location_hostel=row.location_hostel,
-            count=row.count,
-            window_days=days
-        ))
-        
+    service = ComplaintService(uow)
+    items = await service.get_recurring_analytics(days)
     return APIResponse(success=True, data=items)
 
 
@@ -353,19 +283,11 @@ async def get_recurring_analytics(
     response_model=APIResponse[List[AgeingComplaintResponse]]
 )
 async def get_ageing_analytics(
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     _ = Depends(require_permission(Perms.COMPLAINT_LIST))
 ):
-    terminal_states = [ComplaintStatus.resolved, ComplaintStatus.closed, ComplaintStatus.cancelled]
-    
-    stmt = (
-        select(Complaint)
-        .where(Complaint.status.not_in(terminal_states))
-        .order_by(Complaint.created_at.asc())
-    )
-    
-    result = await db.execute(stmt)
-    complaints = result.scalars().all()
+    service = ComplaintService(uow)
+    complaints = await service.get_ageing_analytics()
     
     now = datetime.now(timezone.utc)
     items = []
@@ -396,11 +318,10 @@ async def get_complaint(
     id: UUID,
     current_user: User = Depends(require_permission(Perms.COMPLAINT_VIEW)),
     user_permissions: set = Depends(get_user_permissions),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
-    stmt = select(Complaint).where(Complaint.id == id)
-    result = await db.execute(stmt)
-    complaint = result.scalar_one_or_none()
+    service = ComplaintService(uow)
+    complaint = await service.get_complaint(id)
     
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
@@ -424,33 +345,19 @@ async def get_complaint(
 async def cancel_complaint(
     id: UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
-    stmt = select(Complaint).where(Complaint.id == id)
-    result = await db.execute(stmt)
-    complaint = result.scalar_one_or_none()
-    
+    service = ComplaintService(uow)
+    try:
+        complaint = await service.cancel_complaint(id, current_user.id)
+    except ValueError as e:
+        # Map service validation errors to 400 or 403
+        if "authorized" in str(e):
+            raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+        
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
-        
-    # Ownership check
-    if complaint.raised_by != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to cancel this complaint")
-        
-    if complaint.status != ComplaintStatus.open:
-        raise HTTPException(status_code=400, detail="Only open complaints can be cancelled")
-        
-    complaint.status = ComplaintStatus.cancelled
-    
-    status_log = ComplaintStatusLog(
-        complaint_id=complaint.id,
-        status=ComplaintStatus.cancelled,
-        changed_by=current_user.id,
-        note="Cancelled by creator."
-    )
-    db.add(status_log)
-    await db.commit()
-    await db.refresh(complaint)
         
     response_data = ComplaintResponse.model_validate(complaint)
     if complaint.photo_url:

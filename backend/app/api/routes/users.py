@@ -11,6 +11,7 @@ from app.models.user import User, UserType
 from app.schemas.common import APIResponse
 from app.schemas.auth import EmailUpdateRequest, EmailVerifyOTPRequest
 from app.utils.email import send_email_background
+from app.utils.validation import validate_upload_file
 
 router = APIRouter()
 
@@ -26,10 +27,9 @@ async def upload_profile_photo(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        # Check file size (1MB limit)
-        if photo.size and photo.size > 1024 * 1024:
-            raise HTTPException(status_code=400, detail="File size must be under 1MB")
-            
+        # Check file size (1MB limit) and valid image formats
+        await validate_upload_file(photo, max_size_mb=1)
+        
         photo_url = await upload_avatar(photo, str(current_user.id))
     except Exception as e:
         print(f"Photo upload error: {str(e)}")

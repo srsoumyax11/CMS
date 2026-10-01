@@ -14,6 +14,7 @@ from app.schemas.common import APIResponse
 from app.api.deps import require_permission, get_current_user, get_user_permissions
 from app.core.permissions import Perms
 from app.core.storage import upload_notice_attachment
+from app.utils.validation import validate_upload_file
 
 router = APIRouter(tags=["Notices"])
 
@@ -39,23 +40,10 @@ async def create_notice(
 ):
     attachment_url = None
     if file:
-        ALLOWED_MIME_TYPES = {
-            "image/jpeg": ".jpg",
-            "image/png": ".png",
-            "image/webp": ".webp",
-            "application/pdf": ".pdf"
-        }
+        ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
+        await validate_upload_file(file, allowed_types=ALLOWED_MIME_TYPES, max_size_mb=10)
         
-        if file.content_type not in ALLOWED_MIME_TYPES:
-            raise HTTPException(status_code=400, detail="Only JPEG, PNG, WEBP, and PDF files are allowed.")
-            
-        if getattr(file, "size", 0) > MAX_FILE_SIZE:
-            raise HTTPException(status_code=400, detail="File size exceeds the 10MB limit.")
-            
         file_content = await file.read()
-        if len(file_content) > MAX_FILE_SIZE:
-            raise HTTPException(status_code=400, detail="File size exceeds the 10MB limit.")
-            
         attachment_url = await upload_notice_attachment(file_content, file.content_type)
         
     if target_hostel:

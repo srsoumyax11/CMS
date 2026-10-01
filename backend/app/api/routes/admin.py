@@ -13,7 +13,7 @@ from app.models.user import User, UserType, AccountStatus
 from app.models.profiles import StudentProfile, FacultyProfile
 from app.models.rbac import Role
 from app.schemas.common import APIResponse
-from app.utils.validation import validate_password
+from app.utils.validation import validate_password, validate_upload_file
 from app.core.storage import upload_avatar
 from app.models.academic import Department, Course
 from app.schemas.admin import (
@@ -584,8 +584,7 @@ async def admin_upload_user_photo(
         raise HTTPException(status_code=404, detail="User not found")
         
     try:
-        if photo.size and photo.size > 1024 * 1024 * 2:
-            raise HTTPException(status_code=400, detail="File size must be under 2MB")
+        await validate_upload_file(photo, max_size_mb=2)
             
         photo_url = await upload_avatar(photo, str(u.id))
         

@@ -70,6 +70,8 @@ tags_metadata = [
     }
 ]
 
+from app.core.cache import init_redis, close_redis
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup DB health check
@@ -82,9 +84,17 @@ async def lifespan(app: FastAPI):
         print(f"❌ Database connection failed: {e}", flush=True)
         sys.exit(1)
         
+    print("⏳ Initializing Redis...", flush=True)
+    try:
+        await init_redis()
+        print("✅ Redis connection established!", flush=True)
+    except Exception as e:
+        print(f"⚠️ Redis connection failed (rate limiting will fail open): {e}", flush=True)
+        
     yield
     
     print("🛑 Shutting down backend...", flush=True)
+    await close_redis()
 
 app = FastAPI(
     title="Campus Management System API",

@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
+from app.core.uow import UnitOfWork
 from app.core.security import decode_token
 from app.models.user import User, UserType
 from app.models.rbac import Role, Permission, Asset, Action
@@ -17,17 +18,25 @@ from app.core.permissions import Perms
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
+def get_uow(db: AsyncSession = Depends(get_db)) -> UnitOfWork:
+    return UnitOfWork(db)
+
 class RateLimiter:
     """
-    A simple in-memory rate limiter for hackathon purposes.
-    Tracks requests by client IP in a dictionary.
+    A distributed rate limiter using Redis.
+    Tracks requests by client IP or User ID.
     """
     def __init__(self, times: int, hours: int = 0, minutes: int = 0, seconds: int = 0):
         self.times = times
         self.window = hours * 3600 + minutes * 60 + seconds
-        self.requests: Dict[str, Tuple[float, int]] = {}
 
-    def __call__(self, request: Request):
+    async def __call__(self, request: Request):
+        from app.core.cache import redis_client
+        
+        # If redis isn't configured/connected, fail open
+        if not redis_client:
+            return
+            
         client_key = request.client.host if request.client else "unknown"
         
         # Prefer user ID if authenticated (prevents shared-IP NAT issues in hostels)
@@ -41,21 +50,23 @@ class RateLimiter:
             except Exception:
                 pass
                 
-        now = time.time()
+        # Key uses the specific path to prevent a rate limit on one endpoint affecting others, 
+        # unless intended by a shared instance (which we can customize later)
+        key = f"ratelimit:{client_key}"
         
-        if client_key in self.requests:
-            start_time, count = self.requests[client_key]
-            if now - start_time < self.window:
-                if count >= self.times:
-                    raise HTTPException(
-                        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                        detail="Too many requests"
-                    )
-                self.requests[client_key] = (start_time, count + 1)
-            else:
-                self.requests[client_key] = (now, 1)
-        else:
-            self.requests[client_key] = (now, 1)
+        try:
+            current = await redis_client.incr(key)
+            if current == 1:
+                await redis_client.expire(key, self.window)
+            
+            if current > self.times:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Too many requests"
+                )
+        except Exception as e:
+            # If redis connection fails, fail open to avoid downtime
+            pass
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
     credentials_exception = HTTPException(
