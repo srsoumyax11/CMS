@@ -37,22 +37,8 @@ import { Plus, Users, Loader2, Pencil, ShieldAlert, Camera, Trash2 } from 'lucid
 import { toast } from 'sonner';
 import type { FacultyItemResponse, FacultyCreateRequest, AccountStatus, EmploymentStatus, AdminItemResponse } from '@/types/api';
 import { PasswordRequirements } from '@/components/shared/PasswordRequirements';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 
-const accountStatusConfig: Record<string, { label: string; className: string }> = {
-  pending: { label: 'Pending', className: 'bg-amber-100 text-amber-700 border-amber-200' },
-  revision: { label: 'Revision', className: 'bg-purple-100 text-purple-700 border-purple-200' },
-  active: { label: 'Active', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  suspended: { label: 'Suspended', className: 'bg-orange-100 text-orange-700 border-orange-200' },
-  rejected: { label: 'Rejected', className: 'bg-red-100 text-red-700 border-red-200' },
-};
-
-const employmentStatusConfig: Record<string, { label: string; className: string }> = {
-  active: { label: 'Active', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  on_leave: { label: 'On Leave', className: 'bg-blue-100 text-blue-700 border-blue-200' },
-  resigned: { label: 'Resigned', className: 'bg-gray-100 text-gray-700 border-gray-200' },
-  retired: { label: 'Retired', className: 'bg-purple-100 text-purple-700 border-purple-200' },
-  terminated: { label: 'Terminated', className: 'bg-red-100 text-red-700 border-red-200' },
-};
 
 export function FacultyManagement() {
   const queryClient = useQueryClient();
@@ -222,15 +208,7 @@ export function FacultyManagement() {
       key: 'account_status',
       header: 'Account',
       render: (row: FacultyItemResponse) => {
-        const config = accountStatusConfig[row.account_status] ?? {
-          label: row.account_status,
-          className: 'bg-gray-100 text-gray-600 border-gray-200',
-        };
-        return (
-          <Badge variant="outline" className={config.className}>
-            {config.label}
-          </Badge>
-        );
+        return <StatusBadge status={row.account_status} type="account" />;
       },
     },
   ];
@@ -257,12 +235,7 @@ export function FacultyManagement() {
       key: 'account_status',
       header: 'Account Status',
       render: (row: AdminItemResponse) => {
-        const config = accountStatusConfig[row.account_status];
-        return (
-          <Badge variant="outline" className={config.className}>
-            {config.label}
-          </Badge>
-        );
+        return <StatusBadge status={row.account_status} type="account" />;
       },
     },
   ];
