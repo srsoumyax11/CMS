@@ -31,27 +31,32 @@ const categories: { value: ComplaintCategory; label: string }[] = [
 ];
 
 import { useAuth } from '@/context/AuthContext';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { complaintCreateSchema, type ComplaintCreateFormValues } from '@/schemas/validation-schemas';
 
 export function ComplaintCreate() {
   const { role } = useAuth();
   const basePath = role ? `/${role}` : '';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [category, setCategory] = useState<ComplaintCategory>('electrical');
-  const [hostel, setHostel] = useState('');
-  const [room, setRoom] = useState('');
-  const [description, setDescription] = useState('');
-  const [visibility, setVisibility] = useState<ComplaintVisibility>('public');
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<ComplaintCreateFormValues>({
+    resolver: zodResolver(complaintCreateSchema),
+    defaultValues: { category: 'electrical', location_hostel: '', location_room: '', description: '', visibility: 'public' }
+  });
+
   const [photo, setPhoto] = useState<File | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (data: ComplaintCreateFormValues) =>
       complaintsApi.create({
-        category,
-        location_hostel: hostel,
-        location_room: room || null,
-        description,
-        visibility,
+        ...data,
+        location_room: data.location_room || null,
         photo,
       }),
     onSuccess: () => {
@@ -66,9 +71,8 @@ export function ComplaintCreate() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createMutation.mutate();
+  const onSubmit = (data: ComplaintCreateFormValues) => {
+    createMutation.mutate(data);
   };
 
   return (
@@ -82,45 +86,48 @@ export function ComplaintCreate() {
           <CardTitle className="text-xl">File a Complaint</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select
-                value={category}
-                onValueChange={(v) => setCategory(v as ComplaintCategory)}
-              >
-                <SelectTrigger id="category">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="category"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger id="category">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="hostel">Hostel / Block</Label>
+                <Label htmlFor="location_hostel">Hostel / Block</Label>
                 <Input
-                  id="hostel"
-                  value={hostel}
-                  onChange={(e) => setHostel(e.target.value)}
+                  id="location_hostel"
+                  {...register('location_hostel')}
                   placeholder="e.g., Block A"
-                  required
                 />
+                {errors.location_hostel && <p className="text-xs text-red-500">{errors.location_hostel.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="room">Room (optional)</Label>
+                <Label htmlFor="location_room">Room (optional)</Label>
                 <Input
-                  id="room"
-                  value={room}
-                  onChange={(e) => setRoom(e.target.value)}
+                  id="location_room"
+                  {...register('location_room')}
                   placeholder="e.g., 204"
                 />
+                {errors.location_room && <p className="text-xs text-red-500">{errors.location_room.message}</p>}
               </div>
             </div>
 
@@ -128,28 +135,31 @@ export function ComplaintCreate() {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                {...register('description')}
                 placeholder="Describe the issue in detail..."
-                required
                 rows={5}
               />
+              {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="visibility">Visibility</Label>
-              <Select
-                value={visibility}
-                onValueChange={(v) => setVisibility(v as ComplaintVisibility)}
-              >
-                <SelectTrigger id="visibility" className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="private">Private</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                name="visibility"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger id="visibility" className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">Public</SelectItem>
+                      <SelectItem value="private">Private</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.visibility && <p className="text-xs text-red-500">{errors.visibility.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -172,7 +182,7 @@ export function ComplaintCreate() {
               </Button>
               <Button
                 type="submit"
-                disabled={createMutation.isPending || !hostel || !description}
+                disabled={createMutation.isPending}
               >
                 {createMutation.isPending ? (
                   <>

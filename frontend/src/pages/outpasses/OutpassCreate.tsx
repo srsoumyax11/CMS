@@ -12,16 +12,27 @@ import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/context/AuthContext';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { outpassCreateSchema, type OutpassCreateFormValues } from '@/schemas/validation-schemas';
 
 export function OutpassCreate() {
   const { role } = useAuth();
   const basePath = role ? `/${role}` : '';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [destination, setDestination] = useState('');
-  const [reason, setReason] = useState('');
-  const [departureTime, setDepartureTime] = useState('');
-  const [expectedReturnTime, setExpectedReturnTime] = useState('');
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<OutpassCreateFormValues>({
+    resolver: zodResolver(outpassCreateSchema),
+    defaultValues: { destination: '', reason: '', departure_time: '', expected_return_time: '' }
+  });
+
+  const departureTime = watch('departure_time');
+  const expectedReturnTime = watch('expected_return_time');
 
   const { data: myOutpassesResp } = useQuery({
     queryKey: [QUERY_KEYS.MY_OUTPASSES],
@@ -47,12 +58,12 @@ export function OutpassCreate() {
   }, [departureTime, expectedReturnTime, activeOutpasses]);
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (data: OutpassCreateFormValues) =>
       outpassesApi.create({
-        destination,
-        reason,
-        departure_time: new Date(departureTime).toISOString(),
-        expected_return_time: new Date(expectedReturnTime).toISOString(),
+        destination: data.destination,
+        reason: data.reason,
+        departure_time: new Date(data.departure_time).toISOString(),
+        expected_return_time: new Date(data.expected_return_time).toISOString(),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MY_OUTPASSES] });
@@ -65,13 +76,8 @@ export function OutpassCreate() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (new Date(departureTime) >= new Date(expectedReturnTime)) {
-      toast.error('Return time must be after departure time');
-      return;
-    }
-    createMutation.mutate();
+  const onSubmit = (data: OutpassCreateFormValues) => {
+    createMutation.mutate(data);
   };
 
   return (
@@ -85,28 +91,26 @@ export function OutpassCreate() {
           <CardTitle className="text-xl">Request Outpass</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="destination">Destination</Label>
               <Input
                 id="destination"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
+                {...register('destination')}
                 placeholder="Where are you going?"
-                required
               />
+              {errors.destination && <p className="text-xs text-red-500">{errors.destination.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="reason">Reason</Label>
               <Textarea
                 id="reason"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                {...register('reason')}
                 placeholder="Reason for leaving campus..."
-                required
                 rows={3}
               />
+              {errors.reason && <p className="text-xs text-red-500">{errors.reason.message}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -115,20 +119,18 @@ export function OutpassCreate() {
                 <Input
                   id="departure"
                   type="datetime-local"
-                  value={departureTime}
-                  onChange={(e) => setDepartureTime(e.target.value)}
-                  required
+                  {...register('departure_time')}
                 />
+                {errors.departure_time && <p className="text-xs text-red-500">{errors.departure_time.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="return">Expected Return Time</Label>
                 <Input
                   id="return"
                   type="datetime-local"
-                  value={expectedReturnTime}
-                  onChange={(e) => setExpectedReturnTime(e.target.value)}
-                  required
+                  {...register('expected_return_time')}
                 />
+                {errors.expected_return_time && <p className="text-xs text-red-500">{errors.expected_return_time.message}</p>}
               </div>
             </div>
 
@@ -154,13 +156,7 @@ export function OutpassCreate() {
               </Button>
               <Button
                 type="submit"
-                disabled={
-                  createMutation.isPending ||
-                  !destination ||
-                  !reason ||
-                  !departureTime ||
-                  !expectedReturnTime
-                }
+                disabled={createMutation.isPending}
               >
                 {createMutation.isPending ? (
                   <>

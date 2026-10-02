@@ -38,6 +38,9 @@ import { toast } from 'sonner';
 import type { StudentItemResponse, AccountStatus, AcademicStatus, Course, Department, StudentCreateRequest } from '@/types/api';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { studentCreateSchema, type StudentCreateFormValues, studentUpdateSchema, type StudentUpdateFormValues } from '@/schemas/validation-schemas';
 
 export function StudentManagement() {
   const queryClient = useQueryClient();
@@ -45,7 +48,17 @@ export function StudentManagement() {
   const [showDetails, setShowDetails] = useState<StudentItemResponse | null>(null);
   
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<Partial<StudentCreateRequest>>({ name: '', email: '', password: '', course_id: '', department_id: '', year: 1, hostel: '' });
+
+  const {
+    register: registerCreate,
+    handleSubmit: handleCreateSubmit,
+    control: createControl,
+    formState: { errors: createErrors },
+    reset: resetCreate,
+  } = useForm<StudentCreateFormValues>({
+    resolver: zodResolver(studentCreateSchema),
+    defaultValues: { name: '', email: '', password: '', course_id: '', department_id: '', year: 1, hostel: '' }
+  });
 
   const [updateAction, setUpdateAction] = useState<{
     id: string;
@@ -54,10 +67,29 @@ export function StudentManagement() {
   } | null>(null);
   const [statusNote, setStatusNote] = useState('');
   
-  const [editAction, setEditAction] = useState<{
-    id: string;
-    payload: { name: string; course_id: string; department_id: string; year: number; hostel: string };
-  } | null>(null);
+  const [editActionId, setEditActionId] = useState<string | null>(null);
+
+  const {
+    register: registerEdit,
+    handleSubmit: handleEditSubmit,
+    control: editControl,
+    formState: { errors: editErrors },
+    reset: resetEdit,
+  } = useForm<StudentUpdateFormValues>({
+    resolver: zodResolver(studentUpdateSchema),
+    defaultValues: { name: '', course_id: '', department_id: '', year: 1, hostel: '' }
+  });
+
+  const handleEditClick = (row: StudentItemResponse) => {
+    setEditActionId(row.id);
+    resetEdit({
+      name: row.name,
+      course_id: row.course_id || '',
+      department_id: row.department_id || '',
+      year: row.year,
+      hostel: row.hostel || '',
+    });
+  };
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: [QUERY_KEYS.STUDENTS, statusFilter],
@@ -85,7 +117,7 @@ export function StudentManagement() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
       toast.success('Student created successfully');
       setIsCreateOpen(false);
-      setCreateForm({ name: '', email: '', password: '', course_id: '', department_id: '', year: 1, hostel: '' });
+      resetCreate();
     },
     onError: (error: any) => toast.error(error.response?.data?.detail || 'Failed to create student'),
   });
@@ -107,7 +139,7 @@ export function StudentManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
       toast.success('Student details updated');
-      setEditAction(null);
+      setEditActionId(null);
     },
     onError: () => toast.error('Failed to update student details'),
   });
@@ -200,16 +232,7 @@ export function StudentManagement() {
                 size="icon"
                 className="h-8 w-8"
                 title="Edit Profile"
-                onClick={() => setEditAction({
-                  id: row.id,
-                  payload: {
-                    name: row.name,
-                    course_id: row.course_id || '',
-                    department_id: row.department_id || '',
-                    year: row.year,
-                    hostel: row.hostel || ''
-                  }
-                })}
+                onClick={() => handleEditClick(row)}
               >
                 <Edit2 className="h-4 w-4" />
               </Button>
@@ -351,194 +374,232 @@ export function StudentManagement() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog open={isCreateOpen} onOpenChange={(open) => {
+        setIsCreateOpen(open);
+        if (!open) resetCreate();
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Add Student</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label>Name</Label>
-              <Input
-                value={createForm.name}
-                onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                placeholder="e.g., John Doe"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                value={createForm.email}
-                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                placeholder="e.g., john@example.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Password</Label>
-              <Input
-                type="password"
-                value={createForm.password}
-                onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                placeholder="Minimum 8 characters"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Course</Label>
-              <Select
-                value={createForm.course_id}
-                onValueChange={(val) => setCreateForm({ ...createForm, course_id: val })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select course" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Department</Label>
-              <Select
-                value={createForm.department_id}
-                onValueChange={(val) => setCreateForm({ ...createForm, department_id: val })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>{d.short_name} - {d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Year</Label>
-                <Select
-                  value={String(createForm.year)}
-                  onValueChange={(val) => setCreateForm({ ...createForm, year: parseInt(val) })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5].map((y) => (
-                      <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Hostel (Optional)</Label>
-                <Input
-                  value={createForm.hostel}
-                  onChange={(e) => setCreateForm({ ...createForm, hostel: e.target.value })}
-                  placeholder="e.g., A101"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            <Button 
-              onClick={() => createMutation.mutate(createForm as StudentCreateRequest)}
-              disabled={!createForm.name || !createForm.email || !createForm.password || !createForm.course_id || !createForm.department_id || createMutation.isPending}
-            >
-              {createMutation.isPending ? 'Creating...' : 'Create Student'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!editAction} onOpenChange={(open) => !open && setEditAction(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Student Profile</DialogTitle>
-          </DialogHeader>
-          {editAction && (
+          <form onSubmit={handleCreateSubmit((data) => createMutation.mutate(data as StudentCreateRequest))}>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label>Name</Label>
                 <Input
-                  id="name"
-                  value={editAction.payload.name}
-                  onChange={(e) => setEditAction({ ...editAction, payload: { ...editAction.payload, name: e.target.value } })}
+                  {...registerCreate('name')}
+                  placeholder="e.g., John Doe"
                 />
+                {createErrors.name && <p className="text-xs text-red-500">{createErrors.name.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  {...registerCreate('email')}
+                  placeholder="e.g., john@example.com"
+                />
+                {createErrors.email && <p className="text-xs text-red-500">{createErrors.email.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label>Password</Label>
+                <Input
+                  type="password"
+                  {...registerCreate('password')}
+                  placeholder="Minimum 8 characters"
+                />
+                {createErrors.password && <p className="text-xs text-red-500">{createErrors.password.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Course</Label>
-                <Select
-                  value={editAction.payload.course_id}
-                  onValueChange={(val) => setEditAction({ ...editAction, payload: { ...editAction.payload, course_id: val } })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select course" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {courses.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="course_id"
+                  control={createControl}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {createErrors.course_id && <p className="text-xs text-red-500">{createErrors.course_id.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Department</Label>
-                <Select
-                  value={editAction.payload.department_id}
-                  onValueChange={(val) => setEditAction({ ...editAction, payload: { ...editAction.payload, department_id: val } })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>{d.short_name} - {d.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="department_id"
+                  control={createControl}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>{d.short_name} - {d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {createErrors.department_id && <p className="text-xs text-red-500">{createErrors.department_id.message}</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Year</Label>
-                  <Select
-                    value={String(editAction.payload.year)}
-                    onValueChange={(val) => setEditAction({ ...editAction, payload: { ...editAction.payload, year: parseInt(val) } })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5].map((y) => (
-                        <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Controller
+                    name="year"
+                    control={createControl}
+                    render={({ field }) => (
+                      <Select 
+                        onValueChange={(val) => field.onChange(parseInt(val))} 
+                        value={field.value ? String(field.value) : ''}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5].map((y) => (
+                            <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {createErrors.year && <p className="text-xs text-red-500">{createErrors.year.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="hostel">Hostel (Optional)</Label>
+                  <Label>Hostel (Optional)</Label>
                   <Input
-                    id="hostel"
-                    value={editAction.payload.hostel}
-                    onChange={(e) => setEditAction({ ...editAction, payload: { ...editAction.payload, hostel: e.target.value } })}
+                    {...registerCreate('hostel')}
+                    placeholder="e.g., A101"
                   />
+                  {createErrors.hostel && <p className="text-xs text-red-500">{createErrors.hostel.message}</p>}
                 </div>
               </div>
             </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditAction(null)}>Cancel</Button>
-            <Button onClick={() => {
-              if (editAction) {
-                editMutation.mutate({ id: editAction.id, payload: editAction.payload });
-              }
-            }}>
-              Save Changes
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+              <Button 
+                type="submit"
+                disabled={createMutation.isPending}
+              >
+                {createMutation.isPending ? 'Creating...' : 'Create Student'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editActionId} onOpenChange={(open) => !open && setEditActionId(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Student Profile</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit((data) => {
+            if (editActionId) {
+              editMutation.mutate({ id: editActionId, payload: data });
+            }
+          })}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Full Name</Label>
+                <Input
+                  id="edit-name"
+                  {...registerEdit('name')}
+                />
+                {editErrors.name && <p className="text-xs text-red-500">{editErrors.name.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label>Course</Label>
+                <Controller
+                  name="course_id"
+                  control={editControl}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {editErrors.course_id && <p className="text-xs text-red-500">{editErrors.course_id.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label>Department</Label>
+                <Controller
+                  name="department_id"
+                  control={editControl}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>{d.short_name} - {d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {editErrors.department_id && <p className="text-xs text-red-500">{editErrors.department_id.message}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Year</Label>
+                  <Controller
+                    name="year"
+                    control={editControl}
+                    render={({ field }) => (
+                      <Select 
+                        onValueChange={(val) => field.onChange(parseInt(val))} 
+                        value={field.value ? String(field.value) : ''}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5].map((y) => (
+                            <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {editErrors.year && <p className="text-xs text-red-500">{editErrors.year.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-hostel">Hostel (Optional)</Label>
+                  <Input
+                    id="edit-hostel"
+                    {...registerEdit('hostel')}
+                  />
+                  {editErrors.hostel && <p className="text-xs text-red-500">{editErrors.hostel.message}</p>}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditActionId(null)}>Cancel</Button>
+              <Button 
+                type="submit"
+                disabled={editMutation.isPending}
+              >
+                {editMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
