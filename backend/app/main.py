@@ -33,7 +33,8 @@ from app.api.routes import (
     timetable,
     attendance,
     mess,
-    notifications
+    notifications,
+    health
 )
 
 tags_metadata = [
@@ -167,6 +168,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(health.router, tags=["System"])
 app.include_router(metadata.router, prefix="/api/metadata", tags=["Metadata"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
