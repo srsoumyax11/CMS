@@ -1,100 +1,32 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminApi } from '@/api/adminApi';
+import { useQuery } from '@tanstack/react-query';
 import { metadataApi } from '@/api/metadataApi';
 import { QUERY_KEYS } from '@/lib/constants';
-import { DataTable } from '@/components/shared/DataTable';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel
-} from '@/components/ui/dropdown-menu';
-import { Check, X, Users, MoreVertical, Edit2, Plus } from 'lucide-react';
-import { toast } from 'sonner';
-import type { StudentItemResponse, AccountStatus, AcademicStatus, Course, Department, StudentCreateRequest } from '@/types/api';
-import { StatusBadge } from '@/components/shared/StatusBadge';
+import { Plus } from 'lucide-react';
+import type { StudentItemResponse, AccountStatus, Course, Department } from '@/types/api';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { studentCreateSchema, type StudentCreateFormValues, studentUpdateSchema, type StudentUpdateFormValues } from '@/schemas/validation-schemas';
+import type { StudentUpdateFormValues } from '@/schemas/validation-schemas';
+
+import { useAdminList } from '@/hooks/useAdminList';
+import { useDialogState } from '@/hooks/useDialogState';
+import { useStudentMutations } from '@/hooks/useStudentMutations';
+import { adminApi } from '@/api/adminApi';
+
+import { StudentTable } from './components/StudentTable';
+import { StudentDetailsModal } from './components/StudentDetailsModal';
+import { StudentActionModal, type UpdateActionPayload } from './components/StudentActionModal';
+import { StudentCreateModal } from './components/StudentCreateModal';
+import { StudentEditModal } from './components/StudentEditModal';
+import { useState } from 'react';
 
 export function StudentManagement() {
-  const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
-  const [showDetails, setShowDetails] = useState<StudentItemResponse | null>(null);
-  
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-
-  const {
-    register: registerCreate,
-    handleSubmit: handleCreateSubmit,
-    control: createControl,
-    formState: { errors: createErrors },
-    reset: resetCreate,
-  } = useForm<StudentCreateFormValues>({
-    resolver: zodResolver(studentCreateSchema),
-    defaultValues: { name: '', email: '', password: '', course_id: '', department_id: '', year: 1, hostel: '' }
-  });
-
-  const [updateAction, setUpdateAction] = useState<{
-    id: string;
-    payload: { account_status?: AccountStatus; academic_status?: AcademicStatus; status_note?: string };
-    label: string;
-  } | null>(null);
-  const [statusNote, setStatusNote] = useState('');
-  
-  const [editActionId, setEditActionId] = useState<string | null>(null);
-
-  const {
-    register: registerEdit,
-    handleSubmit: handleEditSubmit,
-    control: editControl,
-    formState: { errors: editErrors },
-    reset: resetEdit,
-  } = useForm<StudentUpdateFormValues>({
-    resolver: zodResolver(studentUpdateSchema),
-    defaultValues: { name: '', course_id: '', department_id: '', year: 1, hostel: '' }
-  });
-
-  const handleEditClick = (row: StudentItemResponse) => {
-    setEditActionId(row.id);
-    resetEdit({
-      name: row.name,
-      course_id: row.course_id || '',
-      department_id: row.department_id || '',
-      year: row.year,
-      hostel: row.hostel || '',
-    });
-  };
-
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: [QUERY_KEYS.STUDENTS, statusFilter],
-    queryFn: () => adminApi.listStudents({ status: statusFilter as AccountStatus }),
-  });
+  const { items: students, isLoading, error, filter: statusFilter, setFilter: setStatusFilter, refetch } = useAdminList<StudentItemResponse, string | undefined>(
+    [QUERY_KEYS.STUDENTS],
+    (filter) => adminApi.listStudents({ status: filter as AccountStatus }),
+    undefined
+  );
 
   const { data: coursesResponse } = useQuery({
     queryKey: [QUERY_KEYS.COURSES],
@@ -109,182 +41,31 @@ export function StudentManagement() {
   const courses: Course[] = coursesResponse?.data?.data ?? [];
   const departments: Department[] = deptsResponse?.data?.data ?? [];
 
-  const students: StudentItemResponse[] = data?.data?.data ?? [];
+  const { createMutation, updateStatusMutation, editMutation } = useStudentMutations();
 
-  const createMutation = useMutation({
-    mutationFn: (data: StudentCreateRequest) => adminApi.createStudent(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
-      toast.success('Student created successfully');
-      setIsCreateOpen(false);
-      resetCreate();
-    },
-    onError: (error: any) => toast.error(error.response?.data?.detail || 'Failed to create student'),
-  });
+  const detailsModal = useDialogState<StudentItemResponse>();
+  const createModal = useDialogState();
+  const actionModal = useDialogState<UpdateActionPayload>();
+  
+  // Custom state for edit modal since it needs id + initialData
+  const [editModalId, setEditModalId] = useState<string | null>(null);
+  const [editModalData, setEditModalData] = useState<StudentUpdateFormValues | null>(null);
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
-      adminApi.updateStudentStatus(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
-      toast.success('Student status updated');
-      setUpdateAction(null);
-    },
-    onError: () => toast.error('Failed to update student status'),
-  });
+  const handleEditClick = (row: StudentItemResponse) => {
+    setEditModalId(row.id);
+    setEditModalData({
+      name: row.name,
+      course_id: row.course_id || '',
+      department_id: row.department_id || '',
+      year: row.year,
+      hostel: row.hostel || '',
+    });
+  };
 
-  const editMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
-      adminApi.updateStudentDetails(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
-      toast.success('Student details updated');
-      setEditActionId(null);
-    },
-    onError: () => toast.error('Failed to update student details'),
-  });
-
-  const columns = [
-    {
-      key: 'name',
-      header: 'Name',
-      render: (row: StudentItemResponse) => (
-        <span className="font-medium text-foreground">{row.name}</span>
-      ),
-    },
-    {
-      key: 'user_id',
-      header: 'Reg No.',
-      render: (row: StudentItemResponse) => (
-        <span className="text-sm font-medium">{row.user_id || 'N/A'}</span>
-      ),
-    },
-    {
-      key: 'course',
-      header: 'Course',
-      render: (row: StudentItemResponse) => (
-        <span className="text-sm text-foreground">
-          {row.course_name} · {row.department_name} ({row.year})
-        </span>
-      ),
-    },
-    {
-      key: 'account_status',
-      header: 'Account',
-      render: (row: StudentItemResponse) => {
-        return <StatusBadge status={row.account_status} type="account" />;
-      },
-    },
-    {
-      key: 'academic_status',
-      header: 'Academic',
-      render: (row: StudentItemResponse) => {
-        if (!row.academic_status) {
-          return (
-            <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
-              Incomplete
-            </Badge>
-          );
-        }
-        return <StatusBadge status={row.academic_status} type="academic" />;
-      },
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      render: (row: StudentItemResponse) => {
-        return (
-          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-            {row.account_status === 'pending' && (
-              <PermissionGuard permission="students:update">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100"
-                  title="Approve"
-                  onClick={() => setUpdateAction({ 
-                    id: row.id, 
-                    payload: { account_status: 'active' },
-                    label: 'approve account'
-                  })}
-                >
-                  <Check className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
-                  title="Reject"
-                  onClick={() => setUpdateAction({ 
-                    id: row.id, 
-                    payload: { account_status: 'rejected' },
-                    label: 'reject account'
-                  })}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </PermissionGuard>
-            )}
-
-            <PermissionGuard permission="students:update">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                title="Edit Profile"
-                onClick={() => handleEditClick(row)}
-              >
-                <Edit2 className="h-4 w-4" />
-              </Button>
-            </PermissionGuard>
-            <PermissionGuard permission="students:update">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Account Status</DropdownMenuLabel>
-                  {['active', 'suspended', 'revision', 'rejected'].map((status) => (
-                    <DropdownMenuItem 
-                      key={`acc-${status}`}
-                      disabled={row.account_status === status}
-                      onClick={() => setUpdateAction({ 
-                        id: row.id, 
-                        payload: { account_status: status as AccountStatus },
-                        label: `mark account as ${status}`
-                      })}
-                      className="capitalize"
-                    >
-                      Mark as {status}
-                    </DropdownMenuItem>
-                  ))}
-                  
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Academic Status</DropdownMenuLabel>
-                  {['enrolled', 'graduated', 'dropped', 'expelled'].map((status) => (
-                    <DropdownMenuItem 
-                      key={`acad-${status}`}
-                      disabled={row.academic_status === status}
-                      onClick={() => setUpdateAction({ 
-                        id: row.id, 
-                        payload: { academic_status: status as AcademicStatus },
-                        label: `mark academic standing as ${status}`
-                      })}
-                      className="capitalize"
-                    >
-                      Mark as {status}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </PermissionGuard>
-          </div>
-        );
-      },
-    },
-  ];
+  const closeEditModal = () => {
+    setEditModalId(null);
+    setEditModalData(null);
+  };
 
   if (error) {
     return <ErrorState onRetry={() => refetch()} />;
@@ -300,13 +81,14 @@ export function StudentManagement() {
           </p>
         </div>
         <PermissionGuard permission="students:create">
-          <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> Add Student
+          <Button onClick={() => createModal.open()}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Student
           </Button>
         </PermissionGuard>
       </div>
 
-      <Tabs value={statusFilter ?? 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? undefined : v)}>
+      <Tabs defaultValue="all" value={statusFilter || 'all'} onValueChange={(val) => setStatusFilter(val === 'all' ? undefined : val)}>
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="pending">Pending</TabsTrigger>
@@ -316,353 +98,57 @@ export function StudentManagement() {
         </TabsList>
       </Tabs>
 
-      <DataTable
-        columns={columns}
-        data={students}
+      <StudentTable 
+        students={students}
         isLoading={isLoading}
-        rowKey={(row) => row.id}
-        onRowClick={(row) => setShowDetails(row)}
-        emptyTitle="No students found"
-        emptyDescription="There are no students matching this filter."
-        emptyIcon={<Users className="h-6 w-6" />}
+        onRowClick={detailsModal.open}
+        onUpdateAction={actionModal.open}
+        onEditClick={handleEditClick}
       />
 
-      <Dialog open={!!updateAction} onOpenChange={(open) => {
-        if (!open) {
-          setUpdateAction(null);
-          setStatusNote('');
-        }
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{updateAction ? `Confirm Update` : 'Confirm Action'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              {updateAction ? `Are you sure you want to ${updateAction.label}?` : ''}
-            </p>
-            {updateAction && ['revision', 'suspended', 'rejected'].includes(updateAction.payload.account_status ?? '') && (
-              <div className="space-y-2">
-                <Label htmlFor="status_note">Reason / Note (Optional)</Label>
-                <Textarea
-                  id="status_note"
-                  placeholder="Provide a reason for this status change..."
-                  value={statusNote}
-                  onChange={(e) => setStatusNote(e.target.value)}
-                />
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setUpdateAction(null);
-              setStatusNote('');
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={() => {
-              if (updateAction) {
-                updateMutation.mutate({ 
-                  id: updateAction.id, 
-                  payload: { ...updateAction.payload, status_note: statusNote || undefined } 
-                });
-              }
-            }}>
-              Confirm
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <StudentDetailsModal 
+        student={detailsModal.data}
+        isOpen={detailsModal.isOpen}
+        onClose={detailsModal.close}
+      />
 
-      <Dialog open={isCreateOpen} onOpenChange={(open) => {
-        setIsCreateOpen(open);
-        if (!open) resetCreate();
-      }}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add Student</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreateSubmit((data) => createMutation.mutate(data as StudentCreateRequest))}>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input
-                  {...registerCreate('name')}
-                  placeholder="e.g., John Doe"
-                />
-                {createErrors.name && <p className="text-xs text-red-500">{createErrors.name.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  {...registerCreate('email')}
-                  placeholder="e.g., john@example.com"
-                />
-                {createErrors.email && <p className="text-xs text-red-500">{createErrors.email.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Password</Label>
-                <Input
-                  type="password"
-                  {...registerCreate('password')}
-                  placeholder="Minimum 8 characters"
-                />
-                {createErrors.password && <p className="text-xs text-red-500">{createErrors.password.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Course</Label>
-                <Controller
-                  name="course_id"
-                  control={createControl}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select course" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {courses.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {createErrors.course_id && <p className="text-xs text-red-500">{createErrors.course_id.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <Controller
-                  name="department_id"
-                  control={createControl}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departments.map((d) => (
-                          <SelectItem key={d.id} value={d.id}>{d.short_name} - {d.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {createErrors.department_id && <p className="text-xs text-red-500">{createErrors.department_id.message}</p>}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Year</Label>
-                  <Controller
-                    name="year"
-                    control={createControl}
-                    render={({ field }) => (
-                      <Select 
-                        onValueChange={(val) => field.onChange(parseInt(val))} 
-                        value={field.value ? String(field.value) : ''}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[1, 2, 3, 4, 5].map((y) => (
-                            <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {createErrors.year && <p className="text-xs text-red-500">{createErrors.year.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label>Hostel (Optional)</Label>
-                  <Input
-                    {...registerCreate('hostel')}
-                    placeholder="e.g., A101"
-                  />
-                  {createErrors.hostel && <p className="text-xs text-red-500">{createErrors.hostel.message}</p>}
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-              <Button 
-                type="submit"
-                disabled={createMutation.isPending}
-              >
-                {createMutation.isPending ? 'Creating...' : 'Create Student'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <StudentActionModal 
+        action={actionModal.data}
+        isOpen={actionModal.isOpen}
+        onClose={actionModal.close}
+        onConfirm={(id, payload) => {
+          updateStatusMutation.mutate({ id, payload });
+          actionModal.close();
+        }}
+      />
 
-      <Dialog open={!!editActionId} onOpenChange={(open) => !open && setEditActionId(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Student Profile</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleEditSubmit((data) => {
-            if (editActionId) {
-              editMutation.mutate({ id: editActionId, payload: data });
-            }
-          })}>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Full Name</Label>
-                <Input
-                  id="edit-name"
-                  {...registerEdit('name')}
-                />
-                {editErrors.name && <p className="text-xs text-red-500">{editErrors.name.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Course</Label>
-                <Controller
-                  name="course_id"
-                  control={editControl}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select course" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {courses.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {editErrors.course_id && <p className="text-xs text-red-500">{editErrors.course_id.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <Controller
-                  name="department_id"
-                  control={editControl}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departments.map((d) => (
-                          <SelectItem key={d.id} value={d.id}>{d.short_name} - {d.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {editErrors.department_id && <p className="text-xs text-red-500">{editErrors.department_id.message}</p>}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Year</Label>
-                  <Controller
-                    name="year"
-                    control={editControl}
-                    render={({ field }) => (
-                      <Select 
-                        onValueChange={(val) => field.onChange(parseInt(val))} 
-                        value={field.value ? String(field.value) : ''}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[1, 2, 3, 4, 5].map((y) => (
-                            <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {editErrors.year && <p className="text-xs text-red-500">{editErrors.year.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-hostel">Hostel (Optional)</Label>
-                  <Input
-                    id="edit-hostel"
-                    {...registerEdit('hostel')}
-                  />
-                  {editErrors.hostel && <p className="text-xs text-red-500">{editErrors.hostel.message}</p>}
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditActionId(null)}>Cancel</Button>
-              <Button 
-                type="submit"
-                disabled={editMutation.isPending}
-              >
-                {editMutation.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <StudentCreateModal 
+        isOpen={createModal.isOpen}
+        onClose={createModal.close}
+        isPending={createMutation.isPending}
+        courses={courses}
+        departments={departments}
+        onSubmit={(data) => {
+          createMutation.mutate(data, {
+            onSuccess: () => createModal.close()
+          });
+        }}
+      />
 
-      <Dialog open={!!showDetails} onOpenChange={(open) => !open && setShowDetails(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Student Details</DialogTitle>
-          </DialogHeader>
-          {showDetails && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 border-b pb-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
-                  {showDetails.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">{showDetails.name}</h3>
-                  <p className="text-sm text-muted-foreground">{showDetails.course_name} · {showDetails.branch_name}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Registration No.</p>
-                  <p className="font-medium text-foreground">{showDetails.user_id || 'N/A'}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Email Address</p>
-                  <p className="font-medium text-foreground truncate" title={showDetails.email}>
-                    {showDetails.email}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Batch/Year</p>
-                  <p className="font-medium text-foreground">{showDetails.year}</p>
-                </div>
-                <div className="space-y-1"></div>
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Account Status</p>
-                  <div className="mt-1">
-                    <StatusBadge status={showDetails.account_status} type="account" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Academic Status</p>
-                  <div className="mt-1">
-                    {showDetails.academic_status ? (
-                      <StatusBadge status={showDetails.academic_status} type="academic" />
-                    ) : (
-                      <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
-                        Incomplete
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDetails(null)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <StudentEditModal 
+        id={editModalId}
+        initialData={editModalData}
+        isOpen={!!editModalId}
+        onClose={closeEditModal}
+        isPending={editMutation.isPending}
+        courses={courses}
+        departments={departments}
+        onSubmit={(id, payload) => {
+          editMutation.mutate({ id, payload }, {
+            onSuccess: () => closeEditModal()
+          });
+        }}
+      />
     </div>
   );
 }
