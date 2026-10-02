@@ -1,18 +1,10 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { outpassesApi } from '@/api/outpassesApi';
-import { QUERY_KEYS } from '@/lib/constants';
-import { UI_CONFIG } from '@/config';
-import { DataTable } from '@/components/shared/DataTable';
 import { ErrorState } from '@/components/shared/ErrorState';
-import { StatusBadge } from '@/components/shared/StatusBadge';
-import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { StatCard } from '@/components/shared/StatCard';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -27,22 +19,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  CheckSquare,
-  Clock,
-  Check,
-  X,
-  LogOut,
-  LogIn,
-  AlertTriangle,
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
-import type {
-  OutpassResponse,
-  OutpassStatus,
-  OutpassListParams,
-} from '@/types/api';
+import { CheckSquare, Clock, AlertTriangle } from 'lucide-react';
+import type { OutpassResponse, OutpassStatus } from '@/types/api';
+import { useOutpassAdmin } from '@/hooks/useOutpassAdmin';
+import { OutpassTable } from './components/OutpassTable';
+import { useDialogState } from '@/hooks/useDialogState';
 
 const statusFilterOptions: { value: OutpassStatus; label: string }[] = [
   { value: 'pending', label: 'Pending' },
@@ -54,326 +35,78 @@ const statusFilterOptions: { value: OutpassStatus; label: string }[] = [
 ];
 
 export function OutpassManagement() {
-  const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<OutpassStatus | undefined>();
-  const [overdueFilter, setOverdueFilter] = useState<boolean | undefined>();
-  const [rejectTarget, setRejectTarget] = useState<OutpassResponse | null>(null);
+  const { filters, queries, mutations } = useOutpassAdmin();
   const [rejectNote, setRejectNote] = useState('');
-  const [confirmAction, setConfirmAction] = useState<{
-    outpass: OutpassResponse;
-    type: 'approve' | 'depart' | 'return';
-  } | null>(null);
 
-  const params: OutpassListParams = {
-    status: statusFilter,
-    is_overdue: overdueFilter,
-  };
+  const rejectModal = useDialogState<OutpassResponse>();
+  const confirmModal = useDialogState<{ outpass: OutpassResponse; type: 'approve' | 'depart' | 'return' }>();
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: [QUERY_KEYS.ADMIN_OUTPASSES, params],
-    queryFn: () => outpassesApi.listAll(params),
-  });
-
-  const outpasses: OutpassResponse[] = data?.data?.data?.items ?? [];
-
-  const approveMutation = useMutation({
-    mutationFn: (id: string) => outpassesApi.approve(id),
-    onMutate: async (id) => {
-      if (!UI_CONFIG.ENABLE_OPTIMISTIC_UPDATES) return { previous: null };
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
-      const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
-      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
-        if (!old?.data?.data?.items) return old;
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            data: {
-              ...old.data.data,
-              items: old.data.data.items.map((o: OutpassResponse) => 
-                o.id === id ? { ...o, status: 'approved' } : o
-              )
-            }
-          }
-        };
-      });
-      return { previous };
-    },
-    onSuccess: () => {
-      toast.success('Outpass approved');
-      setConfirmAction(null);
-    },
-    onError: (err: any, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
-      }
-      toast.error(err.response?.data?.error || 'Failed to approve outpass');
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
-    },
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: ({ id, note }: { id: string; note: string }) =>
-      outpassesApi.reject(id, { note: note || null }),
-    onMutate: async ({ id }) => {
-      if (!UI_CONFIG.ENABLE_OPTIMISTIC_UPDATES) return { previous: null };
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
-      const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
-      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
-        if (!old?.data?.data?.items) return old;
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            data: {
-              ...old.data.data,
-              items: old.data.data.items.map((o: OutpassResponse) => 
-                o.id === id ? { ...o, status: 'rejected' } : o
-              )
-            }
-          }
-        };
-      });
-      return { previous };
-    },
-    onSuccess: () => {
-      toast.success('Outpass rejected');
-      setRejectTarget(null);
-      setRejectNote('');
-    },
-    onError: (err: any, _variables, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
-      }
-      toast.error(err.response?.data?.error || 'Failed to reject outpass');
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
-    },
-  });
-
-  const departMutation = useMutation({
-    mutationFn: (id: string) => outpassesApi.depart(id),
-    onMutate: async (id) => {
-      if (!UI_CONFIG.ENABLE_OPTIMISTIC_UPDATES) return { previous: null };
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
-      const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
-      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
-        if (!old?.data?.data?.items) return old;
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            data: {
-              ...old.data.data,
-              items: old.data.data.items.map((o: OutpassResponse) => 
-                o.id === id ? { ...o, status: 'active' } : o
-              )
-            }
-          }
-        };
-      });
-      return { previous };
-    },
-    onSuccess: () => {
-      toast.success('Marked as departed');
-      setConfirmAction(null);
-    },
-    onError: (err: any, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
-      }
-      toast.error(err.response?.data?.error || 'Failed to mark departure');
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
-    },
-  });
-
-  const returnMutation = useMutation({
-    mutationFn: (id: string) => outpassesApi.return(id),
-    onMutate: async (id) => {
-      if (!UI_CONFIG.ENABLE_OPTIMISTIC_UPDATES) return { previous: null };
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
-      const previous = queryClient.getQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params]);
-      queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], (old: any) => {
-        if (!old?.data?.data?.items) return old;
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            data: {
-              ...old.data.data,
-              items: old.data.data.items.map((o: OutpassResponse) => 
-                o.id === id ? { ...o, status: 'completed' } : o
-              )
-            }
-          }
-        };
-      });
-      return { previous };
-    },
-    onSuccess: () => {
-      toast.success('Marked as returned');
-      setConfirmAction(null);
-    },
-    onError: (err: any, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
-      }
-      toast.error(err.response?.data?.error || 'Failed to mark return');
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
-    },
-  });
+  const outpasses: OutpassResponse[] = queries.listQuery.data?.data?.data?.items ?? [];
 
   const pendingCount = outpasses.filter((o) => o.status === 'pending').length;
   const activeCount = outpasses.filter((o) => o.status === 'active').length;
   const overdueCount = outpasses.filter((o) => o.is_overdue).length;
 
-  const columns = [
-    {
-      key: 'destination',
-      header: 'Destination',
-      render: (row: OutpassResponse) => (
-        <span className="font-medium text-foreground">{row.destination}</span>
-      ),
-    },
-    {
-      key: 'departure',
-      header: 'Departure',
-      render: (row: OutpassResponse) =>
-        format(new Date(row.departure_time), 'MMM d, HH:mm'),
-    },
-    {
-      key: 'return',
-      header: 'Expected Return',
-      render: (row: OutpassResponse) =>
-        format(new Date(row.expected_return_time), 'MMM d, HH:mm'),
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (row: OutpassResponse) => (
-        <div className="flex items-center gap-2">
-          <StatusBadge status={row.status} type="outpass" />
-          {row.is_overdue && (
-            <Badge variant="destructive" className="text-xs">
-              {row.overdue_hours}h
-            </Badge>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      render: (row: OutpassResponse) => {
-        const actions: React.ReactNode[] = [];
-
-        if (row.status === 'pending') {
-          actions.push(
-            <Button
-              key="approve"
-              variant="ghost"
-              size="sm"
-              className="h-7 text-green-600 hover:text-green-700 hover:bg-green-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                setConfirmAction({ outpass: row, type: 'approve' });
-              }}
-            >
-              <Check className="h-3.5 w-3.5" /> Approve
-            </Button>,
-            <Button
-              key="reject"
-              variant="ghost"
-              size="sm"
-              className="h-7 text-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                setRejectTarget(row);
-              }}
-            >
-              <X className="h-3.5 w-3.5" /> Reject
-            </Button>
-          );
-        }
-
-        if (row.status === 'approved') {
-          actions.push(
-            <Button
-              key="depart"
-              variant="ghost"
-              size="sm"
-              className="h-7 text-blue-600 hover:text-blue-700 hover:bg-blue-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                setConfirmAction({ outpass: row, type: 'depart' });
-              }}
-            >
-              <LogOut className="h-3.5 w-3.5" /> Depart
-            </Button>
-          );
-        }
-
-        if (row.status === 'active') {
-          actions.push(
-            <Button
-              key="return"
-              variant="ghost"
-              size="sm"
-              className="h-7 text-green-600 hover:text-green-700 hover:bg-green-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                setConfirmAction({ outpass: row, type: 'return' });
-              }}
-            >
-              <LogIn className="h-3.5 w-3.5" /> Return
-            </Button>
-          );
-        }
-
-        return (
-          <PermissionGuard permission="outpasses:update" fallback={<span className="text-sm text-muted-foreground">None</span>}>
-            <div className="flex items-center gap-1">{actions}</div>
-          </PermissionGuard>
-        );
-      },
-    },
-  ];
-
-  if (error) {
-    return <ErrorState onRetry={() => refetch()} />;
+  if (queries.listQuery.error) {
+    return <ErrorState onRetry={() => queries.listQuery.refetch()} />;
   }
+
+  const handleConfirmAction = () => {
+    if (!confirmModal.data) return;
+    const { outpass, type } = confirmModal.data;
+    
+    if (type === 'approve') {
+      mutations.approveMutation.mutate(outpass.id, { onSuccess: confirmModal.close });
+    } else if (type === 'depart') {
+      mutations.departMutation.mutate(outpass.id, { onSuccess: confirmModal.close });
+    } else if (type === 'return') {
+      mutations.returnMutation.mutate(outpass.id, { onSuccess: confirmModal.close });
+    }
+  };
+
+  const confirmTitle = () => {
+    switch (confirmModal.data?.type) {
+      case 'approve': return 'Approve Outpass';
+      case 'depart': return 'Confirm Departure';
+      case 'return': return 'Confirm Return';
+      default: return 'Confirm Action';
+    }
+  };
+
+  const confirmDescription = () => {
+    const name = confirmModal.data?.outpass.student_name;
+    switch (confirmModal.data?.type) {
+      case 'approve': return `Are you sure you want to approve this outpass request for ${name}?`;
+      case 'depart': return `Confirm that ${name} has departed from campus.`;
+      case 'return': return `Confirm that ${name} has returned to campus.`;
+      default: return 'Are you sure you want to proceed?';
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-foreground">Outpass Management</h2>
         <p className="text-sm text-muted-foreground">
-          Approve, reject, and track student gate passes
+          Review requests and track student campus exits and returns
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard icon={Clock} label="Pending" value={pendingCount} />
-        <StatCard icon={CheckSquare} label="Active" value={activeCount} />
-        <StatCard
-          icon={AlertTriangle}
-          label="Overdue"
-          value={overdueCount}
-          className={overdueCount > 0 ? 'border-destructive/30' : ''}
+        <StatCard icon={CheckSquare} label="Pending Requests" value={pendingCount} />
+        <StatCard icon={Clock} label="Currently Off-Campus" value={activeCount} />
+        <StatCard 
+          icon={AlertTriangle} 
+          label="Overdue Returns" 
+          value={overdueCount} 
+          trend={overdueCount > 0 ? { value: overdueCount, label: 'requires attention', isPositive: false } : undefined}
         />
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Select
-          value={statusFilter ?? 'all'}
-          onValueChange={(v) => setStatusFilter(v === 'all' ? undefined : (v as OutpassStatus))}
+          value={filters.statusFilter ?? 'all'}
+          onValueChange={(v) => filters.setStatusFilter(v === 'all' ? undefined : (v as OutpassStatus))}
         >
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Status" />
@@ -389,102 +122,80 @@ export function OutpassManagement() {
         </Select>
 
         <Select
-          value={overdueFilter === undefined ? 'all' : overdueFilter ? 'yes' : 'no'}
+          value={filters.overdueFilter === undefined ? 'all' : filters.overdueFilter ? 'overdue' : 'on-time'}
           onValueChange={(v) => {
-            if (v === 'all') setOverdueFilter(undefined);
-            else setOverdueFilter(v === 'yes');
+            if (v === 'all') filters.setOverdueFilter(undefined);
+            else if (v === 'overdue') filters.setOverdueFilter(true);
+            else filters.setOverdueFilter(false);
           }}
         >
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="Overdue" />
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Timeline" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="yes">Overdue Only</SelectItem>
-            <SelectItem value="no">Not Overdue</SelectItem>
+            <SelectItem value="all">All Outpasses</SelectItem>
+            <SelectItem value="overdue">Overdue Only</SelectItem>
+            <SelectItem value="on-time">On Time</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={outpasses}
-        isLoading={isLoading}
-        rowKey={(row) => row.id}
-        emptyTitle="No outpass requests"
-        emptyDescription="There are no outpasses matching these filters."
-        emptyIcon={<CheckSquare className="h-6 w-6" />}
+      <OutpassTable
+        outpasses={outpasses}
+        isLoading={queries.listQuery.isLoading}
+        onApproveClick={(outpass) => confirmModal.open({ outpass, type: 'approve' })}
+        onRejectClick={(outpass) => rejectModal.open(outpass)}
+        onDepartClick={(outpass) => confirmModal.open({ outpass, type: 'depart' })}
+        onReturnClick={(outpass) => confirmModal.open({ outpass, type: 'return' })}
       />
 
-      <Dialog open={!!rejectTarget} onOpenChange={(open) => !open && setRejectTarget(null)}>
-        <DialogContent className="max-w-md">
+      <ConfirmDialog
+        isOpen={confirmModal.isOpen}
+        title={confirmTitle()}
+        description={confirmDescription()}
+        onConfirm={handleConfirmAction}
+        onCancel={confirmModal.close}
+      />
+
+      <Dialog open={rejectModal.isOpen} onOpenChange={(open) => !open && rejectModal.close()}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Reject Outpass</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              Rejecting outpass to <strong>{rejectTarget?.destination}</strong>
+              Are you sure you want to reject the outpass request for {rejectModal.data?.student_name}?
             </p>
             <div className="space-y-2">
-              <Label htmlFor="reject-note">Rejection Note (optional)</Label>
+              <Label htmlFor="reject_note">Reason for Rejection</Label>
               <Input
-                id="reject-note"
+                id="reject_note"
+                placeholder="e.g., Incomplete information, restricted dates..."
                 value={rejectNote}
                 onChange={(e) => setRejectNote(e.target.value)}
-                placeholder="Reason for rejection..."
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectTarget(null)}>
+            <Button variant="outline" onClick={rejectModal.close}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() =>
-                rejectTarget &&
-                rejectMutation.mutate({ id: rejectTarget.id, note: rejectNote })
-              }
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                if (rejectModal.data) {
+                  mutations.rejectMutation.mutate(
+                    { id: rejectModal.data.id, note: rejectNote },
+                    { onSuccess: () => { rejectModal.close(); setRejectNote(''); } }
+                  );
+                }
+              }}
             >
               Reject Outpass
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <ConfirmDialog
-        open={!!confirmAction}
-        onOpenChange={(open) => !open && setConfirmAction(null)}
-        title={
-          confirmAction?.type === 'approve'
-            ? 'Approve this outpass?'
-            : confirmAction?.type === 'depart'
-              ? 'Mark as departed?'
-              : 'Mark as returned?'
-        }
-        description={
-          confirmAction?.type === 'approve'
-            ? `The student will be allowed to leave for ${confirmAction.outpass.destination}.`
-            : confirmAction?.type === 'depart'
-              ? 'The student has left the campus gate.'
-              : 'The student has returned to campus.'
-        }
-        confirmLabel={
-          confirmAction?.type === 'approve'
-            ? 'Approve'
-            : confirmAction?.type === 'depart'
-              ? 'Confirm Departure'
-              : 'Confirm Return'
-        }
-        onConfirm={() => {
-          if (!confirmAction) return;
-          if (confirmAction.type === 'approve')
-            approveMutation.mutate(confirmAction.outpass.id);
-          else if (confirmAction.type === 'depart')
-            departMutation.mutate(confirmAction.outpass.id);
-          else returnMutation.mutate(confirmAction.outpass.id);
-        }}
-      />
     </div>
   );
 }
