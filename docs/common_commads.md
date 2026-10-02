@@ -46,3 +46,26 @@ cd .\backend\
 .\venv\Scripts\activate
 python scripts/main.py
 ```
+
+### Run Backend Unit Tests (Pytest)
+```bash
+cd .\backend\
+.\venv\Scripts\activate
+pytest tests/
+```
+
+### Generate New Database Migrations (Alembic)
+Run this after making changes to SQLAlchemy models in `app/models/`.
+```bash
+cd .\backend\
+.\venv\Scripts\activate
+alembic revision --autogenerate -m "describe_your_changes_here"
+alembic upgrade head
+```
+
+### Cleanup Temporary Files (Windows PowerShell)
+Use this to remove leftover development scratch files quickly.
+```powershell
+cd .\backend\
+Remove-Item -Path "scratch_*.py", "scratch" -Recurse -Force
+```
