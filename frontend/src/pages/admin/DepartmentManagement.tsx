@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getErrorMessage } from '@/lib/error-utils';
 import { adminApi } from '@/api/adminApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,7 +93,7 @@ export function DepartmentManagement() {
       setFormData({ name: '', code: '', department_type: 'academic', is_active: true, hod_user_id: null });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Failed to create department');
+      toast.error(getErrorMessage(err, 'Failed to create department'));
     },
   });
 
@@ -106,7 +107,7 @@ export function DepartmentManagement() {
       setShowEdit(null);
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Failed to update department');
+      toast.error(getErrorMessage(err, 'Failed to update department'));
     },
   });
 
@@ -118,7 +119,7 @@ export function DepartmentManagement() {
       toast.success('Department deleted successfully');
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Failed to delete department. It may be in use.');
+      toast.error(getErrorMessage(err, 'Failed to delete department. It may be in use.'));
     },
   });
 
@@ -214,13 +215,14 @@ export function DepartmentManagement() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(dept)}>
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(dept)} aria-label={`Edit ${dept.name}`}>
                     <Edit2 className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    aria-label={`Delete ${dept.name}`}
                     onClick={() => {
                       if (confirm(`Are you sure you want to delete ${dept.name}?`)) {
                         deleteMutation.mutate(dept.id);
@@ -306,12 +308,12 @@ export function DepartmentManagement() {
             </div>
 
             <div className="space-y-2">
-              <Label>Department Type</Label>
+              <Label htmlFor="department_type">Department Type</Label>
               <Select
                 value={formData.department_type}
                 onValueChange={(val: 'academic' | 'administrative') => setFormData({ ...formData, department_type: val })}
               >
-                <SelectTrigger>
+                <SelectTrigger id="department_type">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -322,12 +324,12 @@ export function DepartmentManagement() {
             </div>
 
             <div className="space-y-2">
-              <Label>Head of Department</Label>
+              <Label htmlFor="hod_user_id">Head of Department</Label>
               <Select
                 value={formData.hod_user_id || 'none'}
                 onValueChange={(val) => setFormData({ ...formData, hod_user_id: val === 'none' ? null : val })}
               >
-                <SelectTrigger>
+                <SelectTrigger id="hod_user_id">
                   <SelectValue placeholder="Select HOD" />
                 </SelectTrigger>
                 <SelectContent>

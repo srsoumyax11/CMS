@@ -1,3 +1,4 @@
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { QueryProvider } from '@/context/QueryProvider';
@@ -18,36 +19,36 @@ import { Toaster } from 'sonner';
 import SystemSettings from '@/pages/admin/SystemSettings';
 
 // Notices
-import { NoticeList } from '@/pages/notices/NoticeList';
-import { NoticeDetail } from '@/pages/notices/NoticeDetail';
-import { NoticeCreate } from '@/pages/notices/NoticeCreate';
+const NoticeList = React.lazy(() => import('@/pages/notices/NoticeList').then(module => ({ default: module.NoticeList })));
+const NoticeDetail = React.lazy(() => import('@/pages/notices/NoticeDetail').then(module => ({ default: module.NoticeDetail })));
+const NoticeCreate = React.lazy(() => import('@/pages/notices/NoticeCreate').then(module => ({ default: module.NoticeCreate })));
 
 // Complaints
-import { MyComplaints } from '@/pages/complaints/MyComplaints';
-import { ComplaintCreate } from '@/pages/complaints/ComplaintCreate';
-import { ComplaintDetail } from '@/pages/complaints/ComplaintDetail';
+const MyComplaints = React.lazy(() => import('@/pages/complaints/MyComplaints').then(module => ({ default: module.MyComplaints })));
+const ComplaintCreate = React.lazy(() => import('@/pages/complaints/ComplaintCreate').then(module => ({ default: module.ComplaintCreate })));
+const ComplaintDetail = React.lazy(() => import('@/pages/complaints/ComplaintDetail').then(module => ({ default: module.ComplaintDetail })));
 
 // Outpasses
-import { MyOutpasses } from '@/pages/outpasses/MyOutpasses';
-import { OutpassCreate } from '@/pages/outpasses/OutpassCreate';
-import { OutpassDetail } from '@/pages/outpasses/OutpassDetail';
+const MyOutpasses = React.lazy(() => import('@/pages/outpasses/MyOutpasses').then(module => ({ default: module.MyOutpasses })));
+const OutpassCreate = React.lazy(() => import('@/pages/outpasses/OutpassCreate').then(module => ({ default: module.OutpassCreate })));
+const OutpassDetail = React.lazy(() => import('@/pages/outpasses/OutpassDetail').then(module => ({ default: module.OutpassDetail })));
 
 // Timetable & Attendance
-import { TimetableView } from '@/pages/timetable/TimetableView';
-import { AttendanceStats } from '@/pages/attendance/AttendanceStats';
+const TimetableView = React.lazy(() => import('@/pages/timetable/TimetableView').then(module => ({ default: module.TimetableView })));
+const AttendanceStats = React.lazy(() => import('@/pages/attendance/AttendanceStats').then(module => ({ default: module.AttendanceStats })));
 
 // Mess
-import { MessView } from '@/pages/mess/MessView';
+const MessView = React.lazy(() => import('@/pages/mess/MessView').then(module => ({ default: module.MessView })));
 
 // Admin
-import { StudentManagement } from '@/pages/admin/StudentManagement';
-import { FacultyManagement } from '@/pages/admin/FacultyManagement';
-import { ComplaintManagement } from '@/pages/admin/ComplaintManagement';
-import { OutpassManagement } from '@/pages/admin/OutpassManagement';
-import { MessManagement } from '@/pages/admin/MessManagement';
-import { RolesPermissions } from '@/pages/admin/RolesPermissions';
-import { DepartmentManagement } from '@/pages/admin/DepartmentManagement';
-import { CourseManagement } from '@/pages/admin/CourseManagement';
+const StudentManagement = React.lazy(() => import('@/pages/admin/StudentManagement').then(module => ({ default: module.StudentManagement })));
+const FacultyManagement = React.lazy(() => import('@/pages/admin/FacultyManagement').then(module => ({ default: module.FacultyManagement })));
+const ComplaintManagement = React.lazy(() => import('@/pages/admin/ComplaintManagement').then(module => ({ default: module.ComplaintManagement })));
+const OutpassManagement = React.lazy(() => import('@/pages/admin/OutpassManagement').then(module => ({ default: module.OutpassManagement })));
+const MessManagement = React.lazy(() => import('@/pages/admin/MessManagement').then(module => ({ default: module.MessManagement })));
+const RolesPermissions = React.lazy(() => import('@/pages/admin/RolesPermissions').then(module => ({ default: module.RolesPermissions })));
+const DepartmentManagement = React.lazy(() => import('@/pages/admin/DepartmentManagement').then(module => ({ default: module.DepartmentManagement })));
+const CourseManagement = React.lazy(() => import('@/pages/admin/CourseManagement').then(module => ({ default: module.CourseManagement })));
 
 import './App.css';
 
@@ -59,7 +60,8 @@ function RoleRedirect() {
 
 export function StudentRoutes() {
   return (
-    <Routes>
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
       <Route index element={<StudentDashboard />} />
       <Route path="notices" element={<NoticeList />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
@@ -73,13 +75,15 @@ export function StudentRoutes() {
       <Route path="attendance" element={<AttendanceStats />} />
       <Route path="mess" element={<MessView />} />
       <Route path="profile" element={<Profile />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 
 export function FacultyRoutes() {
   return (
-    <Routes>
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
       <Route index element={<StudentDashboard />} />
       <Route path="notices" element={<NoticeList />} />
       <Route path="notices/new" element={<NoticeCreate />} />
@@ -89,13 +93,15 @@ export function FacultyRoutes() {
       <Route path="timetable" element={<TimetableView />} />
       <Route path="attendance" element={<AttendanceStats />} />
       <Route path="profile" element={<Profile />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 
 export function AdminRoutes() {
   return (
-    <Routes>
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
       <Route index element={<AdminDashboard />} />
       <Route path="notices" element={<NoticeList />} />
       <Route path="notices/new" element={<NoticeCreate />} />
@@ -114,7 +120,8 @@ export function AdminRoutes() {
       <Route path="courses" element={<CourseManagement />} />
       <Route path="settings" element={<SystemSettings />} />
       <Route path="profile" element={<Profile />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

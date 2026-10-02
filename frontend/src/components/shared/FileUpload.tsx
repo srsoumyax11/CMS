@@ -9,6 +9,7 @@ interface FileUploadProps {
   maxSizeMB?: number;
   onFileSelect: (file: File | null) => void;
   className?: string;
+  id?: string;
 }
 
 export function FileUpload({
@@ -17,6 +18,7 @@ export function FileUpload({
   maxSizeMB = 5,
   onFileSelect,
   className,
+  id,
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -42,6 +44,7 @@ export function FileUpload({
   return (
     <div className={cn('space-y-2', className)}>
       <input
+        id={id}
         ref={inputRef}
         type="file"
         accept={accept}
@@ -72,6 +75,7 @@ export function FileUpload({
             variant="ghost"
             size="icon"
             className="h-7 w-7 shrink-0"
+            aria-label={`Remove ${selectedFile.name}`}
             onClick={handleRemove}
           >
             <X className="h-4 w-4" />

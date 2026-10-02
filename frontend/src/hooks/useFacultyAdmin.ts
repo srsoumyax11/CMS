@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useState } from 'react';
 import type { AccountStatus, FacultyCreateRequest, AdminItemResponse, FacultyItemResponse } from '@/types/api';
 import { useAdminList } from '@/hooks/useAdminList';
+import { getErrorMessage } from '@/lib/error-utils';
 
 export function useFacultyAdmin() {
   const queryClient = useQueryClient();
@@ -27,7 +28,7 @@ export function useFacultyAdmin() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FACULTY] });
       toast.success('Faculty member created');
     },
-    onError: () => toast.error('Failed to create faculty member'),
+    onError: (err) => toast.error(getErrorMessage(err, 'Failed to create faculty member')),
   });
 
   const editMutation = useMutation({
@@ -37,7 +38,7 @@ export function useFacultyAdmin() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FACULTY] });
       toast.success('Faculty member updated');
     },
-    onError: () => toast.error('Failed to update faculty member'),
+    onError: (err) => toast.error(getErrorMessage(err, 'Failed to update faculty member')),
   });
 
   return {

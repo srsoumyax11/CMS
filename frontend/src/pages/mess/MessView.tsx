@@ -219,7 +219,7 @@ export function MessView() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Rating: {rating}/5</Label>
+                  <div className="text-sm font-medium leading-none">Rating: {rating}/5</div>
                   <div className="flex items-center gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -227,6 +227,7 @@ export function MessView() {
                         type="button"
                         onClick={() => setRating(star)}
                         className="transition-transform hover:scale-110"
+                        aria-label={`Rate ${star} out of 5 stars`}
                       >
                         <Star
                           className={`h-6 w-6 ${

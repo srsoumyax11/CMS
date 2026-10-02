@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rolesApi } from '@/api/rolesApi';
 import { useAuth } from '@/context/AuthContext';
 import { QUERY_KEYS } from '@/lib/constants';
+import { getErrorMessage } from '@/lib/error-utils';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -140,8 +141,7 @@ export function RolesPermissions() {
       toast.success('Role created successfully');
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Failed to create role';
-      toast.error(msg);
+      toast.error(getErrorMessage(error, 'Failed to create role'));
     },
   });
 
@@ -154,8 +154,7 @@ export function RolesPermissions() {
       toast.success('Role updated successfully');
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Failed to update role';
-      toast.error(msg);
+      toast.error(getErrorMessage(error, 'Failed to update role'));
     },
   });
 
@@ -168,8 +167,7 @@ export function RolesPermissions() {
       setDraftPermissions(null);
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Failed to update permissions';
-      toast.error(msg);
+      toast.error(getErrorMessage(error, 'Failed to update permissions'));
     },
   });
 
@@ -182,8 +180,7 @@ export function RolesPermissions() {
       setAssignUserId('');
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Failed to assign role';
-      toast.error(msg);
+      toast.error(getErrorMessage(error, 'Failed to assign role'));
     },
   });
 
@@ -199,8 +196,7 @@ export function RolesPermissions() {
       }
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Failed to delete role';
-      toast.error(msg);
+      toast.error(getErrorMessage(error, 'Failed to delete role'));
       setShowDelete(null);
       setRoleToDeleteCount(null);
     },
@@ -212,8 +208,8 @@ export function RolesPermissions() {
       const res = await rolesApi.getAssignmentCount(role.id);
       setRoleToDeleteCount(res.data.data ?? 0);
       setShowDelete(role);
-    } catch {
-      toast.error('Failed to check role assignments');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to check role assignments'));
     } finally {
       setIsCheckingCount(null);
     }
@@ -343,6 +339,7 @@ export function RolesPermissions() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6 -mr-2 text-muted-foreground hover:text-foreground"
+                                aria-label={`Role actions for ${role.name}`}
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <MoreVertical className="h-4 w-4" />

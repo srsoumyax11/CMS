@@ -101,8 +101,9 @@ export function NoticeCreate() {
             </div>
 
             <div className="space-y-2">
-              <Label>Attachment (optional)</Label>
+              <Label htmlFor="attachment">Attachment (optional)</Label>
               <FileUpload
+                id="attachment"
                 label="Upload attachment"
                 accept="image/*,.pdf"
                 maxSizeMB={10}

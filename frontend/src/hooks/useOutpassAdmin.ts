@@ -5,6 +5,7 @@ import { UI_CONFIG } from '@/config';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import type { OutpassStatus, OutpassListParams, OutpassResponse } from '@/types/api';
+import { getErrorMessage } from '@/lib/error-utils';
 
 export function useOutpassAdmin() {
   const queryClient = useQueryClient();
@@ -51,7 +52,7 @@ export function useOutpassAdmin() {
       if (context?.previous) {
         queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
       }
-      toast.error(err.response?.data?.error || 'Failed to approve outpass');
+      toast.error(getErrorMessage(err, 'Failed to approve outpass'));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
@@ -89,7 +90,7 @@ export function useOutpassAdmin() {
       if (context?.previous) {
         queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
       }
-      toast.error(err.response?.data?.error || 'Failed to reject outpass');
+      toast.error(getErrorMessage(err, 'Failed to reject outpass'));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
@@ -126,7 +127,7 @@ export function useOutpassAdmin() {
       if (context?.previous) {
         queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
       }
-      toast.error(err.response?.data?.error || 'Failed to mark departure');
+      toast.error(getErrorMessage(err, 'Failed to mark departure'));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });
@@ -163,7 +164,7 @@ export function useOutpassAdmin() {
       if (context?.previous) {
         queryClient.setQueryData([QUERY_KEYS.ADMIN_OUTPASSES, params], context.previous);
       }
-      toast.error(err.response?.data?.error || 'Failed to mark return');
+      toast.error(getErrorMessage(err, 'Failed to mark return'));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_OUTPASSES] });

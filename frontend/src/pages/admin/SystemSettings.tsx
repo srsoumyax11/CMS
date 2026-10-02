@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { adminApi } from '@/api/adminApi';
 import type { SystemSetting } from '@/types/api';
+import { getErrorMessage } from '@/lib/error-utils';
 
 export default function SystemSettings() {
   const [searchParams] = useSearchParams();
@@ -37,7 +38,7 @@ export default function SystemSettings() {
         setLocalValues(locals);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to fetch settings');
+      toast.error(getErrorMessage(error, 'Failed to fetch settings'));
     } finally {
       setLoading(false);
     }
@@ -52,7 +53,7 @@ export default function SystemSettings() {
         toast.success('Setting updated successfully');
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to update setting');
+      toast.error(getErrorMessage(error, 'Failed to update setting'));
       // Revert optimism if needed by refetching
       fetchSettings();
     }

@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { GraduationCap, Loader2, AlertCircle, ArrowLeft,CheckCircle2, Eye, EyeOff } from 'lucide-react';
-import { PasswordRequirements } from '@/components/shared/PasswordRequirements';
+
 
 export function Register() {
   const navigate = useNavigate();
@@ -187,7 +187,7 @@ export function Register() {
                     </span>
                   </Button>
                 </div>
-                <PasswordRequirements password={password} className="mt-2" />
+
               </div>
 
               {error && (

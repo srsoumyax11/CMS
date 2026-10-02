@@ -82,6 +82,7 @@ export function StudentTable({ students, isLoading, onRowClick, onUpdateAction, 
                   size="icon"
                   className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100"
                   title="Approve"
+                  aria-label={`Approve ${row.name}`}
                   onClick={() => onUpdateAction({ 
                     id: row.id, 
                     payload: { account_status: 'active' },
@@ -95,6 +96,7 @@ export function StudentTable({ students, isLoading, onRowClick, onUpdateAction, 
                   size="icon"
                   className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
                   title="Reject"
+                  aria-label={`Reject ${row.name}`}
                   onClick={() => onUpdateAction({ 
                     id: row.id, 
                     payload: { account_status: 'rejected' },
@@ -112,6 +114,7 @@ export function StudentTable({ students, isLoading, onRowClick, onUpdateAction, 
                 size="icon"
                 className="h-8 w-8"
                 title="Edit Profile"
+                aria-label={`Edit ${row.name}`}
                 onClick={() => onEditClick(row)}
               >
                 <Edit2 className="h-4 w-4" />
@@ -120,7 +123,7 @@ export function StudentTable({ students, isLoading, onRowClick, onUpdateAction, 
             <PermissionGuard permission="students:update">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`More actions for ${row.name}`}>
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>

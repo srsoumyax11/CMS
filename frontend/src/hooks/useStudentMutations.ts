@@ -3,6 +3,7 @@ import { adminApi } from '@/api/adminApi';
 import { QUERY_KEYS } from '@/lib/constants';
 import { toast } from 'sonner';
 import type { StudentCreateRequest, AccountStatus, AcademicStatus } from '@/types/api';
+import { getErrorMessage } from '@/lib/error-utils';
 
 export function useStudentMutations() {
   const queryClient = useQueryClient();
@@ -13,7 +14,7 @@ export function useStudentMutations() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
       toast.success('Student created successfully');
     },
-    onError: (error: any) => toast.error(error.response?.data?.detail || 'Failed to create student'),
+    onError: (error) => toast.error(getErrorMessage(error, 'Failed to create student')),
   });
 
   const updateStatusMutation = useMutation({
@@ -23,7 +24,7 @@ export function useStudentMutations() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
       toast.success('Student status updated');
     },
-    onError: () => toast.error('Failed to update student status'),
+    onError: (err) => toast.error(getErrorMessage(err, 'Failed to update student status')),
   });
 
   const editMutation = useMutation({
@@ -33,7 +34,7 @@ export function useStudentMutations() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
       toast.success('Student details updated');
     },
-    onError: () => toast.error('Failed to update student details'),
+    onError: (err) => toast.error(getErrorMessage(err, 'Failed to update student details')),
   });
 
   return {

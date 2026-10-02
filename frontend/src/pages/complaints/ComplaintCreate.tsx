@@ -163,8 +163,9 @@ export function ComplaintCreate() {
             </div>
 
             <div className="space-y-2">
-              <Label>Photo (optional)</Label>
+              <Label htmlFor="photo">Photo (optional)</Label>
               <FileUpload
+                id="photo"
                 label="Upload photo"
                 accept="image/*"
                 maxSizeMB={5}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getErrorMessage } from '@/lib/error-utils';
 import { adminApi } from '@/api/adminApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,7 +59,7 @@ export function CourseManagement() {
       setFormData({ name: '', is_active: true, duration_years: 4 });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.detail || 'Failed to create course');
+      toast.error(getErrorMessage(err, 'Failed to create course'));
     },
   });
 
@@ -72,7 +73,7 @@ export function CourseManagement() {
       setShowEdit(null);
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.detail || 'Failed to update course');
+      toast.error(getErrorMessage(err, 'Failed to update course'));
     },
   });
 
@@ -84,7 +85,7 @@ export function CourseManagement() {
       toast.success('Course deleted successfully');
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.detail || 'Failed to delete course. It may be in use.');
+      toast.error(getErrorMessage(err, 'Failed to delete course. It may be in use.'));
     },
   });
 
@@ -177,13 +178,14 @@ export function CourseManagement() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(course)}>
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(course)} aria-label={`Edit ${course.name}`}>
                       <Edit2 className="h-4 w-4" />
                     </Button>
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      aria-label={`Delete ${course.name}`}
                       onClick={() => {
                         if (confirm(`Are you sure you want to delete ${course.name}?`)) {
                           deleteMutation.mutate(course.id);

@@ -10,6 +10,7 @@ import { Loader2, Camera, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminApi } from '@/api/adminApi';
 import type { FacultyItemResponse, Department, AccountStatus, EmploymentStatus } from '@/types/api';
+import { getErrorMessage } from '@/lib/error-utils';
 
 interface FacultyEditModalProps {
   faculty: FacultyItemResponse | null;
@@ -64,7 +65,7 @@ export function FacultyEditModal({ faculty, isOpen, onClose, onSubmit, isPending
         onUploadSuccess();
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Failed to upload photo");
+      toast.error(getErrorMessage(error, "Failed to upload photo"));
     } finally {
       setIsUploadingPhoto(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

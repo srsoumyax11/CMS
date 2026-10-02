@@ -5,6 +5,7 @@ import { QUERY_KEYS } from '@/lib/constants';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import type { ComplaintStatus, ComplaintCategory, ComplaintListParams } from '@/types/api';
+import { getErrorMessage } from '@/lib/error-utils';
 
 export function useComplaintAdmin() {
   const queryClient = useQueryClient();
@@ -45,7 +46,7 @@ export function useComplaintAdmin() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_COMPLAINTS] });
       toast.success('Complaint status updated');
     },
-    onError: () => toast.error('Failed to update status'),
+    onError: (err) => toast.error(getErrorMessage(err, 'Failed to update status')),
   });
 
   const assignMutation = useMutation({
@@ -55,7 +56,7 @@ export function useComplaintAdmin() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_COMPLAINTS] });
       toast.success('Complaint assigned');
     },
-    onError: () => toast.error('Failed to assign complaint'),
+    onError: (err) => toast.error(getErrorMessage(err, 'Failed to assign complaint')),
   });
 
   return {

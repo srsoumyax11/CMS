@@ -12,7 +12,8 @@ import { Camera, Mail, Shield, Edit2, Loader2, Check, X, Copy, Key, ShieldCheck,
 import { ROLE_LABELS } from '@/lib/navigation';
 import { toast } from 'sonner';
 import { ProfilePhotoCropper } from '@/components/shared/ProfilePhotoCropper';
-import { PasswordRequirements } from '@/components/shared/PasswordRequirements';
+import { getErrorMessage } from '@/lib/error-utils';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -147,7 +148,7 @@ export function Profile() {
               toast.success(`Verification code sent to ${editEmailValue.trim()}`);
             }
           } catch (err: any) {
-            toast.error(err.response?.data?.detail || 'Failed to request email update');
+            toast.error(getErrorMessage(err, 'Failed to request email update'));
             success = false;
           }
         }
@@ -177,7 +178,7 @@ export function Profile() {
       await refreshUser();
       setIsEditingProfile(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Invalid verification code');
+      toast.error(getErrorMessage(err, 'Invalid verification code'));
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -222,7 +223,7 @@ export function Profile() {
           toast.success('Verification code sent to your email');
         }
       } catch (err: any) {
-        toast.error(err.response?.data?.detail || 'Failed to request 2FA enablement');
+        toast.error(getErrorMessage(err, 'Failed to request 2FA enablement'));
       }
     } else {
       setIsDisableModalOpen(true);
@@ -236,7 +237,7 @@ export function Profile() {
       toast.success('Two-Factor Authentication disabled');
       setIsDisableModalOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to disable 2FA');
+      toast.error(getErrorMessage(err, 'Failed to disable 2FA'));
     }
   };
 
@@ -250,7 +251,7 @@ export function Profile() {
       await refreshUser();
       toast.success('Two-Factor Authentication enabled successfully');
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Invalid verification code');
+      toast.error(getErrorMessage(err, 'Invalid verification code'));
     } finally {
       setIsVerifyingTwoFaOtp(false);
     }
@@ -553,7 +554,7 @@ export function Profile() {
                     </span>
                   </Button>
                 </div>
-                <PasswordRequirements password={newPassword} className="mt-2" />
+
               </div>
               <Button onClick={handleChangePassword} disabled={isChangingPassword}>
                 {isChangingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
