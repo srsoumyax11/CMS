@@ -41,14 +41,15 @@ async def create_notice(
     service = NoticeService(uow)
     attachment_url = None
     if file:
+        from app.core.config import settings
         ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
-        await validate_upload_file(file, allowed_types=ALLOWED_MIME_TYPES, max_size_mb=10)
+        await validate_upload_file(file, allowed_types=ALLOWED_MIME_TYPES, max_size_mb=settings.MAX_UPLOAD_FILE_SIZE_MB)
         
         file_content = await file.read()
         attachment_url = await upload_notice_attachment(file_content, file.content_type)
         
     if target_hostel:
-        target_hostel = target_hostel.strip().lower()
+        target_hostel = target_hostel.strip()
 
     notice = Notice(
         title=title,

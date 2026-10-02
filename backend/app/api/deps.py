@@ -174,3 +174,37 @@ def can_mark_attendance(slot: TimetableSlot, current_user: User, user_permission
         return True
         
     return False
+
+from app.core.uow import UnitOfWork, get_uow
+from app.services.outpass_service import OutpassService
+from app.services.timetable_service import TimetableService
+from app.services.attendance_service import AttendanceService
+from app.services.mess_service import MessService
+from app.services.notification_service import NotificationService
+from app.services.metadata_service import MetadataService
+from app.services.role_service import RoleService
+from app.services.complaint_service import ComplaintService
+
+def get_complaint_service(uow: UnitOfWork = Depends(get_uow)) -> ComplaintService:
+    return ComplaintService(uow)
+
+def get_outpass_service(uow: UnitOfWork = Depends(get_uow)) -> OutpassService:
+    return OutpassService(uow)
+
+def get_timetable_service(uow: UnitOfWork = Depends(get_uow)) -> TimetableService:
+    return TimetableService(uow)
+
+def get_attendance_service(uow: UnitOfWork = Depends(get_uow)) -> AttendanceService:
+    return AttendanceService(uow)
+
+def get_mess_service(uow: UnitOfWork = Depends(get_uow)) -> MessService:
+    return MessService(uow)
+
+def get_notification_service(uow: UnitOfWork = Depends(get_uow)) -> NotificationService:
+    return NotificationService(uow)
+
+def get_metadata_service(uow: UnitOfWork = Depends(get_uow)) -> MetadataService:
+    return MetadataService(uow)
+
+def get_role_service(uow: UnitOfWork = Depends(get_uow)) -> RoleService:
+    return RoleService(uow)

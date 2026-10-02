@@ -7,7 +7,6 @@ def run_timetable_tests():
     student_headers = state["student_headers"]
     admin_headers = state["admin_headers"]
     course_id = state["course_id"]
-    branch_id = state["branch_id"]
     fac_id = state["faculty_uuid"]
     
     now = datetime.now(timezone.utc)
@@ -15,7 +14,7 @@ def run_timetable_tests():
     print_step("30. POST /api/timetable (Admin creates Timetable Slot)")
     slot_data = {
         "course_id": course_id,
-        "branch_id": branch_id,
+        "department_id": state.get("department_id"),
         "year": 2024,
         "subject_name": "Database Systems",
         "faculty_id": fac_id,

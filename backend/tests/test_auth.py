@@ -7,8 +7,6 @@ from .state import state
 
 def run_auth_tests():
     course_id = state["course_id"]
-    branch_id = state["branch_id"]
-
     # ---------------------------------------------------------
     # 1. REGISTER STUDENT
     # ---------------------------------------------------------
@@ -19,7 +17,6 @@ def run_auth_tests():
         "email": STUDENT_EMAIL,
         "password": STUDENT_PASSWORD,
         "name": "Test Student",
-        "branch_id": branch_id,
         "year": 2024,
         "hostel": "Hostel B"
     }
@@ -38,9 +35,11 @@ def run_auth_tests():
     # Negative Test: Weak password
     weak_pwd_data = bad_reg_data.copy()
     weak_pwd_data["course_id"] = course_id
+    weak_pwd_data["department_id"] = state["department_id"]
+    weak_pwd_data["user_id"] = "STU9999"
     weak_pwd_data["password"] = "weak"
     r = requests.post(f"{BASE_URL}/auth/register", json=weak_pwd_data)
-    assert r.status_code == 400, "Expected 400 for weak password"
+    assert r.status_code == 400, f"Expected 400 for weak password, got {r.status_code}: {r.text}"
     print("✅ Negative test passed: Weak password caught (400)")
 
     # Positive Test: Register successful
@@ -50,7 +49,7 @@ def run_auth_tests():
         "name": "Test Student",
         "user_id": f"STU{random_suffix.upper()}",
         "course_id": course_id,
-        "branch_id": branch_id,
+        "department_id": state["department_id"],
         "year": 2024,
         "hostel": "Hostel A"
     }
@@ -83,12 +82,6 @@ def run_auth_tests():
     student_token = res_json["data"]["access_token"]
     student_headers = {"Authorization": f"Bearer {student_token}"}
     print("✅ Student logged in successfully despite being pending.")
-    
-    r = requests.post(f"{BASE_URL}/users/me/student-profile", headers=student_headers, json={
-        "course_id": course_id, "branch_id": branch_id, "year": 2024, "hostel": "Hostel A"
-    })
-    assert r.status_code == 200, f"Profile creation failed: {r.text}"
-    print("✅ Student profile created successfully.")
     
     state["student_token"] = student_token
     state["student_headers"] = student_headers

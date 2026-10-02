@@ -7,8 +7,6 @@ def run_rbac_tests():
     student_headers = state["student_headers"]
     admin_headers = state["admin_headers"]
     course_id = state["course_id"]
-    branch_id = state["branch_id"]
-
     # ---------------------------------------------------------
     # 5. GET /api/admin/students?status=pending (SuperAdmin)
     # ---------------------------------------------------------
@@ -87,6 +85,7 @@ def run_rbac_tests():
         "password": FACULTY_PASSWORD,
         "name": "Prof. Soumya Ranjan Sahoo",
         "department_id": state["department_id"],
+        "course_id": state["course_id"],
         # missing designation
     }
     r = requests.post(f"{BASE_URL}/admin/faculty", headers=admin_headers, json=bad_fac_data)
@@ -128,7 +127,7 @@ def run_rbac_tests():
         "name": "Test Student 2",
         "user_id": f"STU2{random_suffix.upper()}",
         "course_id": course_id,
-        "branch_id": branch_id,
+        "department_id": state["department_id"],
         "year": 2024,
         "hostel": "Hostel B"
     }
@@ -142,11 +141,7 @@ def run_rbac_tests():
     s2_token = r.json()["data"]["access_token"]
     s2_headers = {"Authorization": f"Bearer {s2_token}"}
     
-    # Create Profile for S2
-    r = requests.post(f"{BASE_URL}/users/me/student-profile", headers=s2_headers, json={
-        "course_id": course_id, "branch_id": branch_id, "year": 2024, "hostel": "Hostel B"
-    })
-    assert r.status_code == 200
+    # Create Profile for S2 is obsolete in new refactored code (created during register)
     
     # Fetch from Admin Pending list
     r = requests.get(f"{BASE_URL}/admin/students?status=pending", headers=admin_headers)
@@ -170,7 +165,7 @@ def run_rbac_tests():
         "email": FACULTY_EMAIL,
         "password": FACULTY_PASSWORD
     })
-    assert fac_login.status_code == 200, "Faculty login failed"
+    assert fac_login.status_code == 200, f"Faculty login failed: {fac_login.text}"
     faculty_token = fac_login.json()["data"]["access_token"]
     faculty_headers = {"Authorization": f"Bearer {faculty_token}"}
     

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, UUID4, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, UUID4, EmailStr, Field
 from typing import Optional, List, Literal
 from app.models.user import AccountStatus
 from app.models.profiles import AcademicStatus, EmploymentStatus
@@ -52,6 +52,8 @@ class StudentItemResponse(BaseModel):
     academic_status: Optional[AcademicStatus] = None
     status_note: Optional[str] = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 class StudentAdminUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
     course_id: Optional[UUID4] = None
@@ -84,6 +86,8 @@ class FacultyItemResponse(BaseModel):
     employment_status: EmploymentStatus
     status_note: Optional[str] = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 class FacultyUpdateRequest(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
@@ -102,6 +106,8 @@ class DepartmentResponse(BaseModel):
     department_type: Literal["academic", "administrative"]
     is_active: bool
     hod_user_id: Optional[UUID4] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 class DepartmentCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -130,6 +136,8 @@ class SystemSettingResponse(BaseModel):
     is_public: bool
     description: Optional[str] = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 class SystemSettingUpdateRequest(BaseModel):
     value: Optional[str] = None
 
@@ -141,6 +149,8 @@ class AdminItemResponse(BaseModel):
     account_status: AccountStatus
     status_note: Optional[str] = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 class OnboardingTask(BaseModel):
     id: str
     title: str
@@ -151,3 +161,5 @@ class OnboardingTask(BaseModel):
 class OnboardingStatusResponse(BaseModel):
     completion_percentage: int
     tasks: List[OnboardingTask]
+
+    model_config = ConfigDict(from_attributes=True)

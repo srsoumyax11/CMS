@@ -17,6 +17,8 @@ from app.models.complaint import Complaint, ComplaintStatusLog, ComplaintCategor
 from app.schemas.common import APIResponse
 from app.schemas.complaint import ComplaintResponse, ComplaintListResponse, ComplaintStatusUpdateRequest, ComplaintAssignRequest, RecurringIssueResponse, AgeingComplaintResponse
 from app.utils.validation import validate_upload_file
+from app.api.middleware import verify_ownership
+from app.api.deps import get_complaint_service
 
 router = APIRouter()
 
@@ -58,7 +60,8 @@ async def create_complaint(
         try:
             photo_path = await upload_complaint_photo(photo, str(current_user.id))
         except Exception as e:
-            print(f"Complaint photo upload error: {str(e)}")
+            import logging
+            logging.getLogger(__name__).error(f"Complaint photo upload error: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail="Failed to upload complaint evidence")
 
     location_hostel = location_hostel.strip().lower()
@@ -75,6 +78,8 @@ async def create_complaint(
     )
     
     complaint = await service.create_complaint(complaint, changed_by=current_user.id)
+    if complaint:
+        await uow.db.refresh(complaint)
         
     # Re-fetch for response mapping if needed, or construct response
     response_data = ComplaintResponse.model_validate(complaint)
@@ -214,6 +219,8 @@ async def update_complaint_status(
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
         
+    await uow.db.refresh(complaint)
+        
     response_data = ComplaintResponse.model_validate(complaint)
     if complaint.photo_url:
         response_data.photo_url = get_signed_url("complaint-attachments", complaint.photo_url)
@@ -252,6 +259,8 @@ async def assign_complaint(
         )
         
     complaint = await service.assign_complaint(id, req.assigned_to)
+    if complaint:
+        await uow.db.refresh(complaint)
         
     response_data = ComplaintResponse.model_validate(complaint)
     if complaint.photo_url:
@@ -314,21 +323,18 @@ async def get_ageing_analytics(
     description="Fetches details for a specific complaint. Protected by IDOR checks (Owner or Public). **Requires:** `complaint:view`",
     response_model=APIResponse[ComplaintResponse]
 )
+
+@verify_ownership(resource_name="complaint")
 async def get_complaint(
     id: UUID,
+    service: ComplaintService = Depends(get_complaint_service),
     current_user: User = Depends(require_permission(Perms.COMPLAINT_VIEW)),
-    user_permissions: set = Depends(get_user_permissions),
-    uow: UnitOfWork = Depends(get_uow)
+    permissions: set = Depends(get_user_permissions)
 ):
-    service = ComplaintService(uow)
     complaint = await service.get_complaint(id)
     
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
-        
-    if not can_view_complaint_detail(complaint, current_user, user_permissions):
-        # We raise 403 because we found the complaint but the user lacks visibility
-        raise HTTPException(status_code=403, detail="Not authorized to view this complaint")
         
     response_data = ComplaintResponse.model_validate(complaint)
     if complaint.photo_url:
@@ -350,6 +356,8 @@ async def cancel_complaint(
     service = ComplaintService(uow)
     try:
         complaint = await service.cancel_complaint(id, current_user.id)
+        if complaint:
+            await uow.db.refresh(complaint)
     except ValueError as e:
         # Map service validation errors to 400 or 403
         if "authorized" in str(e):

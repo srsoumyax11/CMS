@@ -1,17 +1,18 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-import random
-import jwt
-from app.core.config import settings
-from app.core.database import get_db
-from app.core.security import get_current_user, verify_password, hash_password, create_otp_session_token
-from app.core.storage import upload_avatar
-from app.models.user import User, UserType
+from app.core.security import get_current_user
+from app.core.uow import get_uow, UnitOfWork
+from app.models.user import User
 from app.schemas.common import APIResponse
-from app.schemas.auth import EmailUpdateRequest, EmailVerifyOTPRequest
-from app.utils.email import send_email_background
-from app.utils.validation import validate_upload_file
+from app.schemas.auth import (
+    EmailUpdateRequest, 
+    EmailVerifyOTPRequest,
+    NameUpdateRequest, 
+    PasswordChangeRequest, 
+    UserIdUpdateRequest, 
+    StudentProfileCreateRequest,
+    UserPreferencesUpdateRequest
+)
+from app.services.user_service import UserService
 
 router = APIRouter()
 
@@ -24,32 +25,14 @@ router = APIRouter()
 async def upload_profile_photo(
     photo: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
+    service = UserService(uow)
     try:
-        # Check file size (1MB limit) and valid image formats
-        await validate_upload_file(photo, max_size_mb=1)
-        
-        photo_url = await upload_avatar(photo, str(current_user.id))
-    except Exception as e:
-        print(f"Photo upload error: {str(e)}")
-        raise HTTPException(status_code=400, detail="Failed to upload photo")
-        
-    try:
-        # Update the user profile in the database
-        current_user.photo_url = photo_url
-            
-        await db.commit()
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database Error")
-        
-    return APIResponse(success=True, data={"photo_url": photo_url}, error=None)
-from app.schemas.auth import NameUpdateRequest, PasswordChangeRequest, UserIdUpdateRequest, StudentProfileCreateRequest
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
-from app.models.profiles import StudentProfile, AcademicStatus
-from app.models.academic import Course, Department
+        photo_url = await service.upload_avatar(current_user, photo)
+        return APIResponse(success=True, data={"photo_url": photo_url}, error=None)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get(
     "/me/student-profile",
@@ -59,23 +42,23 @@ from app.models.academic import Course, Department
 )
 async def get_my_student_profile(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
-    if current_user.user_type != UserType.student:
-        raise HTTPException(status_code=400, detail="Only students have a student profile")
-    
-    result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
-    profile = result.scalar_one_or_none()
-    if not profile:
-        return APIResponse(success=True, data=None, error=None)
-    
-    return APIResponse(success=True, data={
-        "course_id": str(profile.course_id),
-        "department_id": str(profile.department_id),
-        "year": profile.year,
-        "hostel": profile.hostel,
-        "academic_status": profile.academic_status.value if profile.academic_status else None,
-    }, error=None)
+    service = UserService(uow)
+    try:
+        profile = await service.get_student_profile(current_user)
+        if not profile:
+            return APIResponse(success=True, data=None, error=None)
+            
+        return APIResponse(success=True, data={
+            "course_id": str(profile.course_id),
+            "department_id": str(profile.department_id),
+            "year": profile.year,
+            "hostel": profile.hostel,
+            "academic_status": profile.academic_status.value if profile.academic_status else None,
+        }, error=None)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post(
     "/me/student-profile",
@@ -86,38 +69,14 @@ async def get_my_student_profile(
 async def create_student_profile(
     data: StudentProfileCreateRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
-    if current_user.user_type != UserType.student:
-        raise HTTPException(status_code=400, detail="Only students can create a student profile")
-        
-    # Check if profile already exists
-    result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Student profile already exists")
-        
-    # Validate Course and Department
-    course_res = await db.execute(select(Course).where(Course.id == data.course_id, Course.is_active == True))
-    dept_res = await db.execute(select(Department).where(Department.id == data.department_id, Department.is_active == True))
-    
-    if not course_res.scalar_one_or_none() or not dept_res.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Invalid or inactive course/department")
-        
+    service = UserService(uow)
     try:
-        profile = StudentProfile(
-            user_id=current_user.id,
-            course_id=data.course_id,
-            department_id=data.department_id,
-            year=data.year,
-            hostel=data.hostel.strip().lower() if data.hostel else None,
-            academic_status=AcademicStatus.enrolled
-        )
-        db.add(profile)
-        await db.commit()
+        await service.create_student_profile(current_user, data)
         return APIResponse(success=True, data={"message": "Profile created successfully"}, error=None)
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database Error")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.put(
     "/me/student-profile",
@@ -128,34 +87,16 @@ async def create_student_profile(
 async def update_student_profile(
     data: StudentProfileCreateRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
-    if current_user.user_type != UserType.student:
-        raise HTTPException(status_code=400, detail="Only students can update a student profile")
-        
-    # Fetch existing profile
-    result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
-    profile = result.scalar_one_or_none()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Student profile not found. Use POST to create one.")
-        
-    # Validate Course and Department
-    course_res = await db.execute(select(Course).where(Course.id == data.course_id, Course.is_active == True))
-    dept_res = await db.execute(select(Department).where(Department.id == data.department_id, Department.is_active == True))
-    
-    if not course_res.scalar_one_or_none() or not dept_res.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Invalid or inactive course/department")
-        
+    service = UserService(uow)
     try:
-        profile.course_id = data.course_id
-        profile.department_id = data.department_id
-        profile.year = data.year
-        profile.hostel = data.hostel.strip().lower() if data.hostel else None
-        await db.commit()
+        await service.update_student_profile(current_user, data)
         return APIResponse(success=True, data={"message": "Profile updated successfully"}, error=None)
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database Error")
+    except ValueError as e:
+        if "not found" in str(e):
+            raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.patch(
     "/me/user-id",
@@ -166,21 +107,14 @@ async def update_student_profile(
 async def update_user_id(
     data: UserIdUpdateRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
+    service = UserService(uow)
     try:
-        current_user.user_id = data.user_id
-        await db.commit()
-        return APIResponse(success=True, data={"user_id": current_user.user_id}, error=None)
-    except IntegrityError as e:
-        await db.rollback()
-        error_msg = str(e.orig).lower() if e.orig else ""
-        if "users_user_id_key" in error_msg or "user_id" in error_msg:
-            raise HTTPException(status_code=400, detail="User ID is already taken")
-        raise HTTPException(status_code=400, detail="Database Integrity Error")
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database Error")
+        user = await service.update_user_id(current_user, data.user_id)
+        return APIResponse(success=True, data={"user_id": user.user_id}, error=None)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.patch(
     "/me/name",
@@ -191,16 +125,14 @@ async def update_user_id(
 async def update_profile_name(
     data: NameUpdateRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
+    service = UserService(uow)
     try:
-        current_user.name = data.name
-        await db.commit()
-        return APIResponse(success=True, data={"name": current_user.name}, error=None)
-    except Exception as e:
-        await db.rollback()
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database Error")
+        user = await service.update_profile_name(current_user, data.name)
+        return APIResponse(success=True, data={"name": user.name}, error=None)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post(
     "/me/password",
@@ -211,20 +143,14 @@ async def update_profile_name(
 async def change_password(
     data: PasswordChangeRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
-    if not verify_password(data.current_password, current_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Incorrect current password")
-    
+    service = UserService(uow)
     try:
-        current_user.hashed_password = hash_password(data.new_password)
-        await db.commit()
+        await service.change_password(current_user, data)
         return APIResponse(success=True, data={"message": "Password updated successfully"}, error=None)
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database Error")
-
-from app.schemas.auth import UserPreferencesUpdateRequest
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.patch(
     "/me/preferences",
@@ -235,23 +161,17 @@ from app.schemas.auth import UserPreferencesUpdateRequest
 async def update_preferences(
     data: UserPreferencesUpdateRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
+    service = UserService(uow)
     try:
-        if data.email_notifications is not None:
-            current_user.email_notifications = data.email_notifications
-        if data.in_app_alerts is not None:
-            current_user.in_app_alerts = data.in_app_alerts
-            
-        await db.commit()
+        user = await service.update_preferences(current_user, data)
         return APIResponse(success=True, data={
-            "email_notifications": current_user.email_notifications,
-            "in_app_alerts": current_user.in_app_alerts
+            "email_notifications": user.email_notifications,
+            "in_app_alerts": user.in_app_alerts
         }, error=None)
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database Error")
-
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post(
     "/me/email/request",
@@ -263,35 +183,14 @@ async def request_email_update(
     data: EmailUpdateRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
-    # Check if the new email is already in use
-    stmt = select(User).where(User.email == data.new_email)
-    result = await db.execute(stmt)
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Email is already registered by another account")
-        
-    # Generate OTP
-    otp_code = str(random.randint(100000, 999999))
-    otp_hash = hash_password(otp_code)
-    
-    # Create the stateless session token
-    session_token = create_otp_session_token(subject=current_user.id, new_email=data.new_email, otp_hash=otp_hash)
-    
-    # Send verification email
-    send_email_background(
-        background_tasks=background_tasks,
-        to_email=data.new_email,
-        subject="Your Email Verification Code",
-        template_name="email_update_otp.html",
-        context={
-            "name": current_user.name or "User",
-            "otp_code": otp_code,
-            "new_email": data.new_email
-        }
-    )
-    
-    return APIResponse(success=True, data={"message": "OTP sent to new address", "session_token": session_token}, error=None)
+    service = UserService(uow)
+    try:
+        session_token = await service.request_email_update(current_user, data, background_tasks)
+        return APIResponse(success=True, data={"message": "OTP sent to new address", "session_token": session_token}, error=None)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post(
     "/me/email/verify",
@@ -302,113 +201,58 @@ async def request_email_update(
 async def verify_email_update(
     data: EmailVerifyOTPRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
+    service = UserService(uow)
     try:
-        payload = jwt.decode(data.session_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=400, detail="OTP session expired. Please request a new code.")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=400, detail="Invalid OTP session token")
+        user = await service.verify_email_update(current_user, data.session_token, data.otp)
+        return APIResponse(success=True, data={"email": user.email}, error=None)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    if payload.get("type") != "email_otp":
-        raise HTTPException(status_code=400, detail="Invalid token type")
-        
-    user_id = payload.get("sub")
-    if not user_id or str(current_user.id) != user_id:
-        raise HTTPException(status_code=400, detail="Token mismatch")
-        
-    new_email = payload.get("new_email")
-    otp_hash = payload.get("otp_hash")
-    
-    if not new_email or not otp_hash:
-        raise HTTPException(status_code=400, detail="Invalid token payload")
-        
-    # Verify OTP
-    if not verify_password(data.otp, otp_hash):
-        raise HTTPException(status_code=400, detail="Incorrect verification code")
-        
-    # Check again if email was taken in the meantime
-    stmt = select(User).where(User.email == new_email)
-    result = await db.execute(stmt)
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Email is already registered by another account")
-        
-    try:
-        current_user.email = new_email
-        await db.commit()
-        await db.refresh(current_user)
-        return APIResponse(success=True, data={"message": "Email updated successfully"}, error=None)
-    except Exception:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database error during email update")
-
-# 2FA Endpoints
-
-@router.post("/me/2fa/enable-request", summary="Request 2FA Enablement", response_model=APIResponse[dict])
+@router.post(
+    "/me/2fa/enable-request",
+    summary="Request 2FA Enablement",
+    response_model=APIResponse[dict]
+)
 async def request_2fa_enable(
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow)
 ):
-    if current_user.is_2fa_enabled:
-        raise HTTPException(status_code=400, detail="2FA is already enabled")
-        
-    otp_code = str(random.randint(100000, 999999))
-    otp_hash = hash_password(otp_code)
-    
-    session_token = create_otp_session_token(subject=current_user.id, new_email=current_user.email, otp_hash=otp_hash)
-    
-    send_email_background(
-        background_tasks=background_tasks,
-        to_email=current_user.email,
-        subject="Enable Two-Factor Authentication",
-        template_name="2fa_enable_otp.html",
-        context={"name": current_user.name or "User", "otp_code": otp_code}
-    )
-    return APIResponse(success=True, data={"message": "OTP sent", "session_token": session_token}, error=None)
+    service = UserService(uow)
+    try:
+        session_token = await service.request_2fa_enable(current_user, background_tasks)
+        return APIResponse(success=True, data={"message": "OTP sent", "session_token": session_token}, error=None)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/me/2fa/enable-verify", summary="Verify and Enable 2FA", response_model=APIResponse[dict])
+@router.post(
+    "/me/2fa/enable-verify",
+    summary="Verify and Enable 2FA",
+    response_model=APIResponse[dict]
+)
 async def verify_2fa_enable(
     data: EmailVerifyOTPRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
+    service = UserService(uow)
     try:
-        payload = jwt.decode(data.session_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=400, detail="OTP session expired.")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=400, detail="Invalid OTP session token")
-
-    if payload.get("type") != "email_otp":
-        raise HTTPException(status_code=400, detail="Invalid token type")
-        
-    user_id = payload.get("sub")
-    if not user_id or str(current_user.id) != user_id:
-        raise HTTPException(status_code=400, detail="Token mismatch")
-        
-    otp_hash = payload.get("otp_hash")
-    
-    if not verify_password(data.otp, otp_hash):
-        raise HTTPException(status_code=400, detail="Incorrect verification code")
-        
-    try:
-        current_user.is_2fa_enabled = True
-        await db.commit()
+        await service.verify_2fa_enable(current_user, data.session_token, data.otp)
         return APIResponse(success=True, data={"message": "2FA successfully enabled"}, error=None)
-    except Exception:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database error")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/me/2fa/disable", summary="Disable 2FA", response_model=APIResponse[dict])
+@router.post(
+    "/me/2fa/disable",
+    summary="Disable 2FA",
+    response_model=APIResponse[dict]
+)
 async def disable_2fa(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: UnitOfWork = Depends(get_uow)
 ):
-    try:
-        current_user.is_2fa_enabled = False
-        await db.commit()
-        return APIResponse(success=True, data={"message": "2FA disabled"}, error=None)
-    except Exception:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database error")
+    service = UserService(uow)
+    await service.disable_2fa(current_user)
+    return APIResponse(success=True, data={"message": "2FA disabled successfully"})

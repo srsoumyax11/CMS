@@ -8,8 +8,6 @@ def run_notices_tests():
     s2_headers = state["s2_headers"]
     admin_headers = state["admin_headers"]
     course_id = state["course_id"]
-    branch_id = state["branch_id"]
-
     print_step("20. POST /api/notices (Global Notice)")
     global_notice = requests.post(
         f"{BASE_URL}/notices",
@@ -23,6 +21,7 @@ def run_notices_tests():
     global_notice_id = global_notice.json()["data"]["id"]
     print("✅ Global notice created successfully.")
 
+    dept_id = state["department_id"]
     print_step("21. POST /api/notices (Targeted Notice)")
     targeted_notice = requests.post(
         f"{BASE_URL}/notices",
@@ -31,7 +30,7 @@ def run_notices_tests():
             "title": "CSE Exam Schedule",
             "content": "Exams start on Monday.",
             "target_course_id": course_id,
-            "target_branch_id": branch_id
+            "target_department_id": dept_id
         }
     )
     assert targeted_notice.status_code == 200, targeted_notice.text

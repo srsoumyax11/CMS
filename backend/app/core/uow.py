@@ -13,14 +13,15 @@ class UnitOfWork:
         If an exception is raised, the transaction rolls back.
         If successful, the transaction commits.
         """
-        if self.db.in_transaction():
-            # Already in a transaction, just yield the session
+        try:
             yield self.db
-        else:
-            async with self.db.begin():
-                try:
-                    yield self.db
-                    # Auto-commit on successful exit
-                except Exception:
-                    # Auto-rollback on exception
-                    raise
+            await self.db.commit()
+        except Exception:
+            await self.db.rollback()
+            raise
+
+from fastapi import Depends
+from app.core.database import get_db
+
+async def get_uow(db: AsyncSession = Depends(get_db)) -> UnitOfWork:
+    return UnitOfWork(db)

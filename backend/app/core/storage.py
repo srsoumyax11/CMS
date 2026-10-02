@@ -88,8 +88,8 @@ async def upload_notice_attachment(file_content: bytes, content_type: str) -> st
             file_options={"content-type": content_type}
         )
     except Exception as e:
-        # Supabase raises a generic exception on failure, sometimes containing JSON
-        print(f"Storage upload error: {str(e)}")
+        import logging
+        logging.getLogger(__name__).error(f"Storage upload error: {str(e)}")
         raise Exception("Failed to upload notice attachment to storage")
         
     # Generate the public URL

@@ -1,32 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
-from app.api.deps import get_current_user, RateLimiter
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from sqlalchemy.exc import IntegrityError
-
-from app.core.database import get_db
-from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
-from app.models.user import User, UserType, AccountStatus
-from app.models.profiles import StudentProfile, AcademicStatus
-from app.models.academic import Course
-from app.models.rbac import Role
+from app.api.deps import get_current_user, RateLimiter, get_uow
+from app.core.uow import UnitOfWork
+from app.core.security import verify_password
+from app.models.user import User, UserType
 from app.schemas.auth import (
     RegisterRequest, 
     LoginRequest, 
     TokenResponse, 
     RefreshTokenRequest, 
     RefreshTokenResponse,
-    RegisterResponseData,
     UserResponse,
     EmailVerifyOTPRequest
 )
 from app.schemas.common import APIResponse
-from app.utils.email import send_email_background
-from app.utils.validation import validate_password
+from app.services.auth_service import AuthService
 
 router = APIRouter()
+
+def get_auth_service(uow: UnitOfWork = Depends(get_uow)) -> AuthService:
+    return AuthService(uow)
 
 @router.get(
     "/check-username",
@@ -34,10 +27,9 @@ router = APIRouter()
     description="Checks if a user_id is available for registration.",
     response_model=APIResponse[bool]
 )
-async def check_username(user_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.user_id == user_id))
-    user = result.scalar_one_or_none()
-    return APIResponse(success=True, data=(user is None), error=None)
+async def check_username(user_id: str, service: AuthService = Depends(get_auth_service)):
+    is_available = await service.check_username(user_id)
+    return APIResponse(success=True, data=is_available, error=None)
 
 @router.get(
     "/check-email",
@@ -45,10 +37,9 @@ async def check_username(user_id: str, db: AsyncSession = Depends(get_db)):
     description="Checks if an email is already registered.",
     response_model=APIResponse[bool]
 )
-async def check_email(email: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email == email))
-    user = result.scalar_one_or_none()
-    return APIResponse(success=True, data=(user is None), error=None)
+async def check_email(email: str, service: AuthService = Depends(get_auth_service)):
+    is_available = await service.check_email(email)
+    return APIResponse(success=True, data=is_available, error=None)
 
 @router.post(
     "/register", 
@@ -56,54 +47,16 @@ async def check_email(email: str, db: AsyncSession = Depends(get_db)):
     description="Registers a new student user. Assigns the default 'Student' role, sets status to 'pending', and logs them in.", 
     response_model=APIResponse[TokenResponse]
 )
-async def register(data: RegisterRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
-    # Validate password against system settings
-    await validate_password(data.password, db)
-
-    # Check if user already exists
-    result = await db.execute(select(User).where(User.email == data.email))
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    # Atomic transaction for User
+async def register(
+    data: RegisterRequest, 
+    background_tasks: BackgroundTasks, 
+    service: AuthService = Depends(get_auth_service)
+):
     try:
-        new_user = User(
-            email=data.email,
-            hashed_password=hash_password(data.password),
-            user_type=UserType.student,
-            name=data.name,
-            user_id=data.user_id,
-            photo_url=data.photo_url
-        )
-        db.add(new_user)
-        await db.commit()
-    except IntegrityError as e:
-        await db.rollback()
-        error_msg = str(e.orig).lower() if e.orig else ""
-        if "users_email_key" in error_msg or "email" in error_msg:
-            raise HTTPException(status_code=400, detail="Email is already registered")
-        elif "users_user_id_key" in error_msg or "user_id" in error_msg:
-            raise HTTPException(status_code=400, detail="User ID is already taken")
-        raise HTTPException(status_code=400, detail="Database Integrity Error")
+        new_user, access_token, refresh_token = await service.register_student(data, background_tasks)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    # Issue tokens
-    access_token = create_access_token(subject=str(new_user.id))
-    refresh_token = create_refresh_token(subject=str(new_user.id))
-    
-    # Trigger Welcome Email
-    send_email_background(
-        background_tasks=background_tasks,
-        to_email=new_user.email,
-        subject="Welcome to Synergy CMS!",
-        template_name="welcome.html",
-        context={
-            "name": new_user.name,
-            "email": new_user.email,
-            "user_id": new_user.user_id,
-            "role": "Student"
-        }
-    )
-    
     return APIResponse(
         success=True, 
         data=TokenResponse(
@@ -124,19 +77,15 @@ async def register(data: RegisterRequest, background_tasks: BackgroundTasks, db:
     description="Standard OAuth2 form data login endpoint for Swagger UI testing.",
     dependencies=[Depends(RateLimiter(times=5, minutes=1))]
 )
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
-    """
-    Standard OAuth2 endpoint required by Swagger UI.
-    Takes form-data instead of JSON, and returns a flat token object instead of APIResponse.
-    """
-    result = await db.execute(select(User).where(User.email == form_data.username))
-    user = result.scalar_one_or_none()
-    
-    if not user or not verify_password(form_data.password, user.hashed_password):
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(), 
+    service: AuthService = Depends(get_auth_service)
+):
+    user = await service.authenticate(form_data.username, form_data.password)
+    if not user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
         
-    # User is authenticated. We allow all account statuses so the frontend can route them to appropriate status pages.
-        
+    from app.core.security import create_access_token
     access_token = create_access_token(subject=str(user.id))
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -151,17 +100,11 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 async def login(
     data: LoginRequest, 
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db)
+    service: AuthService = Depends(get_auth_service)
 ):
-    result = await db.execute(
-        select(User).options(
-            selectinload(User.student_profile),
-            selectinload(User.faculty_profile)
-        ).where(User.email == data.email)
-    )
-    user = result.scalar_one_or_none()
+    user = await service.authenticate(data.email, data.password)
     
-    if not user or not verify_password(data.password, user.hashed_password):
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
@@ -169,22 +112,7 @@ async def login(
         
     # User is authenticated.
     if user.is_2fa_enabled:
-        import random
-        from app.core.security import create_otp_session_token, hash_password
-        from app.utils.email import send_email_background
-        
-        otp_code = str(random.randint(100000, 999999))
-        otp_hash = hash_password(otp_code)
-        
-        session_token = create_otp_session_token(subject=str(user.id), new_email=user.email, otp_hash=otp_hash)
-        
-        send_email_background(
-            background_tasks=background_tasks,
-            to_email=user.email,
-            subject="Your Login Security Code",
-            template_name="2fa_login_otp.html",
-            context={"name": user.name or "User", "otp_code": otp_code}
-        )
+        session_token = await service.generate_2fa_otp(user, background_tasks)
         return APIResponse(
             success=True, 
             data={"requires_2fa": True, "session_token": session_token, "email": user.email},
@@ -198,7 +126,7 @@ async def login(
     elif user.user_type == UserType.faculty and user.faculty_profile:
         employment_status = user.faculty_profile.employment_status.value
 
-    # Issue tokens
+    from app.core.security import create_access_token, create_refresh_token
     access_token = create_access_token(subject=str(user.id))
     refresh_token = create_refresh_token(subject=str(user.id))
     
@@ -225,7 +153,7 @@ async def login(
 )
 async def verify_2fa_login(
     data: EmailVerifyOTPRequest,
-    db: AsyncSession = Depends(get_db)
+    service: AuthService = Depends(get_auth_service)
 ):
     try:
         from app.core.config import settings
@@ -239,17 +167,11 @@ async def verify_2fa_login(
     user_id = payload.get("sub")
     otp_hash = payload.get("otp_hash")
     
-    from app.core.security import verify_password
     if not verify_password(data.otp, otp_hash):
         raise HTTPException(status_code=400, detail="Incorrect 2FA code.")
         
-    result = await db.execute(
-        select(User).options(
-            selectinload(User.student_profile),
-            selectinload(User.faculty_profile)
-        ).where(User.id == user_id)
-    )
-    user = result.scalar_one_or_none()
+    # We can just fetch user with profiles using repo inside service
+    user = await service.repo.get_by_id_with_profiles(user_id)
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
         
@@ -284,23 +206,14 @@ async def verify_2fa_login(
     description="Exchanges a valid refresh token for a new access token.",
     response_model=APIResponse[RefreshTokenResponse]
 )
-async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
-    payload = decode_token(data.refresh_token)
-    if not payload or payload.get("type") != "refresh":
-        raise HTTPException(status_code=400, detail="Invalid or expired refresh token")
-        
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="Invalid token subject")
-        
-    # Ensure user still exists and is active
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    
-    if not user or user.account_status != AccountStatus.active:
-        raise HTTPException(status_code=400, detail="User no longer valid or deactivated")
-        
-    new_access_token = create_access_token(subject=str(user.id))
+async def refresh_token(
+    data: RefreshTokenRequest, 
+    service: AuthService = Depends(get_auth_service)
+):
+    try:
+        new_access_token = await service.refresh_token(data.refresh_token)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     
     return APIResponse(
         success=True, 
@@ -308,22 +221,23 @@ async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(ge
         error=None
     )
 
+
 @router.get(
     "/me", 
     summary="Get Current User", 
     description="Fetches the profile and metadata for the currently authenticated user based on the JWT.",
     response_model=APIResponse[UserResponse]
 )
-async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def get_me(current_user: User = Depends(get_current_user)):
     """
     Get current logged in user details. Doesn't require any RBAC permissions.
     Allows users with "pending" profiles to check their status.
     """
-    rbac_roles = [current_user.role.name] if current_user.role else []
+    rbac_roles = [current_user.role.name] if getattr(current_user, "role", None) else []
     permissions = list({
         f"{perm.asset.name}:{perm.action.code}"
         for perm in getattr(current_user.role, "permissions", [])
-    })
+    }) if getattr(current_user, "role", None) else []
 
     return APIResponse(
         success=True,
@@ -334,8 +248,8 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
             account_status=current_user.account_status,
             status_note=current_user.status_note,
             user_type=current_user.user_type,
-            academic_status=current_user.student_profile.academic_status if current_user.student_profile else None,
-            employment_status=current_user.faculty_profile.employment_status if current_user.faculty_profile else None,
+            academic_status=current_user.student_profile.academic_status if getattr(current_user, "student_profile", None) else None,
+            employment_status=current_user.faculty_profile.employment_status if getattr(current_user, "faculty_profile", None) else None,
             name=current_user.name,
             photo_url=current_user.photo_url,
             email_notifications=current_user.email_notifications,

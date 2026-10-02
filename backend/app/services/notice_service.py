@@ -80,7 +80,7 @@ class NoticeService:
             if notice.author_id != user_id and not has_delete_permission:
                 raise ValueError("Cannot modify someone else's notice")
                 
-            await self.repo.delete(notice)
+            await self.repo.delete(notice.id)
             return notice
             
     async def update_notice(self, id: UUID, user_id: UUID, has_edit_permission: bool, update_data: dict) -> Optional[Notice]:

@@ -8,6 +8,15 @@ from sqlalchemy.sql import text
 from contextlib import asynccontextmanager
 import traceback
 import sys
+import uuid
+import time
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from app.core.logging import setup_logging, get_logger, request_id_var
+
+# Setup structured logging
+setup_logging(log_level="INFO")
+logger = get_logger("app")
 
 from app.core.database import AsyncSessionLocal
 
@@ -75,25 +84,25 @@ from app.core.cache import init_redis, close_redis
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup DB health check
-    print("⏳ Checking database connection...", flush=True)
+    logger.info("Checking database connection...")
     try:
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
-            print("✅ Database connection healthy!", flush=True)
+            logger.info("Database connection healthy!")
     except Exception as e:
-        print(f"❌ Database connection failed: {e}", flush=True)
+        logger.error(f"Database connection failed: {e}")
         sys.exit(1)
         
-    print("⏳ Initializing Redis...", flush=True)
+    logger.info("Initializing Redis...")
     try:
         await init_redis()
-        print("✅ Redis connection established!", flush=True)
+        logger.info("Redis connection established!")
     except Exception as e:
-        print(f"⚠️ Redis connection failed (rate limiting will fail open): {e}", flush=True)
+        logger.warning(f"Redis connection failed (rate limiting will fail open): {e}")
         
     yield
     
-    print("🛑 Shutting down backend...", flush=True)
+    logger.info("Shutting down backend...")
     await close_redis()
 
 app = FastAPI(
@@ -113,6 +122,40 @@ Routes are heavily guarded by `require_permission` capabilities and explicit row
     },
     openapi_tags=tags_metadata
 )
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        req_id = str(uuid.uuid4())
+        # Set the correlation ID for this async context
+        request_id_var.set(req_id)
+        
+        start_time = time.time()
+        
+        # Log request
+        logger.info(f"Request started: {request.method} {request.url.path}")
+        
+        try:
+            response = await call_next(request)
+            process_time = time.time() - start_time
+            logger.info(
+                f"Request completed: {request.method} {request.url.path}",
+                extra={"status_code": response.status_code, "process_time_ms": round(process_time * 1000, 2)}
+            )
+            
+            # Attach correlation ID to response headers
+            response.headers["X-Request-ID"] = req_id
+            return response
+            
+        except Exception as e:
+            process_time = time.time() - start_time
+            logger.error(
+                f"Request failed: {request.method} {request.url.path}",
+                extra={"process_time_ms": round(process_time * 1000, 2)},
+                exc_info=True
+            )
+            raise e
+
+app.add_middleware(RequestLoggingMiddleware)
 
 # Setup CORS
 app.add_middleware(
@@ -172,9 +215,9 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     error_msg = traceback.format_exc()
-    print(error_msg)
+    logger.error("Unhandled global exception", exc_info=exc)
     
     return JSONResponse(
         status_code=500,
-        content={"success": False, "data": None, "error": "Internal Server Error"}
+        content={"success": False, "data": None, "error": error_msg}
     )

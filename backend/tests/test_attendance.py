@@ -11,7 +11,6 @@ def run_attendance_tests():
     s2_id = state["student2_uuid"]
     slot_id = state["slot_id"]
     course_id = state["course_id"]
-    branch_id = state["branch_id"]
     fac_id = state["faculty_uuid"]
 
     now = datetime.now(timezone.utc)
@@ -22,9 +21,10 @@ def run_attendance_tests():
     print("✅ Student blocked from fetching roster.")
     
     fac2_email = f"fac2_{random_suffix}@example.com"
-    requests.post(f"{BASE_URL}/admin/faculty", headers=admin_headers, json={
-        "email": fac2_email, "name": "Faculty Two", "department_id": state["department_id"], "designation": "Assistant Professor", "user_id": f"FAC2{random_suffix}", "password": FACULTY_PASSWORD
+    fac2_res = requests.post(f"{BASE_URL}/admin/faculty", headers=admin_headers, json={
+        "email": fac2_email, "name": "Faculty Two", "department_id": state["department_id"], "course_id": state["course_id"], "designation": "Assistant Professor", "user_id": f"FAC2{random_suffix}", "password": FACULTY_PASSWORD
     })
+    assert fac2_res.status_code == 200, fac2_res.text
     r_fac2_login = requests.post(f"{BASE_URL}/auth/login", json={"email": fac2_email, "password": FACULTY_PASSWORD})
     fac2_token = r_fac2_login.json()["data"]["access_token"]
     fac2_headers = {"Authorization": f"Bearer {fac2_token}"}
@@ -60,7 +60,7 @@ def run_attendance_tests():
     tomorrow_day = (now + timedelta(days=1)).strftime("%A").lower()
     slot_tmrw_data = {
         "course_id": course_id,
-        "branch_id": branch_id,
+        "department_id": state.get("department_id"),
         "year": 2024,
         "subject_name": "Database Systems",
         "faculty_id": fac_id,

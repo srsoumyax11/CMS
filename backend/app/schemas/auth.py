@@ -9,6 +9,10 @@ class RegisterRequest(BaseModel):
     password: str
     name: str
     user_id: str
+    course_id: uuid.UUID
+    department_id: uuid.UUID
+    year: int
+    hostel: Optional[str] = None
     photo_url: Optional[str] = None
 
 class LoginRequest(BaseModel):

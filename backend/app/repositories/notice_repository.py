@@ -23,7 +23,7 @@ class NoticeRepository(GenericRepository[Notice]):
         if user_type == UserType.student and profile:
             stmt = stmt.where(
                 or_(
-                    Notice.target_user_types.contains([UserType.student.value]),
+                    Notice.target_user_types.contains(UserType.student.value),
                     Notice.target_user_types.is_(None)
                 )
             ).where(
@@ -50,7 +50,7 @@ class NoticeRepository(GenericRepository[Notice]):
         elif user_type == UserType.faculty:
             stmt = stmt.where(
                 or_(
-                    Notice.target_user_types.contains([UserType.faculty.value]),
+                    Notice.target_user_types.contains(UserType.faculty.value),
                     Notice.target_user_types.is_(None)
                 )
             )
