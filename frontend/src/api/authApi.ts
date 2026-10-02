@@ -41,7 +41,9 @@ export const authApi = {
     client.put<APIResponse<{ message: string }>>(API_ROUTES.CREATE_STUDENT_PROFILE, data),
 
   getStudentProfile: () =>
-    client.get<APIResponse<{ course_id: string; branch_id: string; year: number; hostel: string | null } | null>>(API_ROUTES.CREATE_STUDENT_PROFILE),
+    client.get<APIResponse<{
+      department_id: string; course_id: string; branch_id: string; year: number; hostel: string | null 
+} | null>>(API_ROUTES.CREATE_STUDENT_PROFILE),
 
   uploadPhoto: (file: File) => {
     const formData = new FormData();

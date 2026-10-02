@@ -12,7 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-
+import { PERMISSIONS } from '@/config/permissions';
+import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import {
   Dialog,
   DialogContent,
@@ -76,7 +77,7 @@ const ACTION_DESCRIPTIONS: Record<string, string> = {
 export function RolesPermissions() {
   const queryClient = useQueryClient();
   const { hasPermission } = useAuth();
-  const isSuperAdmin = hasPermission('role:edit');
+  const isSuperAdmin = hasPermission(PERMISSIONS.ROLE.EDIT);
   
   const [selectedRoleId, setSelectedRoleId] = useState<string | undefined>(undefined);
   const [showCreate, setShowCreate] = useState(false);
@@ -286,17 +287,15 @@ export function RolesPermissions() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-7rem)] md:h-[calc(100vh-8rem)] overflow-hidden -m-1 p-1">
-      <div className="flex shrink-0 items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Roles & Permissions</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage system roles and configure access
-          </p>
-        </div>
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Role
-        </Button>
+      <div className="mb-4 shrink-0">
+        <PageHeader
+          actions={
+            <Button onClick={() => setShowCreate(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Role
+            </Button>
+          }
+        />
       </div>
 
       <div className="grid flex-1 min-h-0 gap-6 lg:grid-cols-3">

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { messApi } from '@/api/messApi';
 import { QUERY_KEYS } from '@/lib/constants';
@@ -75,12 +76,7 @@ export function MessManagement() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-foreground">Mess Management</h2>
-        <p className="text-sm text-muted-foreground">
-          Update menus and view analytics
-        </p>
-      </div>
+      <PageHeader />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="shadow-sm">

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { attendanceApi } from '@/api/timetableApi';
 import { QUERY_KEYS } from '@/lib/constants';
+import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,10 +24,7 @@ export function AttendanceStats() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Attendance</h2>
-          <p className="text-sm text-muted-foreground">Your attendance across subjects</p>
-        </div>
+        <PageHeader />
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-20 animate-pulse rounded-xl bg-muted" />
@@ -42,16 +40,13 @@ export function AttendanceStats() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-foreground">Attendance</h2>
-        <p className="text-sm text-muted-foreground">Your attendance across subjects</p>
-      </div>
+      <PageHeader />
 
       {stats.length === 0 ? (
         <EmptyState
           title="No attendance records"
           description="Your attendance data will appear here once records are added."
-          icon={<BookOpen className="h-6 w-6" />}
+          icon={<BookOpen className="h-6 w-6 text-muted-foreground" />}
         />
       ) : (
         <>

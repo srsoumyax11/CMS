@@ -12,6 +12,7 @@ import { Camera, Mail, Shield, Edit2, Loader2, Check, X, Copy, Key, ShieldCheck,
 import { ROLE_LABELS } from '@/lib/navigation';
 import { toast } from 'sonner';
 import { ProfilePhotoCropper } from '@/components/shared/ProfilePhotoCropper';
+import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import { getErrorMessage } from '@/lib/error-utils';
 
 import {
@@ -268,12 +269,10 @@ export function Profile() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-foreground">Account Control Center</h2>
-        <p className="text-sm text-muted-foreground">
-          Manage your profile, security settings, and notifications.
-        </p>
-      </div>
+      <PageHeader
+        title="Account Control Center"
+        description="Manage your profile, security settings, and notifications."
+      />
 
       <Tabs defaultValue="general" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">

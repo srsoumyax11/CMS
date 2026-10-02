@@ -17,14 +17,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { GraduationCap, Loader2, AlertCircle } from 'lucide-react';
-import type { Course } from '@/types/api';
+import type { Course, Department } from '@/types/api';
 
 export function Onboarding() {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
   
   const [courseId, setCourseId] = useState('');
-  const [branchId, setBranchId] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
   const [year, setYear] = useState('');
   const [hostel, setHostel] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -45,16 +45,20 @@ export function Onboarding() {
     queryFn: () => metadataApi.getCourses(),
   });
 
+  const departmentsQuery = useQuery({
+    queryKey: [QUERY_KEYS.DEPARTMENTS],
+    queryFn: () => metadataApi.getDepartments(),
+  });
+
   const courses: Course[] = coursesQuery.data?.data?.data ?? [];
-  const selectedCourse = courses.find((c) => c.id === courseId);
-  const branches = selectedCourse?.branches ?? [];
+  const departments: Department[] = (departmentsQuery.data?.data?.data ?? []).filter(d => d.is_active);
 
   // Pre-fill form when existing profile data is loaded
   useEffect(() => {
     const profile = existingProfileQuery.data?.data?.data;
     if (profile) {
       setCourseId(profile.course_id);
-      setBranchId(profile.branch_id);
+      setDepartmentId(profile.department_id || profile.branch_id || '');
       setYear(String(profile.year));
       setHostel(profile.hostel ?? '');
     }
@@ -64,7 +68,8 @@ export function Onboarding() {
     mutationFn: () => {
       const payload = {
         course_id: courseId,
-        branch_id: branchId,
+        department_id: departmentId,
+        branch_id: departmentId, // backwards compatibility
         year: parseInt(year, 10),
         hostel: hostel || undefined,
       };
@@ -94,16 +99,16 @@ export function Onboarding() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!courseId || !branchId || !year) {
-      setError('Course, Branch, and Year are required.');
+    if (!courseId || !departmentId || !year) {
+      setError('Course, Department, and Year are required.');
       return;
     }
     profileMutation.mutate();
   };
 
   const handleSkip = () => {
-    if (!courseId || !branchId || !year) {
-      setError('Please fill out Course, Branch, and Year before skipping optional details.');
+    if (!courseId || !departmentId || !year) {
+      setError('Please fill out Course, Department, and Year before skipping optional details.');
       return;
     }
     profileMutation.mutate();
@@ -145,10 +150,7 @@ export function Onboarding() {
                 <Label htmlFor="course">Course *</Label>
                 <Select
                   value={courseId}
-                  onValueChange={(v) => {
-                    setCourseId(v);
-                    setBranchId('');
-                  }}
+                  onValueChange={setCourseId}
                 >
                   <SelectTrigger id="course">
                     <SelectValue placeholder="Select course" />
@@ -164,19 +166,19 @@ export function Onboarding() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="branch">Branch *</Label>
+                <Label htmlFor="department">Department *</Label>
                 <Select
-                  value={branchId}
-                  onValueChange={setBranchId}
-                  disabled={!branches.length}
+                  value={departmentId}
+                  onValueChange={setDepartmentId}
+                  disabled={!departments.length}
                 >
-                  <SelectTrigger id="branch">
-                    <SelectValue placeholder="Select branch" />
+                  <SelectTrigger id="department">
+                    <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.name}
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name} ({d.code})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -244,7 +246,7 @@ export function Onboarding() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={profileMutation.isPending || !courseId || !branchId || !year}
+                  disabled={profileMutation.isPending || !courseId || !departmentId || !year}
                 >
                   {profileMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

@@ -15,7 +15,8 @@ export const noticesApi = {
     formData.append('title', data.title);
     formData.append('content', data.content);
     if (data.target_course_id) formData.append('target_course_id', data.target_course_id);
-    if (data.target_branch_id) formData.append('target_branch_id', data.target_branch_id);
+    const deptId = data.target_department_id || data.target_branch_id;
+    if (deptId) formData.append('target_department_id', deptId);
     if (data.target_year) formData.append('target_year', String(data.target_year));
     if (data.target_hostel) formData.append('target_hostel', data.target_hostel);
     if (data.target_user_types) formData.append('target_user_types', data.target_user_types);

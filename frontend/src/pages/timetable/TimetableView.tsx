@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { timetableApi } from '@/api/timetableApi';
 import { QUERY_KEYS } from '@/lib/constants';
+import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
@@ -79,10 +80,7 @@ export function TimetableView() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">My Timetable</h2>
-          <p className="text-sm text-muted-foreground">Weekly class schedule</p>
-        </div>
+        <PageHeader />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {DAYS.slice(0, 6).map((day) => (
             <div key={day} className="h-40 animate-pulse rounded-xl bg-muted" />
@@ -96,16 +94,13 @@ export function TimetableView() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-foreground">My Timetable</h2>
-        <p className="text-sm text-muted-foreground">Weekly class schedule</p>
-      </div>
+      <PageHeader />
 
       {!hasSlots ? (
         <EmptyState
           title="No timetable available"
           description="Your class schedule hasn't been published yet."
-          icon={<CalendarDays className="h-6 w-6" />}
+          icon={<CalendarDays className="h-6 w-6 text-muted-foreground" />}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

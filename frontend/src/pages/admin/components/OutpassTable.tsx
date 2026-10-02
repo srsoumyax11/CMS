@@ -1,12 +1,13 @@
-import { DataTable } from '@/components/shared/DataTable';
+import { ProTable } from '@/components/shared/pro-table/ProTable';
+import type { ProColumn } from '@/components/shared/pro-table/types';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { PERMISSIONS } from '@/config/permissions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CheckSquare, Check, X, LogOut, LogIn } from 'lucide-react';
 import type { OutpassResponse } from '@/types/api';
-import type { UpdateActionPayload } from './StudentActionModal'; // Let's create specific action props instead.
 
 interface OutpassTableProps {
   outpasses: OutpassResponse[];
@@ -18,11 +19,12 @@ interface OutpassTableProps {
 }
 
 export function OutpassTable({ outpasses, isLoading, onApproveClick, onRejectClick, onDepartClick, onReturnClick }: OutpassTableProps) {
-  const columns = [
+  const columns: ProColumn<OutpassResponse>[] = [
     {
-      key: 'student',
+      id: 'student',
       header: 'Student',
-      render: (row: OutpassResponse) => (
+      sortable: true,
+      cell: (_, row: OutpassResponse) => (
         <div className="flex flex-col">
           <span className="font-medium text-foreground">{row.student_name}</span>
           <span className="text-xs text-muted-foreground">{row.student_course}</span>
@@ -30,30 +32,36 @@ export function OutpassTable({ outpasses, isLoading, onApproveClick, onRejectCli
       ),
     },
     {
-      key: 'destination',
+      id: 'destination',
       header: 'Destination',
-      render: (row: OutpassResponse) => (
-        <span className="font-medium text-foreground">{row.destination}</span>
+      accessorKey: 'destination',
+      sortable: true,
+      cell: (val) => (
+        <span className="font-medium text-foreground">{val}</span>
       ),
     },
     {
-      key: 'departure',
+      id: 'departure_time',
       header: 'Departure',
-      render: (row: OutpassResponse) =>
-        format(new Date(row.departure_time), 'MMM d, HH:mm'),
+      accessorKey: 'departure_time',
+      sortable: true,
+      cell: (val) => format(new Date(val), 'MMM d, HH:mm'),
     },
     {
-      key: 'return',
+      id: 'expected_return_time',
       header: 'Expected Return',
-      render: (row: OutpassResponse) =>
-        format(new Date(row.expected_return_time), 'MMM d, HH:mm'),
+      accessorKey: 'expected_return_time',
+      sortable: true,
+      cell: (val) => format(new Date(val), 'MMM d, HH:mm'),
     },
     {
-      key: 'status',
+      id: 'status',
       header: 'Status',
-      render: (row: OutpassResponse) => (
+      accessorKey: 'status',
+      sortable: true,
+      cell: (val, row: OutpassResponse) => (
         <div className="flex items-center gap-2">
-          <StatusBadge status={row.status} type="outpass" />
+          <StatusBadge status={val} type="outpass" />
           {row.is_overdue && (
             <Badge variant="destructive" className="text-xs">
               {row.overdue_hours}h
@@ -63,14 +71,14 @@ export function OutpassTable({ outpasses, isLoading, onApproveClick, onRejectCli
       ),
     },
     {
-      key: 'actions',
+      id: 'actions',
       header: 'Actions',
-      render: (row: OutpassResponse) => {
+      cell: (_, row: OutpassResponse) => {
         const actions: React.ReactNode[] = [];
 
         if (row.status === 'pending') {
           actions.push(
-            <PermissionGuard permission="outpasses:approve" key={`p-approve-${row.id}`}>
+            <PermissionGuard permission={PERMISSIONS.OUTPASS.APPROVE} key={`p-approve-${row.id}`}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -83,7 +91,7 @@ export function OutpassTable({ outpasses, isLoading, onApproveClick, onRejectCli
                 <Check className="h-3.5 w-3.5 mr-1" /> Approve
               </Button>
             </PermissionGuard>,
-            <PermissionGuard permission="outpasses:approve" key={`p-reject-${row.id}`}>
+            <PermissionGuard permission={PERMISSIONS.OUTPASS.APPROVE} key={`p-reject-${row.id}`}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -99,7 +107,7 @@ export function OutpassTable({ outpasses, isLoading, onApproveClick, onRejectCli
           );
         } else if (row.status === 'approved') {
           actions.push(
-            <PermissionGuard permission="outpasses:manage_security" key={`p-depart-${row.id}`}>
+            <PermissionGuard permission={PERMISSIONS.OUTPASS.APPROVE} key={`p-depart-${row.id}`}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -115,7 +123,7 @@ export function OutpassTable({ outpasses, isLoading, onApproveClick, onRejectCli
           );
         } else if (row.status === 'active') {
           actions.push(
-            <PermissionGuard permission="outpasses:manage_security" key={`p-return-${row.id}`}>
+            <PermissionGuard permission={PERMISSIONS.OUTPASS.APPROVE} key={`p-return-${row.id}`}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -141,14 +149,17 @@ export function OutpassTable({ outpasses, isLoading, onApproveClick, onRejectCli
   ];
 
   return (
-    <DataTable
+    <ProTable<OutpassResponse>
       columns={columns}
       data={outpasses}
       isLoading={isLoading}
       rowKey={(row) => row.id}
+      searchPlaceholder="Filter outpasses by student, destination..."
+      enableExport
+      exportFileName="admin_outpasses"
       emptyTitle="No outpasses found"
       emptyDescription="There are no outpass requests matching these filters."
-      emptyIcon={<CheckSquare className="h-6 w-6" />}
+      emptyIcon={<CheckSquare className="h-6 w-6 text-muted-foreground" />}
     />
   );
 }

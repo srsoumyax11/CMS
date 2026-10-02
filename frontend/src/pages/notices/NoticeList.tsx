@@ -2,14 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { noticesApi } from '@/api/noticesApi';
 import { QUERY_KEYS, NOTICE_PAGE_SIZE } from '@/lib/constants';
-import { DataTable } from '@/components/shared/DataTable';
-import { ErrorState } from '@/components/shared/ErrorState';
+import { PageHeader } from '@/components/shared/page-header/PageHeader';
+import { ProTable, type ProColumn } from '@/components/shared/pro-table';
 import { Button } from '@/components/ui/button';
-import { Megaphone, Plus, FileText } from 'lucide-react';
+import { Plus, FileText, Megaphone } from 'lucide-react';
 import { format } from 'date-fns';
 import type { NoticeResponse } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { PERMISSIONS } from '@/config/permissions';
 
 export function NoticeList() {
   const navigate = useNavigate();
@@ -23,77 +24,86 @@ export function NoticeList() {
 
   const notices = data?.data?.data?.items ?? [];
 
-  const columns = [
+  const columns: ProColumn<NoticeResponse>[] = [
     {
-      key: 'title',
-      header: 'Title',
-      render: (row: NoticeResponse) => (
-        <div className="flex items-center gap-2">
-          {!row.is_read && (
-            <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+      id: 'title',
+      header: 'Notice Title',
+      accessorKey: 'title',
+      cell: (val, row) => (
+        <div className="flex items-center gap-2.5">
+          {!row.is_read ? (
+            <span className="h-2 w-2 shrink-0 rounded-full bg-primary" title="Unread notice" />
+          ) : (
+            <span className="h-2 w-2 shrink-0 rounded-full bg-transparent" />
           )}
-          <span className="font-medium text-foreground">{row.title}</span>
+          <span className="font-semibold text-foreground">{row.title}</span>
         </div>
       ),
+      sortable: true,
     },
     {
-      key: 'created_at',
-      header: 'Date',
-      render: (row: NoticeResponse) =>
-        format(new Date(row.created_at), 'MMM d, yyyy'),
+      id: 'created_at',
+      header: 'Published Date',
+      accessorKey: 'created_at',
+      cell: (val) => (
+        <span className="text-xs text-muted-foreground">
+          {val ? format(new Date(val), 'MMM d, yyyy') : '—'}
+        </span>
+      ),
+      sortable: true,
+      width: '150px',
     },
     {
-      key: 'attachment',
+      id: 'attachment',
       header: 'Attachment',
-      render: (row: NoticeResponse) =>
+      cell: (val, row) =>
         row.attachment_url ? (
           <a
             href={row.attachment_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
             onClick={(e) => e.stopPropagation()}
           >
             <FileText className="h-3.5 w-3.5" />
-            View
+            View File
           </a>
         ) : (
-          <span className="text-muted-foreground">—</span>
+          <span className="text-muted-foreground text-xs">—</span>
         ),
+      width: '130px',
+      sortable: false,
     },
   ];
 
-  if (error) {
-    return <ErrorState onRetry={() => refetch()} />;
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Notices</h2>
-          <p className="text-sm text-muted-foreground">
-            Campus announcements and updates
-          </p>
-        </div>
-        <PermissionGuard permission="notices:create">
-          <Button onClick={() => navigate(`${basePath}/notices/new`)}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Notice
-          </Button>
-        </PermissionGuard>
-      </div>
+      <PageHeader
+        actions={
+          <PermissionGuard permission={PERMISSIONS.NOTICE.CREATE}>
+            <Button onClick={() => navigate(`${basePath}/notices/new`)} className="gap-1.5 shadow-xs">
+              <Plus className="h-4 w-4" />
+              New Notice
+            </Button>
+          </PermissionGuard>
+        }
+      />
 
-      <DataTable
+      <ProTable
         columns={columns}
         data={notices}
         isLoading={isLoading}
+        error={error}
+        onRetry={refetch}
         rowKey={(row) => row.id}
         onRowClick={(row) => navigate(`${basePath}/notices/${row.id}`)}
+        searchPlaceholder="Search notices by title..."
+        exportFileName="campus-notices"
         emptyTitle="No notices yet"
-        emptyDescription="There are no announcements to display right now."
-        emptyIcon={<Megaphone className="h-6 w-6" />}
+        emptyDescription="There are no campus announcements published right now."
+        emptyIcon={<Megaphone className="h-8 w-8 text-muted-foreground" />}
       />
     </div>
   );
 }
+export default NoticeList;

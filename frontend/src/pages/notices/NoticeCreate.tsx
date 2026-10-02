@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/error-utils';
 import type { NoticeCreateRequest } from '@/types/api';
 
 export function NoticeCreate() {
@@ -29,7 +30,7 @@ export function NoticeCreate() {
       toast.success('Notice published');
       navigate(-1);
     },
-    onError: () => toast.error('Failed to publish notice'),
+    onError: (err: any) => toast.error(getErrorMessage(err)),
   });
 
   const handleSubmit = (e: React.FormEvent) => {

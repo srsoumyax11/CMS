@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { usePermission } from '@/hooks/usePermission';
+import type { PermissionCode } from '@/config/permissions';
 
 interface PermissionGuardProps {
-  permission: string;
+  permission: PermissionCode | (string & {});
   fallback?: ReactNode;
   children: ReactNode;
 }

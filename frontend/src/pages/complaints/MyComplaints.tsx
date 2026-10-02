@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { complaintsApi } from '@/api/complaintsApi';
 import { QUERY_KEYS } from '@/lib/constants';
-import { DataTable } from '@/components/shared/DataTable';
+import { PageHeader } from '@/components/shared/page-header/PageHeader';
+import { ProTable } from '@/components/shared/pro-table/ProTable';
+import type { ProColumn } from '@/components/shared/pro-table/types';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -27,7 +29,6 @@ export function MyComplaints() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const basePath = role ? `/${role}` : '';
-  const queryClient = useQueryClient();
   const [tab, setTab] = useState<'mine' | 'public'>('mine');
 
   const mineQuery = useQuery({
@@ -44,29 +45,23 @@ export function MyComplaints() {
 
   const activeQuery = tab === 'mine' ? mineQuery : publicQuery;
   const complaints = activeQuery.data?.data?.data?.items ?? [];
-  const queryKey = tab === 'mine' ? QUERY_KEYS.MY_COMPLAINTS : QUERY_KEYS.PUBLIC_COMPLAINTS;
 
-  const cancelMutation = useMutation({
-    mutationFn: (id: string) => complaintsApi.cancel(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKey] });
-    },
-  });
-
-  const columns = [
+  const columns: ProColumn<ComplaintResponse>[] = [
     {
-      key: 'category',
+      id: 'category',
       header: 'Category',
-      render: (row: ComplaintResponse) => (
+      accessorKey: 'category',
+      sortable: true,
+      cell: (val: ComplaintCategory) => (
         <span className="font-medium text-foreground">
-          {categoryLabels[row.category]}
+          {categoryLabels[val] || val}
         </span>
       ),
     },
     {
-      key: 'location',
+      id: 'location',
       header: 'Location',
-      render: (row: ComplaintResponse) => (
+      cell: (_, row) => (
         <span className="text-sm text-muted-foreground">
           {row.location_hostel}
           {row.location_room ? ` · Room ${row.location_room}` : ''}
@@ -74,26 +69,28 @@ export function MyComplaints() {
       ),
     },
     {
-      key: 'status',
+      id: 'status',
       header: 'Status',
-      render: (row: ComplaintResponse) => (
-        <StatusBadge status={row.status} type="complaint" />
-      ),
+      accessorKey: 'status',
+      sortable: true,
+      cell: (val) => <StatusBadge status={val} type="complaint" />,
     },
     {
-      key: 'visibility',
+      id: 'visibility',
       header: 'Visibility',
-      render: (row: ComplaintResponse) => (
+      accessorKey: 'visibility',
+      cell: (val) => (
         <span className="text-sm capitalize text-muted-foreground">
-          {row.visibility}
+          {val}
         </span>
       ),
     },
     {
-      key: 'created_at',
+      id: 'created_at',
       header: 'Filed',
-      render: (row: ComplaintResponse) =>
-        format(new Date(row.created_at), 'MMM d, yyyy'),
+      accessorKey: 'created_at',
+      sortable: true,
+      cell: (val) => format(new Date(val), 'MMM d, yyyy'),
     },
   ];
 
@@ -103,18 +100,14 @@ export function MyComplaints() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Complaints</h2>
-          <p className="text-sm text-muted-foreground">
-            Track and manage your complaints
-          </p>
-        </div>
-        <Button onClick={() => navigate(`${basePath}/complaints/new`)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Complaint
-        </Button>
-      </div>
+      <PageHeader
+        actions={
+          <Button onClick={() => navigate(`${basePath}/complaints/new`)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Complaint
+          </Button>
+        }
+      />
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as 'mine' | 'public')}>
         <TabsList>
@@ -123,19 +116,22 @@ export function MyComplaints() {
         </TabsList>
       </Tabs>
 
-      <DataTable
-        columns={columns}
+      <ProTable<ComplaintResponse>
         data={complaints}
+        columns={columns}
         isLoading={activeQuery.isLoading}
         rowKey={(row) => row.id}
         onRowClick={(row) => navigate(`${basePath}/complaints/${row.id}`)}
+        searchPlaceholder="Search complaints..."
+        enableExport
+        exportFileName={tab === 'mine' ? 'my_complaints' : 'public_complaints'}
         emptyTitle={tab === 'mine' ? 'No complaints filed' : 'No public complaints'}
         emptyDescription={
           tab === 'mine'
             ? "You haven't filed any complaints yet."
             : 'There are no public complaints to display.'
         }
-        emptyIcon={<ClipboardList className="h-6 w-6" />}
+        emptyIcon={<ClipboardList className="h-6 w-6 text-muted-foreground" />}
       />
     </div>
   );

@@ -1,96 +1,50 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getErrorMessage } from '@/lib/error-utils';
 import { adminApi } from '@/api/adminApi';
+import { getErrorMessage } from '@/lib/error-utils';
+import { PageHeader } from '@/components/shared/page-header/PageHeader';
+import { ProTable, type ProColumn, type TableFilterDef } from '@/components/shared/pro-table';
+import { EntityViewEditDialog, type EntityField } from '@/components/shared/entity-dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from 'sonner';
-import { Edit2, Plus, Trash2, Loader2, Building2 } from 'lucide-react';
-import type { Department, DepartmentCreateRequest, DepartmentUpdateRequest } from '@/types/api';
-import { EmptyState } from '@/components/shared/EmptyState';
-import { ErrorState } from '@/components/shared/ErrorState';
 import { Badge } from '@/components/ui/badge';
+import { Plus, Building2, User } from 'lucide-react';
+import { toast } from 'sonner';
+import type { Department, DepartmentCreateRequest, DepartmentUpdateRequest } from '@/types/api';
 
 export function DepartmentManagement() {
   const queryClient = useQueryClient();
-  const [showCreate, setShowCreate] = useState(false);
-  const [showEdit, setShowEdit] = useState<Department | null>(null);
+  const [selectedDept, setSelectedDept] = useState<Department | null>(null);
+  const [dialogMode, setDialogMode] = useState<'view' | 'edit' | 'create'>('view');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const [formData, setFormData] = useState<{
-    name: string;
-    code: string;
-    department_type: 'academic' | 'administrative';
-    is_active: boolean;
-    hod_user_id: string | null;
-  }>({
-    name: '',
-    code: '',
-    department_type: 'academic',
-    is_active: true,
-    hod_user_id: null,
+  // Fetch departments data
+  const { data: response, isLoading, error, refetch } = useQuery({
+    queryKey: ['departments'],
+    queryFn: () => adminApi.listDepartments(),
   });
+  const departments = response?.data?.data || [];
 
-  const [pendingUpdate, setPendingUpdate] = useState<{ id: string; data: DepartmentUpdateRequest } | null>(null);
-
+  // Fetch faculty for HOD assignment
   const { data: facultyRes } = useQuery({
     queryKey: ['admin_faculty'],
     queryFn: () => adminApi.listFaculty(),
   });
   const facultyList = facultyRes?.data?.data || [];
 
-  const { data: response, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['departments'],
-    queryFn: () => adminApi.listDepartments(),
-  });
+  const facultyMap = useMemo(() => {
+    const map = new Map<string, string>();
+    facultyList.forEach((f) => map.set(f.id, f.name));
+    return map;
+  }, [facultyList]);
 
+  // Mutations
   const createMutation = useMutation({
     mutationFn: (data: DepartmentCreateRequest) => adminApi.createDepartment(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       queryClient.invalidateQueries({ queryKey: ['metadata', 'departments'] });
       toast.success('Department created successfully');
-      setShowCreate(false);
-      setFormData({ name: '', code: '', department_type: 'academic', is_active: true, hod_user_id: null });
+      setIsDialogOpen(false);
     },
     onError: (err: any) => {
       toast.error(getErrorMessage(err, 'Failed to create department'));
@@ -104,7 +58,6 @@ export function DepartmentManagement() {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       queryClient.invalidateQueries({ queryKey: ['metadata', 'departments'] });
       toast.success('Department updated successfully');
-      setShowEdit(null);
     },
     onError: (err: any) => {
       toast.error(getErrorMessage(err, 'Failed to update department'));
@@ -117,274 +70,225 @@ export function DepartmentManagement() {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       queryClient.invalidateQueries({ queryKey: ['metadata', 'departments'] });
       toast.success('Department deleted successfully');
+      setIsDialogOpen(false);
     },
     onError: (err: any) => {
       toast.error(getErrorMessage(err, 'Failed to delete department. It may be in use.'));
     },
   });
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    createMutation.mutate(formData);
-  };
+  // Table Columns
+  const columns: ProColumn<Department>[] = [
+    {
+      id: 'name',
+      header: 'Department Name',
+      accessorKey: 'name',
+      cell: (val, row) => (
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Building2 className="h-4 w-4" />
+          </div>
+          <div>
+            <span className="font-semibold text-foreground">{row.name}</span>
+            <p className="text-xs text-muted-foreground uppercase">{row.code}</p>
+          </div>
+        </div>
+      ),
+      sortable: true,
+    },
+    {
+      id: 'code',
+      header: 'Code',
+      accessorKey: 'code',
+      cell: (val) => <span className="font-mono text-xs font-semibold">{val}</span>,
+      sortable: true,
+      width: '120px',
+    },
+    {
+      id: 'department_type',
+      header: 'Type',
+      accessorKey: 'department_type',
+      cell: (val) => (
+        <Badge variant={val === 'academic' ? 'default' : 'outline'} className="capitalize text-xs">
+          {val}
+        </Badge>
+      ),
+      sortable: true,
+      width: '140px',
+    },
+    {
+      id: 'hod',
+      header: 'Head of Department',
+      accessorFn: (row) => (row.hod_user_id ? facultyMap.get(row.hod_user_id) || 'Assigned' : 'None'),
+      cell: (val, row) => (
+        <div className="flex items-center gap-1.5 text-xs">
+          <User className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className={row.hod_user_id ? 'text-foreground font-medium' : 'text-muted-foreground italic'}>
+            {row.hod_user_id ? facultyMap.get(row.hod_user_id) || 'Assigned' : 'Not assigned'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: 'is_active',
+      header: 'Status',
+      accessorKey: 'is_active',
+      cell: (val) => (
+        <Badge variant={val ? 'default' : 'secondary'} className="text-xs">
+          {val ? 'Active' : 'Inactive'}
+        </Badge>
+      ),
+      sortable: true,
+      width: '120px',
+      align: 'center',
+    },
+  ];
 
-  const handleUpdate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!showEdit) return;
+  // Filters
+  const filters: TableFilterDef<Department>[] = [
+    {
+      id: 'is_active',
+      label: 'Status',
+      defaultValue: 'all',
+      options: [
+        { label: 'All', value: 'all' },
+        { label: 'Active', value: true },
+        { label: 'Inactive', value: false },
+      ],
+      filterFn: (row, val) => row.is_active === val,
+    },
+    {
+      id: 'department_type',
+      label: 'Type',
+      defaultValue: 'all',
+      options: [
+        { label: 'All', value: 'all' },
+        { label: 'Academic', value: 'academic' },
+        { label: 'Administrative', value: 'administrative' },
+      ],
+      filterFn: (row, val) => row.department_type === val,
+    },
+  ];
 
-    const data: DepartmentUpdateRequest = {
+  // Entity Modal Fields (View + Edit + Create)
+  const fields: EntityField<Department>[] = [
+    {
+      key: 'name',
+      label: 'Department Name',
+      type: 'text',
+      required: true,
+      placeholder: 'e.g. Computer Science & Engineering',
+    },
+    {
+      key: 'code',
+      label: 'Department Code',
+      type: 'text',
+      required: true,
+      placeholder: 'e.g. CSE',
+    },
+    {
+      key: 'department_type',
+      label: 'Department Type',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Academic', value: 'academic' },
+        { label: 'Administrative', value: 'administrative' },
+      ],
+      defaultValue: 'academic',
+    },
+    {
+      key: 'hod_user_id',
+      label: 'Head of Department (HOD)',
+      type: 'select',
+      placeholder: 'Select a faculty member (Optional)',
+      options: [
+        { label: 'None / Unassigned', value: 'none' },
+        ...facultyList.map((f) => ({ label: `${f.name} (${f.designation || 'Faculty'})`, value: f.id })),
+      ],
+      renderView: (val) => (
+        <span className="text-sm font-medium">
+          {val && val !== 'none' ? facultyMap.get(val) || 'Assigned' : 'Not assigned'}
+        </span>
+      ),
+    },
+    {
+      key: 'is_active',
+      label: 'Active Status',
+      type: 'switch',
+      description: 'Allow students and faculty to be enrolled and assigned to this department.',
+      defaultValue: true,
+    },
+  ];
+
+  const handleSave = async (formData: Record<string, any>, item: Department | null) => {
+    const payload = {
       name: formData.name,
       code: formData.code,
       department_type: formData.department_type,
-      is_active: formData.is_active,
-      hod_user_id: formData.hod_user_id,
+      is_active: Boolean(formData.is_active),
+      hod_user_id: formData.hod_user_id && formData.hod_user_id !== 'none' ? formData.hod_user_id : null,
     };
 
-    // If changing an existing HOD to a new person (or removing them), ask for confirmation
-    if (showEdit.hod_user_id && showEdit.hod_user_id !== formData.hod_user_id) {
-       setPendingUpdate({ id: showEdit.id, data });
+    if (item) {
+      await updateMutation.mutateAsync({ id: item.id, data: payload });
     } else {
-       updateMutation.mutate({ id: showEdit.id, data });
+      await createMutation.mutateAsync(payload);
     }
   };
 
-  const confirmUpdate = () => {
-    if (pendingUpdate) {
-      updateMutation.mutate(pendingUpdate);
-      setPendingUpdate(null);
-    }
+  const handleRowClick = (dept: Department) => {
+    setSelectedDept(dept);
+    setDialogMode('view');
+    setIsDialogOpen(true);
   };
 
-  const openEdit = (dept: Department) => {
-    setFormData({ 
-      name: dept.name, 
-      code: dept.code, 
-      department_type: dept.department_type || 'academic',
-      is_active: dept.is_active,
-      hod_user_id: dept.hod_user_id || null
-    });
-    setShowEdit(dept);
+  const handleOpenCreate = () => {
+    setSelectedDept(null);
+    setDialogMode('create');
+    setIsDialogOpen(true);
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return <ErrorState title="Failed to load departments" description={error?.message} onRetry={refetch} />;
-  }
-
-  const departments = response?.data?.data || [];
-  const academicDepts = departments.filter((d: Department) => d.department_type === 'academic');
-  const adminDepts = departments.filter((d: Department) => d.department_type === 'administrative');
-
-  const renderTable = (depts: Department[], type: string) => (
-    <div className="border rounded-md bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Code</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {depts.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={4} className="h-24">
-                <EmptyState 
-                  icon={<Building2 className="h-6 w-6" />}
-                  title={`No ${type} departments found`}
-                  description="Get started by creating a new department."
-                />
-              </TableCell>
-            </TableRow>
-          ) : (
-            depts.map((dept) => (
-              <TableRow key={dept.id}>
-                <TableCell className="font-medium">{dept.name}</TableCell>
-                <TableCell>{dept.code}</TableCell>
-                <TableCell>
-                  <Badge variant={dept.is_active ? 'default' : 'secondary'}>
-                    {dept.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(dept)} aria-label={`Edit ${dept.name}`}>
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    aria-label={`Delete ${dept.name}`}
-                    onClick={() => {
-                      if (confirm(`Are you sure you want to delete ${dept.name}?`)) {
-                        deleteMutation.mutate(dept.id);
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
-  );
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Departments</h1>
-          <p className="text-muted-foreground mt-1">Manage academic and administrative departments</p>
-        </div>
-      </div>
-
-      <Tabs defaultValue="academic" className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <TabsList>
-            <TabsTrigger value="academic">Academic Departments</TabsTrigger>
-            <TabsTrigger value="administrative">Administrative Departments</TabsTrigger>
-          </TabsList>
-
-          <Button onClick={() => {
-            setFormData({ name: '', code: '', department_type: 'academic', is_active: true, hod_user_id: null });
-            setShowCreate(true);
-          }}>
-            <Plus className="h-4 w-4 mr-2" />
+      <PageHeader
+        actions={
+          <Button onClick={handleOpenCreate} className="gap-1.5 shadow-xs">
+            <Plus className="h-4 w-4" />
             Add Department
           </Button>
-        </div>
-
-        <TabsContent value="academic" className="space-y-4">
-          {renderTable(academicDepts, 'academic')}
-        </TabsContent>
-
-        <TabsContent value="administrative" className="space-y-4">
-          {renderTable(adminDepts, 'administrative')}
-        </TabsContent>
-      </Tabs>
-
-      <Dialog open={showCreate || !!showEdit} onOpenChange={(open) => {
-        if (!open) {
-          setShowCreate(false);
-          setShowEdit(null);
         }
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{showEdit ? 'Edit Department' : 'Create Department'}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={showEdit ? handleUpdate : handleCreate} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g. Computer Science"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="code">Code</Label>
-              <Input
-                id="code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="e.g. CSE"
-                required
-              />
-            </div>
+      />
 
-            <div className="space-y-2">
-              <Label htmlFor="department_type">Department Type</Label>
-              <Select
-                value={formData.department_type}
-                onValueChange={(val: 'academic' | 'administrative') => setFormData({ ...formData, department_type: val })}
-              >
-                <SelectTrigger id="department_type">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="academic">Academic Department</SelectItem>
-                  <SelectItem value="administrative">Administrative Department</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <ProTable
+        columns={columns}
+        data={departments}
+        isLoading={isLoading}
+        error={error}
+        onRetry={refetch}
+        rowKey={(row) => row.id}
+        onRowClick={handleRowClick}
+        filters={filters}
+        searchPlaceholder="Search departments by name or code..."
+        exportFileName="departments-list"
+        emptyTitle="No departments found"
+        emptyDescription="Create your first academic or administrative department to organize courses and faculty."
+      />
 
-            <div className="space-y-2">
-              <Label htmlFor="hod_user_id">Head of Department</Label>
-              <Select
-                value={formData.hod_user_id || 'none'}
-                onValueChange={(val) => setFormData({ ...formData, hod_user_id: val === 'none' ? null : val })}
-              >
-                <SelectTrigger id="hod_user_id">
-                  <SelectValue placeholder="Select HOD" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {facultyList.map(f => (
-                    <SelectItem key={f.id} value={f.id}>{f.name} ({f.email})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center space-x-2 pt-2">
-              <Checkbox
-                id="is_active"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked as boolean })}
-              />
-              <Label htmlFor="is_active">Active Status</Label>
-            </div>
-            
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => {
-                setShowCreate(false);
-                setShowEdit(null);
-              }}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                {(createMutation.isPending || updateMutation.isPending) && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {showEdit ? 'Update' : 'Create'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-      <AlertDialog open={!!pendingUpdate} onOpenChange={(open) => !open && setPendingUpdate(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Change Head of Department?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This department already has an assigned Head of Department. 
-              Assigning a new person will automatically remove the "HOD" role from the current head and assign it to the new one. 
-              Are you sure you want to proceed with this replacement?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmUpdate} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Confirm Replacement
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <EntityViewEditDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        entityName="Department"
+        data={selectedDept}
+        fields={fields}
+        initialMode={dialogMode}
+        onSave={handleSave}
+        isSaving={createMutation.isPending || updateMutation.isPending}
+        canDelete={true}
+        onDelete={(item) => deleteMutation.mutateAsync(item.id)}
+        isDeleting={deleteMutation.isPending}
+      />
     </div>
   );
 }
+export default DepartmentManagement;

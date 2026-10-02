@@ -1,6 +1,8 @@
-import { DataTable } from '@/components/shared/DataTable';
+import { ProTable } from '@/components/shared/pro-table/ProTable';
+import type { ProColumn } from '@/components/shared/pro-table/types';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { PERMISSIONS } from '@/config/permissions';
 import { format } from 'date-fns';
 import {
   Select,
@@ -38,20 +40,22 @@ interface ComplaintTableProps {
 }
 
 export function ComplaintTable({ complaints, isLoading, faculty, onStatusChange, onAssignChange }: ComplaintTableProps) {
-  const columns = [
+  const columns: ProColumn<ComplaintResponse>[] = [
     {
-      key: 'category',
+      id: 'category',
       header: 'Category',
-      render: (row: ComplaintResponse) => (
+      accessorKey: 'category',
+      sortable: true,
+      cell: (val: ComplaintCategory) => (
         <span className="font-medium text-foreground">
-          {categoryLabels[row.category]}
+          {categoryLabels[val] || val}
         </span>
       ),
     },
     {
-      key: 'location',
+      id: 'location',
       header: 'Location',
-      render: (row: ComplaintResponse) => (
+      cell: (_, row) => (
         <span className="text-sm text-muted-foreground">
           {row.location_hostel}
           {row.location_room ? ` · ${row.location_room}` : ''}
@@ -59,29 +63,32 @@ export function ComplaintTable({ complaints, isLoading, faculty, onStatusChange,
       ),
     },
     {
-      key: 'description',
+      id: 'description',
       header: 'Description',
-      render: (row: ComplaintResponse) => (
-        <span className="max-w-xs truncate text-sm text-muted-foreground">
-          {row.description}
+      accessorKey: 'description',
+      cell: (val) => (
+        <span className="max-w-xs truncate text-sm text-muted-foreground block">
+          {val}
         </span>
       ),
     },
     {
-      key: 'status',
+      id: 'status',
       header: 'Status',
-      render: (row: ComplaintResponse) => (
+      accessorKey: 'status',
+      sortable: true,
+      cell: (val: ComplaintStatus, row) => (
         <PermissionGuard 
-          permission="complaints:update" 
-          fallback={<StatusBadge status={row.status} type="complaint" />}
+          permission={PERMISSIONS.COMPLAINT.RESOLVE} 
+          fallback={<StatusBadge status={val} type="complaint" />}
         >
           <Select
-            value={row.status}
+            value={val}
             onValueChange={(v) => onStatusChange(row.id, v as ComplaintStatus)}
           >
             <SelectTrigger className="h-8 w-36">
               <SelectValue>
-                <StatusBadge status={row.status} type="complaint" />
+                <StatusBadge status={val} type="complaint" />
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -96,11 +103,11 @@ export function ComplaintTable({ complaints, isLoading, faculty, onStatusChange,
       ),
     },
     {
-      key: 'assigned',
+      id: 'assigned',
       header: 'Assigned To',
-      render: (row: ComplaintResponse) => (
+      cell: (_, row) => (
         <PermissionGuard 
-          permission="complaints:assign"
+          permission={PERMISSIONS.COMPLAINT.ASSIGN}
           fallback={
             <span className="text-sm text-muted-foreground">
               {row.assigned_to ? faculty.find(f => f.id === row.assigned_to)?.name : 'Unassigned'}
@@ -129,22 +136,26 @@ export function ComplaintTable({ complaints, isLoading, faculty, onStatusChange,
       ),
     },
     {
-      key: 'created',
+      id: 'created_at',
       header: 'Filed',
-      render: (row: ComplaintResponse) =>
-        format(new Date(row.created_at), 'MMM d'),
+      accessorKey: 'created_at',
+      sortable: true,
+      cell: (val) => format(new Date(val), 'MMM d, yyyy'),
     },
   ];
 
   return (
-    <DataTable
+    <ProTable<ComplaintResponse>
       columns={columns}
       data={complaints}
       isLoading={isLoading}
       rowKey={(row) => row.id}
+      searchPlaceholder="Filter complaints by category, description..."
+      enableExport
+      exportFileName="admin_complaints"
       emptyTitle="No complaints found"
       emptyDescription="There are no complaints matching these filters."
-      emptyIcon={<ClipboardList className="h-6 w-6" />}
+      emptyIcon={<ClipboardList className="h-6 w-6 text-muted-foreground" />}
     />
   );
 }

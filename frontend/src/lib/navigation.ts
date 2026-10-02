@@ -1,24 +1,16 @@
-import {
-  Megaphone,
-  ClipboardList,
-  CheckSquare,
-  CalendarDays,
-  UtensilsCrossed,
-  BookOpen,
-  Users,
-  UserCog,
-  ShieldCheck,
-  LayoutDashboard,
-  UserCircle,
-  Settings,
-  type LucideIcon,
-} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { UserRole } from '@/types/api';
+import { PAGES_CONFIG, type NavSection } from '@/config/pages';
 
 export interface NavItem {
   label: string;
   to: string;
   icon: LucideIcon;
+}
+
+export interface NavGroup {
+  name: string;
+  items: NavItem[];
 }
 
 export const ROLE_ROUTES: Record<UserRole, string> = {
@@ -33,127 +25,72 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrator',
 };
 
-export interface NavGroup {
-  name: string;
-  items: NavItem[];
+const SECTION_ORDER: NavSection[] = [
+  'Overview',
+  'Campus Operations',
+  'Administration',
+  'Account',
+];
+
+/**
+ * Derives navigation groups dynamically from the central PAGES_CONFIG registry.
+ */
+function buildNavGroupsForRole(role: UserRole): NavGroup[] {
+  const rolePages = Object.values(PAGES_CONFIG).filter(
+    (page) => page.allowedRoles.includes(role) && page.showInSidebar !== false
+  );
+
+  return SECTION_ORDER.map((section) => {
+    const items = rolePages
+      .filter((page) => page.section === section)
+      .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+      .map((page) => ({
+        label: page.title,
+        to: page.path,
+        icon: page.icon,
+      }));
+
+    return {
+      name: section,
+      items,
+    };
+  }).filter((group) => group.items.length > 0);
 }
 
 export const NAV_GROUPS: Record<UserRole, NavGroup[]> = {
-  student: [
-    {
-      name: 'Overview',
-      items: [
-        { label: 'Dashboard', to: '/student', icon: LayoutDashboard },
-      ]
-    },
-    {
-      name: 'Campus Operations',
-      items: [
-        { label: 'Notices', to: '/student/notices', icon: Megaphone },
-        { label: 'My Complaints', to: '/student/complaints', icon: ClipboardList },
-        { label: 'Outpasses', to: '/student/outpasses', icon: CheckSquare },
-        { label: 'Timetable', to: '/student/timetable', icon: CalendarDays },
-        { label: 'Mess Menu', to: '/student/mess', icon: UtensilsCrossed },
-        { label: 'Attendance', to: '/student/attendance', icon: BookOpen },
-      ]
-    },
-    {
-      name: 'Account',
-      items: [
-        { label: 'Profile', to: '/student/profile', icon: UserCircle },
-      ]
-    }
-  ],
-  faculty: [
-    {
-      name: 'Overview',
-      items: [
-        { label: 'Dashboard', to: '/faculty', icon: LayoutDashboard },
-      ]
-    },
-    {
-      name: 'Campus Operations',
-      items: [
-        { label: 'Notices', to: '/faculty/notices', icon: Megaphone },
-        { label: 'Complaints', to: '/faculty/complaints', icon: ClipboardList },
-        { label: 'Timetable', to: '/faculty/timetable', icon: CalendarDays },
-        { label: 'Attendance', to: '/faculty/attendance', icon: BookOpen },
-      ]
-    },
-    {
-      name: 'Account',
-      items: [
-        { label: 'Profile', to: '/faculty/profile', icon: UserCircle },
-      ]
-    }
-  ],
-  admin: [
-    {
-      name: 'Overview',
-      items: [
-        { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
-      ]
-    },
-    {
-      name: 'Campus Operations',
-      items: [
-        { label: 'Notices', to: '/admin/notices', icon: Megaphone },
-        { label: 'Complaints', to: '/admin/complaints', icon: ClipboardList },
-        { label: 'Outpass Requests', to: '/admin/outpasses', icon: CheckSquare },
-        { label: 'Timetable', to: '/admin/timetable', icon: CalendarDays },
-        { label: 'Mess Management', to: '/admin/mess', icon: UtensilsCrossed },
-      ]
-    },
-    {
-      name: 'Administration',
-      items: [
-        { label: 'Students', to: '/admin/students', icon: Users },
-        { label: 'Users', to: '/admin/users', icon: UserCog },
-        { label: 'Roles', to: '/admin/permissions', icon: ShieldCheck },
-        { label: 'Courses', to: '/admin/courses', icon: BookOpen },
-        { label: 'Departments', to: '/admin/departments', icon: Settings },
-        { label: 'System Settings', to: '/admin/settings', icon: Settings },
-      ]
-    },
-    {
-      name: 'Account',
-      items: [
-        { label: 'Profile', to: '/admin/profile', icon: UserCircle },
-      ]
-    }
-  ]
+  student: buildNavGroupsForRole('student'),
+  faculty: buildNavGroupsForRole('faculty'),
+  admin: buildNavGroupsForRole('admin'),
 };
 
-// Global Configuration for Route-to-Title Breadcrumb Mapping
-export const BREADCRUMB_CONFIG: Record<string, string> = {
-  'admin': 'Dashboard',
-  'student': 'Dashboard',
-  'faculty': 'Dashboard',
-  
-  'notices': 'Notices',
-  'create': 'Create',
-  'edit': 'Edit',
-  
-  'complaints': 'Complaints',
-  'outpasses': 'Outpasses',
-  'timetable': 'Timetable',
-  'mess': 'Mess Menu',
-  'attendance': 'Attendance',
-  
-  'students': 'Students',
-  'users': 'Users',
-  'permissions': 'Roles & Permissions',
-  'profile': 'Profile',
-};
-
+/**
+ * Resolves a readable breadcrumb label for a given path segment or route.
+ */
 export const getBreadcrumbLabel = (segment: string): string => {
-  if (BREADCRUMB_CONFIG[segment]) return BREADCRUMB_CONFIG[segment];
-  
-  // If the segment is a UUID, display a cleaner label instead of the raw ID
+  // Check if segment matches any page id or title
+  const match = Object.values(PAGES_CONFIG).find((p) => {
+    const lastPart = p.path.split('/').filter(Boolean).pop();
+    return lastPart === segment || p.id.endsWith(`.${segment}`);
+  });
+  if (match) return match.title;
+
+  // Segment overrides
+  const overrides: Record<string, string> = {
+    admin: 'Dashboard',
+    student: 'Dashboard',
+    faculty: 'Dashboard',
+    new: 'New',
+    create: 'Create',
+    edit: 'Edit',
+    permissions: 'Roles & Permissions',
+  };
+  if (overrides[segment]) return overrides[segment];
+
+  // If the segment is a UUID, display "Details"
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (uuidRegex.test(segment)) {
     return 'Details';
   }
-  
+
   return segment.charAt(0).toUpperCase() + segment.slice(1);
 };

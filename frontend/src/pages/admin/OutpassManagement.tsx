@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StatCard } from '@/components/shared/StatCard';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
@@ -85,12 +86,7 @@ export function OutpassManagement() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-foreground">Outpass Management</h2>
-        <p className="text-sm text-muted-foreground">
-          Review requests and track student campus exits and returns
-        </p>
-      </div>
+      <PageHeader />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard icon={CheckSquare} label="Pending Requests" value={pendingCount} />

@@ -151,7 +151,8 @@ export interface StudentCreateRequest {
 
 export interface StudentProfileCreateRequest {
   course_id: string;
-  branch_id: string;
+  department_id: string;
+  branch_id?: string; // deprecated backwards compatibility
   year: number;
   hostel?: string;
   photo_url?: string | null;
@@ -214,18 +215,11 @@ export interface APIResponse<T> {
   error?: string | null;
 }
 
-// ── Metadata ─────────────────────────────────────────────────────────
-
-export interface Course {
-  id: string;
-  name: string;
-  branches: Branch[];
-}
-
-export interface Branch {
-  id: string;
-  name: string;
-}
+// ── Metadata Aliases ──────────────────────────────────────────────────
+/**
+ * @deprecated Legacy alias. Use Department instead.
+ */
+export type Branch = Department;
 
 // ── Complaints ───────────────────────────────────────────────────────
 
@@ -293,7 +287,9 @@ export interface NoticeResponse {
   author_id: string;
   attachment_url: string | null;
   target_course_id: string | null;
-  target_branch_id: string | null;
+  target_department_id: string | null;
+  /** @deprecated use target_department_id */
+  target_branch_id?: string | null;
   target_year: number | null;
   target_hostel: string | null;
   target_user_types: string | null;
@@ -311,6 +307,7 @@ export interface NoticeCreateRequest {
   title: string;
   content: string;
   target_course_id?: string | null;
+  target_department_id?: string | null;
   target_branch_id?: string | null;
   target_year?: number | null;
   target_hostel?: string | null;
@@ -370,7 +367,9 @@ export interface OutpassApprovalActionResponse {
 export interface TimetableSlot {
   id: string;
   course_id: string;
-  branch_id: string;
+  department_id: string;
+  /** @deprecated use department_id */
+  branch_id?: string;
   year: number;
   subject_name: string;
   faculty_id: string;
@@ -382,7 +381,9 @@ export interface TimetableSlot {
 
 export interface TimetableSlotCreate {
   course_id: string;
-  branch_id: string;
+  department_id: string;
+  /** @deprecated use department_id */
+  branch_id?: string;
   year: number;
   subject_name: string;
   faculty_id: string;
@@ -394,6 +395,8 @@ export interface TimetableSlotCreate {
 
 export interface TimetableSlotUpdate {
   course_id?: string | null;
+  department_id?: string | null;
+  /** @deprecated use department_id */
   branch_id?: string | null;
   year?: number | null;
   subject_name?: string | null;
