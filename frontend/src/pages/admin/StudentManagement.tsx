@@ -37,7 +37,7 @@ import { Check, X, Users, MoreVertical, Edit2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { StudentItemResponse, AccountStatus, AcademicStatus, Course, Department, StudentCreateRequest } from '@/types/api';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 export function StudentManagement() {
   const queryClient = useQueryClient();
@@ -164,7 +164,7 @@ export function StudentManagement() {
         return (
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             {row.account_status === 'pending' && (
-              <>
+              <PermissionGuard permission="students:update">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -191,69 +191,72 @@ export function StudentManagement() {
                 >
                   <X className="h-4 w-4" />
                 </Button>
-              </>
+              </PermissionGuard>
             )}
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              title="Edit Profile"
-              onClick={() => setEditAction({
-                id: row.id,
-                payload: {
-                  name: row.name,
-                  course_id: row.course_id || '',
-                  department_id: row.department_id || '',
-                  year: row.year,
-                  hostel: row.hostel || ''
-                }
-              })}
-            >
-              <Edit2 className="h-4 w-4" />
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Account Status</DropdownMenuLabel>
-                {['active', 'suspended', 'revision', 'rejected'].map((status) => (
-                  <DropdownMenuItem 
-                    key={`acc-${status}`}
-                    disabled={row.account_status === status}
-                    onClick={() => setUpdateAction({ 
-                      id: row.id, 
-                      payload: { account_status: status as AccountStatus },
-                      label: `mark account as ${status}`
-                    })}
-                    className="capitalize"
-                  >
-                    Mark as {status}
-                  </DropdownMenuItem>
-                ))}
-                
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Academic Status</DropdownMenuLabel>
-                {['enrolled', 'graduated', 'dropped', 'expelled'].map((status) => (
-                  <DropdownMenuItem 
-                    key={`acad-${status}`}
-                    disabled={row.academic_status === status}
-                    onClick={() => setUpdateAction({ 
-                      id: row.id, 
-                      payload: { academic_status: status as AcademicStatus },
-                      label: `mark academic standing as ${status}`
-                    })}
-                    className="capitalize"
-                  >
-                    Mark as {status}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <PermissionGuard permission="students:update">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                title="Edit Profile"
+                onClick={() => setEditAction({
+                  id: row.id,
+                  payload: {
+                    name: row.name,
+                    course_id: row.course_id || '',
+                    department_id: row.department_id || '',
+                    year: row.year,
+                    hostel: row.hostel || ''
+                  }
+                })}
+              >
+                <Edit2 className="h-4 w-4" />
+              </Button>
+            </PermissionGuard>
+            <PermissionGuard permission="students:update">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Account Status</DropdownMenuLabel>
+                  {['active', 'suspended', 'revision', 'rejected'].map((status) => (
+                    <DropdownMenuItem 
+                      key={`acc-${status}`}
+                      disabled={row.account_status === status}
+                      onClick={() => setUpdateAction({ 
+                        id: row.id, 
+                        payload: { account_status: status as AccountStatus },
+                        label: `mark account as ${status}`
+                      })}
+                      className="capitalize"
+                    >
+                      Mark as {status}
+                    </DropdownMenuItem>
+                  ))}
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Academic Status</DropdownMenuLabel>
+                  {['enrolled', 'graduated', 'dropped', 'expelled'].map((status) => (
+                    <DropdownMenuItem 
+                      key={`acad-${status}`}
+                      disabled={row.academic_status === status}
+                      onClick={() => setUpdateAction({ 
+                        id: row.id, 
+                        payload: { academic_status: status as AcademicStatus },
+                        label: `mark academic standing as ${status}`
+                      })}
+                      className="capitalize"
+                    >
+                      Mark as {status}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </PermissionGuard>
           </div>
         );
       },
@@ -273,9 +276,11 @@ export function StudentManagement() {
             Manage student accounts and academic lifecycles
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> Add Student
-        </Button>
+        <PermissionGuard permission="students:create">
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Add Student
+          </Button>
+        </PermissionGuard>
       </div>
 
       <Tabs value={statusFilter ?? 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? undefined : v)}>

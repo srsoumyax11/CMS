@@ -11,11 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface OutpassCreateProps {
-  basePath: string;
-}
+import { useAuth } from '@/context/AuthContext';
 
-export function OutpassCreate({ basePath }: OutpassCreateProps) {
+export function OutpassCreate() {
+  const { role } = useAuth();
+  const basePath = role ? `/${role}` : '';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [destination, setDestination] = useState('');

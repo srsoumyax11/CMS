@@ -11,11 +11,11 @@ import { CheckSquare, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import type { OutpassResponse } from '@/types/api';
 
-interface MyOutpassesProps {
-  basePath: string;
-}
+import { useAuth } from '@/context/AuthContext';
 
-export function MyOutpasses({ basePath }: MyOutpassesProps) {
+export function MyOutpasses() {
+  const { role } = useAuth();
+  const basePath = role ? `/${role}` : '';
   const navigate = useNavigate();
 
   const { data, isLoading, error, refetch } = useQuery({

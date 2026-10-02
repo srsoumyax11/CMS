@@ -8,14 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Megaphone, Plus, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import type { NoticeResponse } from '@/types/api';
+import { useAuth } from '@/context/AuthContext';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
-interface NoticeListProps {
-  basePath: string;
-  canCreate?: boolean;
-}
-
-export function NoticeList({ basePath, canCreate }: NoticeListProps) {
+export function NoticeList() {
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const basePath = role ? `/${role}` : '';
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: [QUERY_KEYS.NOTICES],
@@ -77,12 +76,12 @@ export function NoticeList({ basePath, canCreate }: NoticeListProps) {
             Campus announcements and updates
           </p>
         </div>
-        {canCreate && (
+        <PermissionGuard permission="notices:create">
           <Button onClick={() => navigate(`${basePath}/notices/new`)}>
             <Plus className="mr-2 h-4 w-4" />
             New Notice
           </Button>
-        )}
+        </PermissionGuard>
       </div>
 
       <DataTable

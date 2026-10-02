@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClipboardList, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import type { ComplaintResponse, ComplaintCategory } from '@/types/api';
+import { useAuth } from '@/context/AuthContext';
 
 const categoryLabels: Record<ComplaintCategory, string> = {
   electrical: 'Electrical',
@@ -22,12 +23,10 @@ const categoryLabels: Record<ComplaintCategory, string> = {
   other: 'Other',
 };
 
-interface MyComplaintsProps {
-  basePath: string;
-}
-
-export function MyComplaints({ basePath }: MyComplaintsProps) {
+export function MyComplaints() {
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const basePath = role ? `/${role}` : '';
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<'mine' | 'public'>('mine');
 

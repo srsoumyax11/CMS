@@ -6,6 +6,7 @@ import { UI_CONFIG } from '@/config';
 import { DataTable } from '@/components/shared/DataTable';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { StatCard } from '@/components/shared/StatCard';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Button } from '@/components/ui/button';
@@ -336,7 +337,11 @@ export function OutpassManagement() {
           );
         }
 
-        return <div className="flex items-center gap-1">{actions}</div>;
+        return (
+          <PermissionGuard permission="outpasses:update" fallback={<span className="text-sm text-muted-foreground">None</span>}>
+            <div className="flex items-center gap-1">{actions}</div>
+          </PermissionGuard>
+        );
       },
     },
   ];

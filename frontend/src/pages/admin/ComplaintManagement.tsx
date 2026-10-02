@@ -6,6 +6,7 @@ import { QUERY_KEYS } from '@/lib/constants';
 import { DataTable } from '@/components/shared/DataTable';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { StatCard } from '@/components/shared/StatCard';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Button } from '@/components/ui/button';
@@ -159,50 +160,64 @@ export function ComplaintManagement() {
       key: 'status',
       header: 'Status',
       render: (row: ComplaintResponse) => (
-        <Select
-          value={row.status}
-          onValueChange={(v) =>
-            setStatusUpdateTarget({ id: row.id, status: v as ComplaintStatus })
-          }
+        <PermissionGuard 
+          permission="complaints:update" 
+          fallback={<StatusBadge status={row.status} type="complaint" />}
         >
-          <SelectTrigger className="h-8 w-36">
-            <SelectValue>
-              <StatusBadge status={row.status} type="complaint" />
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select
+            value={row.status}
+            onValueChange={(v) =>
+              setStatusUpdateTarget({ id: row.id, status: v as ComplaintStatus })
+            }
+          >
+            <SelectTrigger className="h-8 w-36">
+              <SelectValue>
+                <StatusBadge status={row.status} type="complaint" />
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </PermissionGuard>
       ),
     },
     {
       key: 'assigned',
       header: 'Assigned To',
       render: (row: ComplaintResponse) => (
-        <Select
-          value={row.assigned_to ?? 'unassigned'}
-          onValueChange={(v) => {
-            if (v !== 'unassigned')
-              assignMutation.mutate({ id: row.id, facultyId: v });
-          }}
+        <PermissionGuard 
+          permission="complaints:assign"
+          fallback={
+            <span className="text-sm text-muted-foreground">
+              {row.assigned_to ? faculty.find(f => f.id === row.assigned_to)?.name : 'Unassigned'}
+            </span>
+          }
         >
-          <SelectTrigger className="h-8 w-40">
-            <SelectValue placeholder="Unassigned" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="unassigned">Unassigned</SelectItem>
-            {faculty.map((f) => (
-              <SelectItem key={f.id} value={f.id}>
-                {f.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select
+            value={row.assigned_to ?? 'unassigned'}
+            onValueChange={(v) => {
+              if (v !== 'unassigned')
+                assignMutation.mutate({ id: row.id, facultyId: v });
+            }}
+          >
+            <SelectTrigger className="h-8 w-40">
+              <SelectValue placeholder="Unassigned" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {faculty.map((f) => (
+                <SelectItem key={f.id} value={f.id}>
+                  {f.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </PermissionGuard>
       ),
     },
     {

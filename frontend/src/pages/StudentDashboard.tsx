@@ -16,23 +16,19 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-const quickLinks: {
-  icon: LucideIcon;
-  label: string;
-  desc: string;
-  path: string;
-}[] = [
-  { icon: Megaphone, label: 'Notices', desc: 'Announcements', path: '/student/notices' },
-  { icon: ClipboardList, label: 'Complaints', desc: 'Track issues', path: '/student/complaints' },
-  { icon: CheckSquare, label: 'Outpasses', desc: 'Manage leaves', path: '/student/outpasses' },
-  { icon: CalendarDays, label: 'Timetable', desc: 'Class schedule', path: '/student/timetable' },
-  { icon: UtensilsCrossed, label: 'Mess Menu', desc: "Today's menu", path: '/student/mess' },
-  { icon: BookOpen, label: 'Attendance', desc: 'Your records', path: '/student/attendance' },
-];
-
-export function StudentDashboard({ basePath = '/student' }: { basePath?: string }) {
-  const { user } = useAuth();
+export function StudentDashboard() {
+  const { user, role } = useAuth();
   const navigate = useNavigate();
+  const basePath = role ? `/${role}` : '';
+  
+  const quickLinks = [
+    { icon: Megaphone, label: 'Notices', desc: 'Announcements', path: `${basePath}/notices` },
+    { icon: ClipboardList, label: 'Complaints', desc: 'Track issues', path: `${basePath}/complaints` },
+    { icon: CheckSquare, label: 'Outpasses', desc: 'Manage leaves', path: `${basePath}/outpasses` },
+    { icon: CalendarDays, label: 'Timetable', desc: 'Class schedule', path: `${basePath}/timetable` },
+    { icon: UtensilsCrossed, label: 'Mess Menu', desc: "Today's menu", path: `${basePath}/mess` },
+    { icon: BookOpen, label: 'Attendance', desc: 'Your records', path: `${basePath}/attendance` },
+  ];
 
   const { data: noticesResp } = useQuery({
     queryKey: ['student-notices-recent'],

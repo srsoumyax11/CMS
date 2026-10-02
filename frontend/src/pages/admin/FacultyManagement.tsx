@@ -38,6 +38,7 @@ import { toast } from 'sonner';
 import type { FacultyItemResponse, FacultyCreateRequest, AccountStatus, EmploymentStatus, AdminItemResponse } from '@/types/api';
 import { PasswordRequirements } from '@/components/shared/PasswordRequirements';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 
 export function FacultyManagement() {
@@ -253,10 +254,12 @@ export function FacultyManagement() {
             View and manage faculty and administrators
           </p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Faculty
-        </Button>
+        <PermissionGuard permission="faculty:create">
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Faculty
+          </Button>
+        </PermissionGuard>
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

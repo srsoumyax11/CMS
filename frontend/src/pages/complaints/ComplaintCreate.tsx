@@ -30,11 +30,11 @@ const categories: { value: ComplaintCategory; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-interface ComplaintCreateProps {
-  basePath: string;
-}
+import { useAuth } from '@/context/AuthContext';
 
-export function ComplaintCreate({ basePath }: ComplaintCreateProps) {
+export function ComplaintCreate() {
+  const { role } = useAuth();
+  const basePath = role ? `/${role}` : '';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [category, setCategory] = useState<ComplaintCategory>('electrical');

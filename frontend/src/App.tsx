@@ -61,13 +61,13 @@ export function StudentRoutes() {
   return (
     <Routes>
       <Route index element={<StudentDashboard />} />
-      <Route path="notices" element={<NoticeList basePath="/student" />} />
+      <Route path="notices" element={<NoticeList />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
-      <Route path="complaints" element={<MyComplaints basePath="/student" />} />
-      <Route path="complaints/new" element={<ComplaintCreate basePath="/student" />} />
+      <Route path="complaints" element={<MyComplaints />} />
+      <Route path="complaints/new" element={<ComplaintCreate />} />
       <Route path="complaints/:id" element={<ComplaintDetail />} />
-      <Route path="outpasses" element={<MyOutpasses basePath="/student" />} />
-      <Route path="outpasses/new" element={<OutpassCreate basePath="/student" />} />
+      <Route path="outpasses" element={<MyOutpasses />} />
+      <Route path="outpasses/new" element={<OutpassCreate />} />
       <Route path="outpasses/:id" element={<OutpassDetail />} />
       <Route path="timetable" element={<TimetableView />} />
       <Route path="attendance" element={<AttendanceStats />} />
@@ -80,11 +80,11 @@ export function StudentRoutes() {
 export function FacultyRoutes() {
   return (
     <Routes>
-      <Route index element={<StudentDashboard basePath="/faculty" />} />
-      <Route path="notices" element={<NoticeList basePath="/faculty" canCreate />} />
+      <Route index element={<StudentDashboard />} />
+      <Route path="notices" element={<NoticeList />} />
       <Route path="notices/new" element={<NoticeCreate />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
-      <Route path="complaints" element={<MyComplaints basePath="/faculty" />} />
+      <Route path="complaints" element={<MyComplaints />} />
       <Route path="complaints/:id" element={<ComplaintDetail />} />
       <Route path="timetable" element={<TimetableView />} />
       <Route path="attendance" element={<AttendanceStats />} />
@@ -97,7 +97,7 @@ export function AdminRoutes() {
   return (
     <Routes>
       <Route index element={<AdminDashboard />} />
-      <Route path="notices" element={<NoticeList basePath="/admin" canCreate />} />
+      <Route path="notices" element={<NoticeList />} />
       <Route path="notices/new" element={<NoticeCreate />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
       <Route path="complaints" element={<ComplaintManagement />} />
