@@ -35,6 +35,14 @@ def run_auth_tests():
     assert r.status_code == 422, "Expected 422 for bad email"
     print("✅ Negative test passed: Invalid email caught (422)")
 
+    # Negative Test: Weak password
+    weak_pwd_data = bad_reg_data.copy()
+    weak_pwd_data["course_id"] = course_id
+    weak_pwd_data["password"] = "weak"
+    r = requests.post(f"{BASE_URL}/auth/register", json=weak_pwd_data)
+    assert r.status_code == 400, "Expected 400 for weak password"
+    print("✅ Negative test passed: Weak password caught (400)")
+
     # Positive Test: Register successful
     reg_data = {
         "email": STUDENT_EMAIL,

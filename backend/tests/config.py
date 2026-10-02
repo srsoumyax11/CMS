@@ -10,7 +10,7 @@ FACULTY_EMAIL = f"testfaculty_{random_suffix}@example.com"
 STUDENT_PASSWORD = "Securepassword123!"
 FACULTY_PASSWORD = "Facultypassword123!"
 SUPERADMIN_EMAIL = "soumya@example.com"
-SUPERADMIN_PASSWORD = "supersecret123"
+SUPERADMIN_PASSWORD = "Supersecret123!"
 
 BASE_URL = "http://127.0.0.1:8000/api"
 

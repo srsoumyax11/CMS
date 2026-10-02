@@ -12,3 +12,4 @@ supabase
 aiosmtplib
 jinja2
 tenacity
+python-magic-bin

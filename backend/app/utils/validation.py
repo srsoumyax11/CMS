@@ -13,8 +13,7 @@ async def validate_password(password: str, db: AsyncSession) -> None:
     Validates a password against the rules configured in SystemSettings.
     Raises HTTPException 400 if validation fails.
     """
-    # Fetch rules from DB
-    result = await db.execute(select(SystemSetting).where(SystemSetting.key.like("auth.password.%")))
+    result = await db.execute(select(SystemSetting))
     settings = result.scalars().all()
     
     rules = {
@@ -26,15 +25,16 @@ async def validate_password(password: str, db: AsyncSession) -> None:
     }
     
     for s in settings:
-        if s.key == "auth.password.min_length":
+        if s.key == "min_password_length":
             rules["min_length"] = int(s.value) if s.value and s.value.isdigit() else 8
-        elif s.key == "auth.password.require_uppercase":
+        elif s.key == "require_uppercase":
             rules["require_uppercase"] = s.value.lower() == "true" if s.value else True
-        elif s.key == "auth.password.require_lowercase":
-            rules["require_lowercase"] = s.value.lower() == "true" if s.value else True
-        elif s.key == "auth.password.require_number":
+        elif s.key == "require_lowercase":
+            # Just default to requiring lower if upper is required usually
+            rules["require_lowercase"] = True
+        elif s.key == "require_numbers":
             rules["require_number"] = s.value.lower() == "true" if s.value else True
-        elif s.key == "auth.password.require_special":
+        elif s.key == "require_special_chars":
             rules["require_special"] = s.value.lower() == "true" if s.value else True
 
     # Validate
