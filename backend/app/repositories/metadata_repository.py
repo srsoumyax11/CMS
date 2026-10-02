@@ -9,8 +9,8 @@ class CourseRepository(GenericRepository[Course]):
     def __init__(self, db: AsyncSession):
         super().__init__(db, Course)
         
-    async def get_by_code(self, code: str) -> Optional[Course]:
-        result = await self.db.execute(select(Course).where(Course.code == code))
+    async def get_by_name(self, name: str) -> Optional[Course]:
+        result = await self.db.execute(select(Course).where(Course.name == name))
         return result.scalar_one_or_none()
 
 class DepartmentRepository(GenericRepository[Department]):

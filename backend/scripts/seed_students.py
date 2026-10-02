@@ -52,12 +52,20 @@ def create_students(count=30):
         email = f"{first_name.lower()}.{last_name.lower()}{random.randint(10, 999)}@student.cms.edu"
         user_id = f"STU{random.randint(100000, 999999)}"
         
+        course = random.choice(courses)
+        dept = random.choice(academic_depts)
+        year = random.randint(2020, 2026)
+
         # 1. Register student
         reg_payload = {
             "name": name,
             "email": email,
             "password": "Password@123",
-            "user_id": user_id
+            "user_id": user_id,
+            "course_id": course['id'],
+            "department_id": dept['id'],
+            "year": year,
+            "hostel": random.choice(["Block A", "Block B", "Block C", None])
         }
         
         reg_resp = student_client.post("/auth/register", json=reg_payload)
@@ -65,34 +73,8 @@ def create_students(count=30):
             print(f"Failed to register {email}: {reg_resp.text}")
             continue
             
-        data = reg_resp.json().get("data", {})
-        access_token = data.get("access_token")
-        
-        if not access_token:
-            print(f"Failed to get token for {email}")
-            continue
-            
-        student_client.token = access_token
-        student_client.session.headers.update({"Authorization": f"Bearer {access_token}"})
-        
-        # 2. Create student profile
-        course = random.choice(courses)
-        dept = random.choice(academic_depts)
-        year = random.randint(2020, 2026)
-        
-        prof_payload = {
-            "course_id": course['id'],
-            "department_id": dept['id'],
-            "year": year,
-            "hostel": random.choice(["Block A", "Block B", "Block C", None])
-        }
-        
-        prof_resp = student_client.post("/users/me/student-profile", json=prof_payload)
-        if prof_resp.status_code == 200:
-            print(f"Registered and created profile for {name} ({user_id})")
-            created_emails.append(email)
-        else:
-            print(f"Failed to create profile for {email}: {prof_resp.text}")
+        print(f"Registered and created profile for {name} ({user_id})")
+        created_emails.append(email)
 
     print("\n--- Approving Students ---")
     

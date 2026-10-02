@@ -17,7 +17,7 @@ class TimetableRepository:
         result = await self.db.execute(select(TimetableSlot))
         return list(result.scalars().all())
         
-    async def list_by_faculty(self, faculty_id: str) -> List[TimetableSlot]:
+    async def list_by_faculty(self, faculty_id: UUID) -> List[TimetableSlot]:
         result = await self.db.execute(
             select(TimetableSlot).where(TimetableSlot.faculty_id == faculty_id)
         )
@@ -35,8 +35,8 @@ class TimetableRepository:
 
     async def get_overlapping(
         self, 
-        faculty_id: str, 
-        day_of_week: int, 
+        faculty_id: UUID, 
+        day_of_week: str, 
         start_time, 
         end_time, 
         exclude_id: Optional[UUID] = None

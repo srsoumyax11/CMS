@@ -134,6 +134,9 @@ export interface RegisterRequest {
   password: string;
   name: string;
   user_id: string;
+  course_id: string;
+  department_id: string;
+  year: number;
 }
 
 export interface StudentCreateRequest {
@@ -334,6 +337,8 @@ export interface OutpassResponse {
   approved_by: string | null;
   created_at: string;
   updated_at: string | null;
+  student_name?: string | null;
+  student_course?: string | null;
   is_overdue: boolean;
   overdue_hours: number;
 }
@@ -454,8 +459,8 @@ export interface StudentItemResponse {
   email: string;
   course_id?: string | null;
   course_name: string;
-  branch_id?: string | null;
-  branch_name: string;
+  department_id?: string | null;
+  department_name: string;
   year: number;
   hostel?: string | null;
   account_status: AccountStatus;

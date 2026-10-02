@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { authApi } from '@/api/authApi';
+import { metadataApi } from '@/api/metadataApi';
 import { useAuth } from '@/context/AuthContext';
 import { STORAGE_KEYS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,22 @@ export function Register() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
+  const [courseId, setCourseId] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [year, setYear] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const { data: coursesData } = useQuery({
+    queryKey: ['metadata', 'courses'],
+    queryFn: () => metadataApi.getCourses().then(res => res.data.data || []),
+  });
+
+  const { data: departmentsData } = useQuery({
+    queryKey: ['metadata', 'departments'],
+    queryFn: () => metadataApi.getDepartments().then(res => res.data.data || []),
+  });
+
+  const academicDepts = departmentsData?.filter(d => d.department_type === 'academic') || [];
 
   const [userIdError, setUserIdError] = useState<string | null>(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
@@ -49,7 +65,7 @@ export function Register() {
           setUserIdError('User ID is already taken');
           setIsUsernameAvailable(false);
         }
-      } catch (err) {
+      } catch (_err) {
         // ignore network error for live validation
       } finally {
         setIsCheckingUsername(false);
@@ -65,6 +81,9 @@ export function Register() {
         password,
         name,
         user_id: userId,
+        course_id: courseId,
+        department_id: departmentId,
+        year: parseInt(year),
       }),
     onSuccess: async (response) => {
       const tokenData = response.data.data;
@@ -75,7 +94,7 @@ export function Register() {
         navigate('/onboarding', { replace: true });
       }
     },
-    onError: (err: unknown) => {
+    onError: (err: Error | unknown) => {
       const message =
         err instanceof Error
           ? err.message
@@ -187,7 +206,59 @@ export function Register() {
                     </span>
                   </Button>
                 </div>
+              </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="courseId">Course</Label>
+                  <Select value={courseId} onValueChange={setCourseId} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {coursesData?.map((course) => (
+                        <SelectItem key={course.id} value={course.id}>
+                          {course.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="departmentId">Department</Label>
+                  <Select value={departmentId} onValueChange={setDepartmentId} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {academicDepts.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="year">Admission Year</Label>
+                <Select value={year} onValueChange={setYear} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 7 }).map((_, i) => {
+                      const y = new Date().getFullYear() - i + 4;
+                      return (
+                        <SelectItem key={y} value={y.toString()}>
+                          {y}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
 
               {error && (
@@ -200,7 +271,7 @@ export function Register() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={registerMutation.isPending || !email || !userId || !password || !name}
+                disabled={registerMutation.isPending || !email || !userId || !password || !name || !courseId || !departmentId || !year}
               >
                 {registerMutation.isPending ? (
                   <>

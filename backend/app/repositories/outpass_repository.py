@@ -6,6 +6,8 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.outpass import Outpass, OutpassStatus, OutpassStatusLog
+from app.models.user import User
+from app.models.profiles import StudentProfile
 from app.repositories.base_repository import GenericRepository
 
 class OutpassRepository(GenericRepository[Outpass]):
@@ -41,7 +43,10 @@ class OutpassRepository(GenericRepository[Outpass]):
         skip: int = 0, 
         limit: int = 100
     ) -> Tuple[List[Outpass], int]:
-        stmt = select(Outpass)
+        from sqlalchemy.orm import joinedload
+        stmt = select(Outpass).options(
+            joinedload(Outpass.student).joinedload(User.student_profile).joinedload(StudentProfile.course)
+        )
         count_stmt = select(func.count(Outpass.id))
         
         if status:

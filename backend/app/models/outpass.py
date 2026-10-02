@@ -34,6 +34,16 @@ class Outpass(Base, UUIDMixin, TimestampMixin):
     approver = relationship("User", foreign_keys=[approved_by], backref="approved_outpasses")
     status_logs = relationship("OutpassStatusLog", back_populates="outpass", cascade="all, delete-orphan", order_by="OutpassStatusLog.created_at")
 
+    @property
+    def student_name(self) -> str | None:
+        return self.student.name if self.student else None
+
+    @property
+    def student_course(self) -> str | None:
+        if self.student and hasattr(self.student, "student_profile") and self.student.student_profile and self.student.student_profile.course:
+            return self.student.student_profile.course.name
+        return None
+
 class OutpassStatusLog(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "outpass_status_logs"
 

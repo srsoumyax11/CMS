@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     
     # File Upload
     MAX_UPLOAD_FILE_SIZE_MB: int = 5
-    ALLOWED_FILE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp"]
+    ALLOWED_FILE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
     
     # Expiry Times
     OTP_EXPIRY_MINUTES: int = 10

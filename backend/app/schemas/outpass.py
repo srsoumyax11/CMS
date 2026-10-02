@@ -28,6 +28,8 @@ class OutpassResponse(BaseModel):
     approved_by: Optional[UUID]
     created_at: datetime
     updated_at: Optional[datetime]
+    student_name: Optional[str] = None
+    student_course: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

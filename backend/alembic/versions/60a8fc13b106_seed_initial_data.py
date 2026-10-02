@@ -203,10 +203,6 @@ def upgrade() -> None:
         ('site_name', 'BPUT CMS', 'General', 'string', 'Name of the institution/site.', 'true'),
         ('site_url', 'http://localhost:3000', 'General', 'string', 'Public URL of the frontend.', 'true'),
         ('maintenance_mode', 'false', 'General', 'boolean', 'Enable maintenance mode to block non-admin users.', 'true'),
-        ('min_password_length', '8', 'Security', 'number', 'Minimum required password length.', 'true'),
-        ('require_uppercase', 'true', 'Security', 'boolean', 'Require at least one uppercase letter.', 'true'),
-        ('require_numbers', 'true', 'Security', 'boolean', 'Require at least one number.', 'true'),
-        ('require_special_chars', 'true', 'Security', 'boolean', 'Require at least one special character.', 'true'),
     ]
     
     for k, v, c, dt, desc, ip in new_settings:

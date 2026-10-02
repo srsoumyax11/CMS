@@ -225,6 +225,7 @@ export function RolesPermissions() {
   const activePermissions = draftPermissions !== null ? draftPermissions : currentPermissions;
 
   const togglePermission = (actionId: string, currentlyGranted: boolean) => {
+    if (selectedRoleData?.name === 'SuperAdmin') return;
     if (selectedRoleData?.is_system_role && !isSuperAdmin) return;
     if (!matrix) return;
     
@@ -435,6 +436,10 @@ export function RolesPermissions() {
                     <Button size="sm" disabled>
                       System Role Locked
                     </Button>
+                  ) : selectedRoleData?.name === 'SuperAdmin' ? (
+                    <Button size="sm" disabled>
+                      SuperAdmin Locked
+                    </Button>
                   ) : (
                     <Button
                       size="sm"
@@ -481,7 +486,7 @@ export function RolesPermissions() {
                                   id={action.id}
                                   checked={isChecked}
                                   onCheckedChange={() => togglePermission(action.id, action.granted)}
-                                  disabled={selectedRoleData?.is_system_role && !isSuperAdmin}
+                                  disabled={(selectedRoleData?.is_system_role && !isSuperAdmin) || selectedRoleData?.name === 'SuperAdmin'}
                                   className="mt-0.5 h-4 w-4"
                                 />
                                 <div className="space-y-1">

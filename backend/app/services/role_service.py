@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
 
 from app.models.rbac import Role, RolePermission
@@ -26,7 +26,7 @@ class RoleService:
             assignment_count=count
         ) for r, count in roles_with_counts]
 
-    async def get_permission_matrix(self, role_id: UUID = None) -> PermissionMatrixResponse:
+    async def get_permission_matrix(self, role_id: Optional[UUID] = None) -> PermissionMatrixResponse:
         assets = await self.repository.get_all_assets()
         all_perms = await self.repository.get_all_permissions_with_actions()
         

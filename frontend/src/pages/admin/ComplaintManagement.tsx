@@ -121,28 +121,70 @@ export function ComplaintManagement() {
         </TabsContent>
 
         <TabsContent value="recurring">
-          <ComplaintTable
-            complaints={recurring}
-            isLoading={queries.recurringQuery.isLoading}
-            faculty={faculty}
-            onStatusChange={(id, status) => setStatusUpdateTarget({ id, status })}
-            onAssignChange={(id, facultyId) => mutations.assignMutation.mutate({ id, facultyId })}
-          />
+          <div className="rounded-md border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="p-3 text-left">Category</th>
+                  <th className="p-3 text-left">Hostel</th>
+                  <th className="p-3 text-left">Count</th>
+                  <th className="p-3 text-left">Window (Days)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recurring.map((issue, i) => (
+                  <tr key={i} className="border-b">
+                    <td className="p-3 capitalize">{issue.category.replace('_', ' ')}</td>
+                    <td className="p-3">{issue.location_hostel}</td>
+                    <td className="p-3 font-medium text-destructive">{issue.count}</td>
+                    <td className="p-3">{issue.window_days}</td>
+                  </tr>
+                ))}
+                {recurring.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-muted-foreground">No recurring issues found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </TabsContent>
 
         <TabsContent value="ageing">
-          <ComplaintTable
-            complaints={ageing}
-            isLoading={queries.ageingQuery.isLoading}
-            faculty={faculty}
-            onStatusChange={(id, status) => setStatusUpdateTarget({ id, status })}
-            onAssignChange={(id, facultyId) => mutations.assignMutation.mutate({ id, facultyId })}
-          />
+          <div className="rounded-md border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="p-3 text-left">ID</th>
+                  <th className="p-3 text-left">Category</th>
+                  <th className="p-3 text-left">Location</th>
+                  <th className="p-3 text-left">Status</th>
+                  <th className="p-3 text-left">Age (Days)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ageing.map((issue) => (
+                  <tr key={issue.id} className="border-b">
+                    <td className="p-3">{issue.id.substring(0, 8)}</td>
+                    <td className="p-3 capitalize">{issue.category.replace('_', ' ')}</td>
+                    <td className="p-3">{issue.location_hostel} {issue.location_room}</td>
+                    <td className="p-3 capitalize">{issue.status.replace('_', ' ')}</td>
+                    <td className="p-3 font-medium text-destructive">{issue.age_days}</td>
+                  </tr>
+                ))}
+                {ageing.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-muted-foreground">No ageing complaints found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </TabsContent>
       </Tabs>
 
       <ConfirmDialog
-        isOpen={!!statusUpdateTarget}
+        open={!!statusUpdateTarget}
         title="Update Complaint Status"
         description={`Are you sure you want to mark this complaint as ${
           statusUpdateTarget?.status.replace('_', ' ')
@@ -155,7 +197,7 @@ export function ComplaintManagement() {
             });
           }
         }}
-        onCancel={() => setStatusUpdateTarget(null)}
+        onOpenChange={(open) => !open && setStatusUpdateTarget(null)}
       />
     </div>
   );

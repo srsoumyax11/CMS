@@ -5,69 +5,19 @@ from sqlalchemy import select
 from fastapi import UploadFile
 from typing import Optional, List
 import magic
-from app.models.settings import SystemSetting
 from app.core.config import settings
 
-async def validate_password(password: str, db: AsyncSession) -> None:
+async def validate_password(password: str, db: AsyncSession = None) -> None:
     """
-    Validates a password against the rules configured in SystemSettings.
+    Validates a password against standard rules.
     Raises HTTPException 400 if validation fails.
     """
-    result = await db.execute(select(SystemSetting))
-    settings = result.scalars().all()
-    
-    rules = {
-        "min_length": 8,
-        "require_uppercase": True,
-        "require_lowercase": True,
-        "require_number": True,
-        "require_special": True
-    }
-    
-    for s in settings:
-        if s.key == "min_password_length":
-            rules["min_length"] = int(s.value) if s.value and s.value.isdigit() else 8
-        elif s.key == "require_uppercase":
-            rules["require_uppercase"] = s.value.lower() == "true" if s.value else True
-        elif s.key == "require_lowercase":
-            # Just default to requiring lower if upper is required usually
-            rules["require_lowercase"] = True
-        elif s.key == "require_numbers":
-            rules["require_number"] = s.value.lower() == "true" if s.value else True
-        elif s.key == "require_special_chars":
-            rules["require_special"] = s.value.lower() == "true" if s.value else True
+    if len(password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters long"
+        )
 
-    # Validate
-    if len(password) < rules["min_length"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Password must be at least {rules['min_length']} characters long"
-        )
-        
-    if rules["require_uppercase"] and not any(c.isupper() for c in password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least one uppercase letter"
-        )
-        
-    if rules["require_lowercase"] and not any(c.islower() for c in password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least one lowercase letter"
-        )
-        
-    if rules["require_number"] and not any(c.isdigit() for c in password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least one number"
-        )
-        
-    special_chars = re.compile(r'[^a-zA-Z0-9]')
-    if rules["require_special"] and not special_chars.search(password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least one special character"
-        )
 
 async def validate_upload_file(file: UploadFile, allowed_types: Optional[List[str]] = None, max_size_mb: Optional[int] = None) -> None:
     """

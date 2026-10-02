@@ -89,6 +89,7 @@ client.interceptors.response.use(
             ...originalRequest.headers,
             Authorization: `Bearer ${token}`,
           };
+          originalRequest._retry = true;
           resolve(client(originalRequest));
           },
           reject,

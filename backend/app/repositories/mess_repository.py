@@ -21,7 +21,7 @@ class MessRepository:
         res = await self.db.execute(stmt)
         return list(res.scalars().all())
 
-    async def upsert_menu(self, day_of_week: str, meal_type: str, items: List[str]) -> None:
+    async def upsert_menu(self, day_of_week: str, meal_type: str, items: str) -> None:
         stmt = insert(MessMenu).values(
             day_of_week=day_of_week,
             meal_type=meal_type,

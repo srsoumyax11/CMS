@@ -23,13 +23,12 @@ class MetadataService:
 
     async def create_course(self, data: CourseCreateRequest) -> Course:
         async with self.uow.transaction():
-            existing = await self.course_repo.get_by_code(data.code)
+            existing = await self.course_repo.get_by_name(data.name)
             if existing:
-                raise ValueError(f"Course code '{data.code}' already exists")
+                raise ValueError(f"Course '{data.name}' already exists")
                 
             course = Course(
                 name=data.name,
-                code=data.code,
                 duration_years=data.duration_years,
                 is_active=data.is_active
             )
@@ -69,7 +68,8 @@ class MetadataService:
             dept = Department(
                 name=data.name,
                 code=data.code,
-                hod_id=data.hod_id,
+                department_type=data.department_type,
+                hod_user_id=data.hod_user_id,
                 is_active=data.is_active
             )
             return await self.dept_repo.create(dept)
@@ -83,7 +83,7 @@ class MetadataService:
             if data.code: dept.code = data.code
             if data.department_type: dept.department_type = data.department_type
             if data.is_active is not None: dept.is_active = data.is_active
-            if data.hod_user_id: dept.hod_id = data.hod_user_id
+            if data.hod_user_id: dept.hod_user_id = data.hod_user_id
             return dept
 
     async def delete_department(self, dept_id: str) -> bool:
@@ -113,15 +113,15 @@ class MetadataService:
             return setting
 
     async def get_public_settings(self) -> dict:
-        settings, _ = await self.settings_repo.list(filters=[("is_public", "==", True)])
+        settings, _ = await self.settings_repo.list(filters={"is_public": True})
         return {s.key: s.value for s in settings}
 
     async def get_active_courses(self) -> List[Course]:
-        courses, _ = await self.course_repo.list(filters=[("is_active", "==", True)])
+        courses, _ = await self.course_repo.list(filters={"is_active": True})
         return courses
 
     async def get_active_departments(self) -> List[Department]:
-        depts, _ = await self.dept_repo.list(filters=[("is_active", "==", True)])
+        depts, _ = await self.dept_repo.list(filters={"is_active": True})
         return depts
 
     async def get_hierarchy(self) -> List[dict]:

@@ -80,7 +80,7 @@ export function StudentManagement() {
             Manage student accounts and academic lifecycles
           </p>
         </div>
-        <PermissionGuard permission="students:create">
+        <PermissionGuard permission="student_profile:create">
           <Button onClick={() => createModal.open()}>
             <Plus className="mr-2 h-4 w-4" />
             Add Student

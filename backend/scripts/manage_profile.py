@@ -46,7 +46,7 @@ def update_profile_picture():
         
     print(f"Uploading {filepath}...")
     with open(filepath, "rb") as f:
-        files = {"photo": f}
+        files = {"photo": ("img.jpg", f, "image/jpeg")}
         resp = client.session.post(f"http://localhost:8000/api/users/me/photo", files=files)
         
     if resp.status_code == 200:

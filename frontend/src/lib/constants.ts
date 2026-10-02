@@ -150,6 +150,8 @@ export const QUERY_KEYS = {
   PUBLIC_COMPLAINTS: 'public-complaints',
   COMPLAINT: 'complaint',
   ADMIN_COMPLAINTS: 'admin-complaints',
+  DEPARTMENTS: 'departments',
+  SYSTEM_SETTINGS: 'system-settings',
   RECURRING_ISSUES: 'recurring-issues',
   AGEING_COMPLAINTS: 'ageing-complaints',
   NOTICES: 'notices',

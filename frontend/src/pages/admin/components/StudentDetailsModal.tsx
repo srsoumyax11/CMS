@@ -25,7 +25,7 @@ export function StudentDetailsModal({ student, isOpen, onClose }: StudentDetails
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-foreground">{student.name}</h3>
-                <p className="text-sm text-muted-foreground">{student.course_name} · {student.branch_name}</p>
+                <p className="text-sm text-muted-foreground">{student.course_name} · {student.department_name}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 text-sm">

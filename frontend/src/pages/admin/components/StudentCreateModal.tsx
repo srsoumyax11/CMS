@@ -112,7 +112,7 @@ export function StudentCreateModal({ isOpen, onClose, onSubmit, isPending, cours
                     </SelectTrigger>
                     <SelectContent>
                       {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.short_name} - {d.name}</SelectItem>
+                        <SelectItem key={d.id} value={d.id}>{d.code} - {d.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

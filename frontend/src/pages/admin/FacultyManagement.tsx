@@ -43,7 +43,7 @@ export function FacultyManagement() {
             View and manage faculty and administrators
           </p>
         </div>
-        <PermissionGuard permission="faculty:create">
+        <PermissionGuard permission="faculty_profile:create">
           <Button onClick={() => createModal.open()}>
             <Plus className="mr-2 h-4 w-4" />
             Add Faculty

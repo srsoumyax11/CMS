@@ -100,7 +100,7 @@ export function StudentEditModal({ id, initialData, isOpen, onClose, onSubmit, i
                     </SelectTrigger>
                     <SelectContent>
                       {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.short_name} - {d.name}</SelectItem>
+                        <SelectItem key={d.id} value={d.id}>{d.code} - {d.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

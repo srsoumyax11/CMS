@@ -99,7 +99,7 @@ export function OutpassManagement() {
           icon={AlertTriangle} 
           label="Overdue Returns" 
           value={overdueCount} 
-          trend={overdueCount > 0 ? { value: overdueCount, label: 'requires attention', isPositive: false } : undefined}
+          hint={overdueCount > 0 ? `${overdueCount} requires attention` : undefined}
         />
       </div>
 
@@ -150,11 +150,11 @@ export function OutpassManagement() {
       />
 
       <ConfirmDialog
-        isOpen={confirmModal.isOpen}
+        open={confirmModal.isOpen}
+        onOpenChange={(open) => !open && confirmModal.close()}
         title={confirmTitle()}
         description={confirmDescription()}
         onConfirm={handleConfirmAction}
-        onCancel={confirmModal.close}
       />
 
       <Dialog open={rejectModal.isOpen} onOpenChange={(open) => !open && rejectModal.close()}>

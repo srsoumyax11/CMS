@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 export function useAdminList<T, F = string>(
   queryKey: readonly unknown[],
-  fetchFn: (filter?: F) => Promise<{ data: { data: T[] } }>,
+  fetchFn: (filter?: F) => Promise<{ data: { data: T[] | null } }>,
   initialFilter?: F
 ) {
   const [filter, setFilter] = useState<F | undefined>(initialFilter);

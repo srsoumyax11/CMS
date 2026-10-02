@@ -76,7 +76,7 @@ export function StudentTable({ students, isLoading, onRowClick, onUpdateAction, 
         return (
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             {row.account_status === 'pending' && (
-              <PermissionGuard permission="students:update">
+              <PermissionGuard permission="student_profile:edit">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -108,7 +108,7 @@ export function StudentTable({ students, isLoading, onRowClick, onUpdateAction, 
               </PermissionGuard>
             )}
 
-            <PermissionGuard permission="students:update">
+            <PermissionGuard permission="student_profile:edit">
               <Button
                 variant="ghost"
                 size="icon"
@@ -120,7 +120,7 @@ export function StudentTable({ students, isLoading, onRowClick, onUpdateAction, 
                 <Edit2 className="h-4 w-4" />
               </Button>
             </PermissionGuard>
-            <PermissionGuard permission="students:update">
+            <PermissionGuard permission="student_profile:edit">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`More actions for ${row.name}`}>

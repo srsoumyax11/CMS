@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { authApi } from '@/api/authApi';
-import type { FacultyCreateRequest, Course, Department, Role } from '@/types/api';
+import type { FacultyCreateRequest, Course, Department, MetadataRole } from '@/types/api';
 
 interface FacultyCreateModalProps {
   isOpen: boolean;
@@ -16,7 +16,7 @@ interface FacultyCreateModalProps {
   isPending: boolean;
   courses: Course[];
   departments: Department[];
-  roles: Role[];
+  roles: MetadataRole[];
 }
 
 export function FacultyCreateModal({ isOpen, onClose, onSubmit, isPending, courses, departments, roles }: FacultyCreateModalProps) {
