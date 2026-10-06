@@ -5,7 +5,7 @@ import type {
   TimetableSlot,
   TimetableSlotCreate,
   TimetableSlotUpdate,
-  AttendanceRosterItem,
+  RosterStudent,
   AttendanceBatchRequest,
   AttendanceStat,
 } from '@/types/api';
@@ -26,11 +26,12 @@ export const timetableApi = {
 
 export const attendanceApi = {
   getRoster: (slotId: string) =>
-    client.get<APIResponse<AttendanceRosterItem[]>>(API_ROUTES.ATTENDANCE_ROSTER(slotId)),
+    client.get<APIResponse<RosterStudent[]>>(API_ROUTES.ATTENDANCE_ROSTER(slotId)),
 
   submitBatch: (data: AttendanceBatchRequest) =>
-    client.post<APIResponse<AttendanceRosterItem[]>>(API_ROUTES.ATTENDANCE_BATCH, data),
+    client.post<APIResponse<void>>(API_ROUTES.ATTENDANCE_BATCH, data),
 
   getMyStats: () =>
     client.get<APIResponse<AttendanceStat[]>>(API_ROUTES.MY_ATTENDANCE_STATS),
 };
+

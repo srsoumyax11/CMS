@@ -64,7 +64,7 @@ async def _send_email_worker(to_email: str, subject: str, template_name: str, co
         port_str = smtp_config.get("smtp_port", "587")
         user = smtp_config.get("smtp_user")
         password = smtp_config.get("smtp_password")
-        from_address = smtp_config.get("smtp_from_address", "noreply@synergyinstitute.net")
+        from_address = smtp_config.get("smtp_from_address", "noreply@BPUTinstitute.net")
         
         if not all([host, port_str]):
             logger.error("Incomplete SMTP settings (host or port missing). Cannot send email.")
@@ -97,7 +97,8 @@ async def _send_email_worker(to_email: str, subject: str, template_name: str, co
             "hostname": host,
             "port": port,
             "use_tls": use_tls,
-            "start_tls": start_tls
+            "start_tls": start_tls,
+            "timeout": 5
         }
         if user and password:
             send_kwargs["username"] = user

@@ -62,7 +62,7 @@ export function FacultyCreateModal({ isOpen, onClose, onSubmit, isPending, cours
         } else {
           setEmailError(null);
         }
-      } catch (err) {
+      } catch {
         setEmailError("Failed to verify email");
       } finally {
         setIsCheckingEmail(false);

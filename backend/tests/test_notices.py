@@ -66,7 +66,7 @@ def run_notices_tests():
             "title": "Hostel A - Course Sync",
             "content": "Meeting for Course students in Hostel A.",
             "target_course_id": course_id,
-            "target_hostel": "Hostel A"
+            "target_hostel": state.get("building_name", "Kalam Boys Hostel")
         }
     )
     assert multi_targeted_notice.status_code == 200, multi_targeted_notice.text

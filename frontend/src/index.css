@@ -2,51 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   BPUT CMS Master Design Tokens & Editorial Theme System
+   Applies high-contrast, editorial typography & dark/light mode across the full app.
+   ========================================================================== */
+
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* ------------------------------------------------------------------------
+     LIGHT MODE THEME (Creamy Ivory/Alabaster Editorial Design)
+     ------------------------------------------------------------------------ */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 13%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 13%;
+    --background: 40 20% 98%;           /* Warm Alabaster Canvas #FAF9F6 */
+    --foreground: 220 25% 10%;          /* Deep Charcoal Slate #12161F (High Contrast) */
+    --card: 0 0% 100%;                  /* Pure White Container */
+    --card-foreground: 220 25% 10%;     /* Deep Charcoal Slate */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 13%;
-    --primary: 349 100% 61%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 95%;
-    --secondary-foreground: 0 0% 13%;
-    --muted: 0 0% 97%;
-    --muted-foreground: 0 0% 42%;
-    --accent: 0 0% 95%;
-    --accent-foreground: 0 0% 13%;
-    --destructive: 11 80% 42%;
+    --popover-foreground: 220 25% 10%;
+    
+    --primary: 220 40% 16%;             /* Deep Academic Navy #182232 */
+    --primary-foreground: 40 20% 98%;    /* Warm Alabaster Text */
+    
+    --secondary: 40 15% 94%;            /* Soft Warm Grey Surface */
+    --secondary-foreground: 220 25% 12%;
+    
+    --muted: 40 12% 94%;                /* Soft Muted Surface #F4F3EE */
+    --muted-foreground: 220 15% 38%;    /* Rich Slate Text #505664 (High Contrast Readability) */
+    
+    --accent: 40 15% 92%;
+    --accent-foreground: 220 25% 10%;
+    
+    --destructive: 0 72% 40%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 87%;
-    --input: 0 0% 87%;
-    --ring: 0 0% 13%;
-    --radius: 0.5rem;
+    
+    --border: 40 12% 86%;               /* Soft Warm Grey Border #DDD9D0 */
+    --input: 40 12% 86%;
+    --ring: 220 40% 16%;
+    --radius: 0.375rem;
 
-    --primary-active: 344 91% 46%;
-    --primary-disabled: 346 100% 91%;
-    --hairline-soft: 0 0% 92%;
-    --border-strong: 0 0% 76%;
-    --body: 0 0% 25%;
-    --muted-soft: 0 0% 57%;
-    --error-hover: 11 96% 36%;
-    --legal-link: 217 100% 63%;
-    --surface-soft: 0 0% 97%;
-    --surface-strong: 0 0% 95%;
-    --luxe: 270 94% 25%;
-    --plus: 330 73% 33%;
+    --primary-active: 220 45% 10%;
+    --primary-disabled: 220 15% 85%;
+    --hairline-soft: 40 12% 90%;
+    --border-strong: 220 15% 75%;
+    --body: 220 20% 22%;
+    --muted-soft: 220 12% 52%;
+    --error-hover: 0 80% 32%;
+    --legal-link: 220 40% 30%;
+    --surface-soft: 40 20% 96%;
+    --surface-strong: 40 15% 92%;
+    --luxe: 220 40% 16%;
+    --plus: 220 30% 25%;
 
-    --chart-1: 349 100% 61%;
-    --chart-2: 0 0% 13%;
-    --chart-3: 0 0% 42%;
-    --chart-4: 0 0% 76%;
-    --chart-5: 0 0% 92%;
+    --chart-1: 220 40% 16%;
+    --chart-2: 220 15% 30%;
+    --chart-3: 220 10% 45%;
+    --chart-4: 220 10% 65%;
+    --chart-5: 40 10% 85%;
 
-    --success: 142 71% 45%;
+    --success: 142 71% 42%;
     --success-foreground: 144 100% 11%;
-    --success-bg: 149 80% 90%;
+    --success-bg: 149 80% 92%;
     
     --warning: 38 92% 50%;
     --warning-foreground: 48 96% 15%;
@@ -57,45 +75,54 @@
     --info-bg: 214 93% 89%;
   }
 
+  /* ------------------------------------------------------------------------
+     DARK MODE THEME (Deep Midnight Obsidian & High-Contrast Ivory Text)
+     ------------------------------------------------------------------------ */
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 6%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 349 100% 61%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 222 25% 7%;           /* Deep Matte Obsidian #0B0E14 */
+    --foreground: 40 20% 96%;          /* Soft Non-Glare Ivory #F7F6F2 (Maximum Readability) */
+    --card: 222 25% 10%;               /* Distinct Surface Card #111622 */
+    --card-foreground: 40 20% 96%;     /* Soft Non-Glare Ivory */
+    --popover: 222 25% 9%;
+    --popover-foreground: 40 20% 96%;
+    
+    --primary: 40 20% 96%;             /* High-Contrast White Primary Action */
+    --primary-foreground: 222 25% 7%;  /* Deep Obsidian Text */
+    
+    --secondary: 222 20% 15%;          /* Matte Charcoal Surface #1C2333 */
+    --secondary-foreground: 40 20% 96%;
+    
+    --muted: 222 20% 14%;              /* Dark Muted Container #1A202E */
+    --muted-foreground: 220 15% 74%;   /* Crisp Light Slate Text #A0A8B8 (High Contrast Readability) */
+    
+    --accent: 222 20% 16%;
+    --accent-foreground: 40 20% 96%;
+    
+    --destructive: 0 65% 45%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    
+    --border: 222 20% 18%;              /* Crisp Subtle Dark Border #242D40 */
+    --input: 222 20% 18%;
+    --ring: 40 20% 96%;
 
-    --primary-active: 344 91% 46%;
-    --primary-disabled: 346 100% 21%;
-    --hairline-soft: 0 0% 15%;
-    --border-strong: 0 0% 25%;
-    --body: 0 0% 70%;
-    --muted-soft: 0 0% 50%;
-    --error-hover: 11 96% 36%;
+    --primary-active: 40 25% 100%;
+    --primary-disabled: 222 15% 25%;
+    --hairline-soft: 222 20% 16%;
+    --border-strong: 222 15% 28%;
+    --body: 220 15% 82%;
+    --muted-soft: 220 10% 60%;
+    --error-hover: 0 80% 45%;
     --legal-link: 217 100% 70%;
-    --surface-soft: 0 0% 10%;
-    --surface-strong: 0 0% 14.9%;
-    --luxe: 270 94% 75%;
-    --plus: 330 73% 65%;
+    --surface-soft: 222 25% 9%;
+    --surface-strong: 222 20% 13%;
+    --luxe: 40 20% 96%;
+    --plus: 40 15% 80%;
 
-    --chart-1: 349 100% 61%;
-    --chart-2: 0 0% 98%;
-    --chart-3: 0 0% 63.9%;
-    --chart-4: 0 0% 25%;
-    --chart-5: 0 0% 15%;
+    --chart-1: 40 20% 96%;
+    --chart-2: 220 15% 80%;
+    --chart-3: 220 10% 60%;
+    --chart-4: 220 10% 40%;
+    --chart-5: 222 20% 20%;
 
     --success: 142 71% 45%;
     --success-foreground: 144 100% 98%;
@@ -111,19 +138,31 @@
   }
 }
 
+/* ==========================================================================
+   Global Base Styles & Readability Enhancements
+   ========================================================================== */
+
 @layer base {
   * {
     @apply border-border;
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
   }
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
     font-family: 'Inter', -apple-system, system-ui, Roboto, 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  
+
+  /* High Contrast Text Selection */
+  ::selection {
+    background-color: hsl(var(--foreground));
+    color: hsl(var(--background));
+  }
+
+  /* Smooth Custom Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -139,18 +178,34 @@
   }
 }
 
+/* ==========================================================================
+   Shared Utility Classes & Card Shadows
+   ========================================================================== */
+
 @layer utilities {
   .shadow-card {
     box-shadow:
-      rgba(0, 0, 0, 0.02) 0 0 0 1px,
-      rgba(0, 0, 0, 0.04) 0 2px 6px 0,
-      rgba(0, 0, 0, 0.1) 0 4px 8px 0;
+      rgba(0, 0, 0, 0.03) 0 0 0 1px,
+      rgba(0, 0, 0, 0.05) 0 2px 6px 0,
+      rgba(0, 0, 0, 0.08) 0 4px 12px 0;
   }
+
+  .dark .shadow-card {
+    box-shadow:
+      rgba(255, 255, 255, 0.04) 0 0 0 1px,
+      rgba(0, 0, 0, 0.3) 0 4px 12px 0;
+  }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Editorial Serif Heading Utility */
+  .font-editorial {
+    font-family: 'Newsreader', 'Playfair Display', 'Georgia', serif;
   }
 }

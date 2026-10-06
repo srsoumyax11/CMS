@@ -56,8 +56,7 @@ async def test_bfla_student_accessing_admin_endpoints(client: httpx.AsyncClient,
     admin_routes = [
         ("GET", "/api/admin/students"),
         ("GET", "/api/admin/faculty"),
-        ("GET", "/api/admin/outpasses"),
-        ("GET", "/api/admin/complaints"),
+        ("GET", "/api/admin/departments"),
         ("GET", "/api/roles"),
         ("GET", "/api/roles/permission-matrix"),
     ]

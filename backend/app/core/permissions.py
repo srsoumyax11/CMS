@@ -17,6 +17,21 @@ class Perms:
     FACULTY_PROFILE_APPROVE = "faculty_profile:approve"
     FACULTY_PROFILE_REJECT = "faculty_profile:reject"
     
+    # Asset: staff_profile
+    STAFF_PROFILE_VIEW = "staff_profile:view"
+    STAFF_PROFILE_LIST = "staff_profile:list"
+    STAFF_PROFILE_CREATE = "staff_profile:create"
+    STAFF_PROFILE_EDIT = "staff_profile:edit"
+    STAFF_PROFILE_DELETE = "staff_profile:delete"
+
+    # Asset: audience_group
+    AUDIENCE_GROUP_VIEW = "audience_group:view"
+    AUDIENCE_GROUP_LIST = "audience_group:list"
+    AUDIENCE_GROUP_CREATE = "audience_group:create"
+    AUDIENCE_GROUP_EDIT = "audience_group:edit"
+    AUDIENCE_GROUP_DELETE = "audience_group:delete"
+    
+
     # Asset: role
     ROLE_VIEW = "role:view"
     ROLE_LIST = "role:list"
@@ -71,3 +86,21 @@ class Perms:
 
     # Asset: department
     DEPARTMENT_MANAGE = "department:manage"
+
+    # Asset: document
+    DOCUMENT_CREATE = "document:create"
+    DOCUMENT_VIEW = "document:view"
+    DOCUMENT_LIST = "document:list"
+    DOCUMENT_APPROVE = "document:approve"
+    DOCUMENT_REJECT = "document:reject"
+    DOCUMENT_MANAGE = "document:manage"
+
+    # Asset: fee
+    FEE_MANAGE = "fee:manage"
+
+    # Asset: visitor
+    VISITOR_MANAGE = "visitor:manage"
+    VISITOR_VIEW = "visitor:view"
+
+    # Asset: hostel
+    HOSTEL_MANAGE = "hostel:manage"

@@ -9,6 +9,7 @@ import { Register } from '@/pages/Register';
 import { VerifyEmail } from '@/pages/VerifyEmail';
 import { Onboarding } from '@/pages/auth/Onboarding';
 import { StudentDashboard } from '@/pages/StudentDashboard';
+import { UserDashboard } from '@/pages/UserDashboard';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { Unauthorized } from '@/pages/Unauthorized';
 import { Profile } from '@/pages/Profile';
@@ -36,6 +37,8 @@ const OutpassDetail = React.lazy(() => import('@/pages/outpasses/OutpassDetail')
 // Timetable & Attendance
 const TimetableView = React.lazy(() => import('@/pages/timetable/TimetableView').then(module => ({ default: module.TimetableView })));
 const AttendanceStats = React.lazy(() => import('@/pages/attendance/AttendanceStats').then(module => ({ default: module.AttendanceStats })));
+const FacultyAttendance = React.lazy(() => import('@/pages/attendance/FacultyAttendance').then(module => ({ default: module.FacultyAttendance })));
+
 
 // Mess
 const MessView = React.lazy(() => import('@/pages/mess/MessView').then(module => ({ default: module.MessView })));
@@ -49,13 +52,41 @@ const MessManagement = React.lazy(() => import('@/pages/admin/MessManagement').t
 const RolesPermissions = React.lazy(() => import('@/pages/admin/RolesPermissions').then(module => ({ default: module.RolesPermissions })));
 const DepartmentManagement = React.lazy(() => import('@/pages/admin/DepartmentManagement').then(module => ({ default: module.DepartmentManagement })));
 const CourseManagement = React.lazy(() => import('@/pages/admin/CourseManagement').then(module => ({ default: module.CourseManagement })));
+const AudienceGroupManagement = React.lazy(() => import('@/pages/admin/AudienceGroupManagement').then(module => ({ default: module.AudienceGroupManagement })));
+const DocumentProcessing = React.lazy(() => import('@/pages/admin/DocumentProcessing').then(module => ({ default: module.DocumentProcessing })));
+const MyDocuments = React.lazy(() => import('@/pages/documents/MyDocuments').then(module => ({ default: module.MyDocuments })));
+const BuildingManagement = React.lazy(() => import('@/pages/admin/BuildingManagement').then(module => ({ default: module.BuildingManagement })));
+const RoomManagement = React.lazy(() => import('@/pages/admin/RoomManagement').then(module => ({ default: module.RoomManagement })));
+const GateLogsManagement = React.lazy(() => import('@/pages/admin/GateLogsManagement').then(module => ({ default: module.GateLogsManagement })));
+const RoleApplicationsManagement = React.lazy(() => import('@/pages/admin/RoleApplicationsManagement').then(module => ({ default: module.RoleApplicationsManagement })));
+const FeeManagement = React.lazy(() => import('@/pages/admin/FeeManagement').then(module => ({ default: module.FeeManagement })));
+const HostelAllocation = React.lazy(() => import('@/pages/admin/HostelAllocation').then(module => ({ default: module.HostelAllocation })));
+
+const MyFees = React.lazy(() => import('@/pages/finance/MyFees').then(module => ({ default: module.MyFees })));
+
+// Gate Pass & Parent Safety Matrix
+const GateGuardScanner = React.lazy(() => import('@/pages/GateGuardScanner').then(module => ({ default: module.GateGuardScanner })));
+const ParentSafetyDashboard = React.lazy(() => import('@/pages/ParentSafetyDashboard').then(module => ({ default: module.ParentSafetyDashboard })));
+
+
 
 import './App.css';
 
 function RoleRedirect() {
   const { role } = useAuth();
-  const target = role ? ROLE_ROUTES[role] : '/login';
+  const target = role && ROLE_ROUTES[role] ? ROLE_ROUTES[role] : '/login';
   return <Navigate to={target} replace />;
+}
+
+export function UserRoutes() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
+        <Route index element={<UserDashboard />} />
+        <Route path="profile" element={<Profile />} />
+      </Routes>
+    </Suspense>
+  );
 }
 
 export function StudentRoutes() {
@@ -74,6 +105,8 @@ export function StudentRoutes() {
       <Route path="timetable" element={<TimetableView />} />
       <Route path="attendance" element={<AttendanceStats />} />
       <Route path="mess" element={<MessView />} />
+      <Route path="documents" element={<MyDocuments />} />
+      <Route path="fees" element={<MyFees />} />
       <Route path="profile" element={<Profile />} />
       </Routes>
     </Suspense>
@@ -91,7 +124,7 @@ export function FacultyRoutes() {
       <Route path="complaints" element={<MyComplaints />} />
       <Route path="complaints/:id" element={<ComplaintDetail />} />
       <Route path="timetable" element={<TimetableView />} />
-      <Route path="attendance" element={<AttendanceStats />} />
+      <Route path="attendance" element={<FacultyAttendance />} />
       <Route path="profile" element={<Profile />} />
       </Routes>
     </Suspense>
@@ -106,6 +139,7 @@ export function AdminRoutes() {
       <Route path="notices" element={<NoticeList />} />
       <Route path="notices/new" element={<NoticeCreate />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
+      <Route path="role-applications" element={<RoleApplicationsManagement />} />
       <Route path="complaints" element={<ComplaintManagement />} />
       <Route path="complaints/:id" element={<ComplaintDetail />} />
       <Route path="outpasses" element={<OutpassManagement />} />
@@ -118,6 +152,13 @@ export function AdminRoutes() {
       <Route path="permissions" element={<RolesPermissions />} />
       <Route path="departments" element={<DepartmentManagement />} />
       <Route path="courses" element={<CourseManagement />} />
+      <Route path="audience-groups" element={<AudienceGroupManagement />} />
+      <Route path="documents" element={<DocumentProcessing />} />
+      <Route path="buildings" element={<BuildingManagement />} />
+      <Route path="rooms" element={<RoomManagement />} />
+      <Route path="hostel-allocations" element={<HostelAllocation />} />
+      <Route path="gate-logs" element={<GateLogsManagement />} />
+      <Route path="fees" element={<FeeManagement />} />
       <Route path="settings" element={<SystemSettings />} />
       <Route path="profile" element={<Profile />} />
       </Routes>
@@ -142,6 +183,14 @@ function AppRoutes() {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<RoleRedirect />} />
+          <Route path="/parent/safety" element={<ParentSafetyDashboard />} />
+          <Route path="/guard/scan" element={<GateGuardScanner />} />
+
+          <Route element={<ProtectedRoute allowedRoles={['user', 'parent']} />}>
+
+            <Route path="/user/*" element={<UserRoutes />} />
+            <Route path="/parent/*" element={<UserRoutes />} />
+          </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['student']} />}>
             <Route path="/student/*" element={<StudentRoutes />} />

@@ -27,8 +27,13 @@ class StudentCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     password: str = Field(..., min_length=8)
+    registration_no: str = Field(..., pattern=r"^\d{10}$", description="10-digit BPUT Registration Number")
+    roll_no: Optional[str] = Field(None, description="Class Roll Number e.g. 23/CSE/042")
     course_id: UUID4
     department_id: UUID4
+    admission_year: int = Field(default=2024, ge=2000, le=2100)
+    current_semester: int = Field(default=1, ge=1, le=10)
+    section: Optional[str] = Field(default="A")
     year: int = Field(default=1, ge=1, le=7)
     hostel: Optional[str] = None
 
@@ -39,15 +44,22 @@ class StudentStatusUpdateRequest(BaseModel):
 
 class StudentItemResponse(BaseModel):
     id: UUID4
-    user_id: str
+    user_id: Optional[str] = ""
+    registration_no: Optional[str] = ""
+    roll_no: Optional[str] = None
     name: str
     email: str
     course_id: Optional[UUID4] = None
     course_name: str
     department_id: Optional[UUID4] = None
     department_name: str
+    admission_year: int = 2024
+    current_semester: int = 1
+    section: Optional[str] = "A"
     year: int
     hostel: Optional[str] = None
+    hostel_name: Optional[str] = None
+    room_id: Optional[UUID4] = None
     account_status: AccountStatus
     academic_status: Optional[AcademicStatus] = None
     status_note: Optional[str] = None
@@ -56,10 +68,16 @@ class StudentItemResponse(BaseModel):
 
 class StudentAdminUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
+    registration_no: Optional[str] = Field(None, pattern=r"^\d{10}$")
+    roll_no: Optional[str] = Field(None)
     course_id: Optional[UUID4] = None
     department_id: Optional[UUID4] = None
+    admission_year: Optional[int] = Field(None, ge=2000, le=2100)
+    current_semester: Optional[int] = Field(None, ge=1, le=10)
+    section: Optional[str] = Field(None)
     year: Optional[int] = Field(None, ge=1, le=5)
     hostel: Optional[str] = Field(None, max_length=100)
+    room_id: Optional[UUID4] = None
 
 class FacultyCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
@@ -72,7 +90,7 @@ class FacultyCreateRequest(BaseModel):
 
 class FacultyItemResponse(BaseModel):
     id: UUID4
-    user_id: str
+    user_id: Optional[str] = ""
     name: str
     email: str
     photo_url: Optional[str] = None
@@ -91,13 +109,18 @@ class FacultyItemResponse(BaseModel):
 class FacultyUpdateRequest(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
-    user_id: Optional[str] = None
     photo_url: Optional[str] = None
     course_id: Optional[UUID4] = None
     department_id: Optional[UUID4] = None
     designation: Optional[str] = None
     account_status: Optional[AccountStatus] = None
     employment_status: Optional[EmploymentStatus] = None
+
+class FacultyStatusUpdateRequest(BaseModel):
+    account_status: Optional[AccountStatus] = None
+    employment_status: Optional[EmploymentStatus] = None
+    status_note: Optional[str] = Field(None, max_length=1000)
+
 
 class DepartmentResponse(BaseModel):
     id: UUID4
@@ -143,7 +166,7 @@ class SystemSettingUpdateRequest(BaseModel):
 
 class AdminItemResponse(BaseModel):
     id: UUID4
-    user_id: str
+    user_id: Optional[str] = ""
     name: str
     email: str
     account_status: AccountStatus

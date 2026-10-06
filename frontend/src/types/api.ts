@@ -1,8 +1,8 @@
 // ── Enums / Union Types ──────────────────────────────────────────────
 
-export type UserRole = 'student' | 'faculty' | 'admin';
+export type UserRole = 'student' | 'faculty' | 'admin' | 'user' | 'parent';
 export type AccountStatus = 'pending' | 'revision' | 'active' | 'suspended' | 'rejected';
-export type UserType = 'student' | 'faculty' | 'admin';
+export type UserType = 'student' | 'faculty' | 'admin' | 'user' | 'parent';
 
 export type AcademicStatus = 'enrolled' | 'graduated' | 'dropped' | 'expelled';
 export type EmploymentStatus = 'active' | 'on_leave' | 'resigned' | 'retired' | 'terminated';
@@ -143,8 +143,13 @@ export interface StudentCreateRequest {
   name: string;
   email: string;
   password?: string;
+  registration_no: string;
+  roll_no?: string;
   course_id: string;
   department_id: string;
+  admission_year?: number;
+  current_semester?: number;
+  section?: string;
   year: number;
   hostel?: string;
 }
@@ -196,10 +201,6 @@ export interface EmailVerifyRequest {
 
 export interface NameUpdateRequest {
   name: string;
-}
-
-export interface UserIdUpdateRequest {
-  user_id: string;
 }
 
 export interface PasswordChangeRequest {
@@ -312,6 +313,7 @@ export interface NoticeCreateRequest {
   target_year?: number | null;
   target_hostel?: string | null;
   target_user_types?: string | null;
+  target_audience_group_id?: string | null;
   file?: File | null;
 }
 
@@ -409,9 +411,15 @@ export interface TimetableSlotUpdate {
 
 // ── Attendance ──────────────────────────────────────────────────────
 
+export interface RosterStudent {
+  student_id: string;
+  name: string;
+  roll_number: string;
+}
+
 export interface AttendanceRosterItem {
   student_id: string;
-  status: string;
+  status: 'present' | 'absent' | 'late' | 'excused';
 }
 
 export interface AttendanceBatchRequest {
@@ -425,7 +433,13 @@ export interface AttendanceStat {
   total_classes: number;
   attended: number;
   percentage: number;
+  present?: number;
+  absent?: number;
+  late?: number;
+  excused?: number;
+  total?: number;
 }
+
 
 // ── Mess ─────────────────────────────────────────────────────────────
 
@@ -457,17 +471,24 @@ export interface MessOptOutCreate {
 
 export interface StudentItemResponse {
   id: string;
-  user_id: string;
+  user_id?: string | null;
+  registration_no?: string | null;
+  roll_no?: string | null;
   name: string;
   email: string;
   course_id?: string | null;
   course_name: string;
   department_id?: string | null;
   department_name: string;
+  admission_year?: number;
+  current_semester?: number;
+  section?: string | null;
   year: number;
   hostel?: string | null;
+  hostel_name?: string | null;
+  room_id?: string | null;
   account_status: AccountStatus;
-  academic_status: AcademicStatus | null;
+  academic_status?: AcademicStatus | null;
   status_note?: string | null;
 }
 
@@ -625,4 +646,167 @@ export interface OnboardingTask {
 export interface OnboardingStatusResponse {
   completion_percentage: number;
   tasks: OnboardingTask[];
+}
+
+// ── Audience Groups ──────────────────────────────────────────────────
+export interface AudienceGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  filters: any;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  member_count: number;
+}
+export interface AudienceGroupCreateRequest {
+  name: string;
+  description?: string | null;
+  filters: any;
+}
+export interface AudienceGroupUpdateRequest {
+  name?: string;
+  description?: string | null;
+  filters?: any;
+}
+
+// ── Documents ────────────────────────────────────────────────────────
+export type DocumentType = 'bonafide' | 'noc' | 'fee_clearance' | 'character_certificate' | 'transcript' | 'other';
+export type DocumentStatus = 'pending' | 'approved' | 'ready' | 'rejected';
+export type DocumentUrgency = 'normal' | 'urgent';
+
+export interface DocumentRequest {
+  id: string;
+  student_id: string;
+  document_type: DocumentType;
+  purpose: string;
+  urgency: DocumentUrgency;
+  status: DocumentStatus;
+  admin_note: string | null;
+  issued_file_url: string | null;
+  processed_by: string | null;
+  created_at: string;
+  updated_at: string;
+  student_name?: string;
+}
+
+export interface DocumentRequestCreate {
+  document_type: DocumentType;
+  purpose: string;
+  urgency: DocumentUrgency;
+}
+
+export interface DocumentRequestUpdate {
+  status: DocumentStatus;
+  admin_note?: string | null;
+  issued_file_url?: string | null;
+}
+
+// ── Infrastructure (Buildings & Rooms) ───────────────────────────────
+export type BuildingType = 'academic' | 'hostel' | 'administrative' | 'sports' | 'other';
+
+export interface Building {
+  id: string;
+  name: string;
+  code: string;
+  building_type: BuildingType;
+  total_floors: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface BuildingCreateRequest {
+  name: string;
+  code: string;
+  building_type: BuildingType;
+  total_floors: number;
+  is_active?: boolean;
+}
+
+export interface Room {
+  id: string;
+  building_id: string;
+  room_number: string;
+  floor: number;
+  capacity: number;
+  room_type: string;
+  is_active: boolean;
+  building_name?: string;
+}
+
+export interface RoomCreateRequest {
+  building_id: string;
+  room_number: string;
+  floor: number;
+  capacity: number;
+  room_type: string;
+  is_active?: boolean;
+}
+
+// ── Facilities (Gate Logs & Fees) ────────────────────────────────────
+export type VisitorStatus = 'entered' | 'exited';
+
+export interface VisitorLog {
+  id: string;
+  visitor_name: string;
+  purpose: string;
+  contact_number: string | null;
+  vehicle_number: string | null;
+  host_user_id: string | null;
+  entry_time: string;
+  exit_time: string | null;
+  status: VisitorStatus;
+  logged_by: string;
+}
+
+export interface VisitorLogCreate {
+  visitor_name: string;
+  purpose: string;
+  contact_number?: string | null;
+  vehicle_number?: string | null;
+  host_user_id?: string | null;
+}
+
+export interface VisitorLogListResponse {
+  items: VisitorLog[];
+}
+
+export type FeeStatus = 'pending' | 'partial' | 'paid' | 'overdue';
+
+export interface FeeDue {
+  id: string;
+  student_id: string;
+  description: string;
+  total_amount: number;
+  paid_amount: number;
+  status: FeeStatus;
+  due_date: string;
+  student_name?: string;
+}
+
+// ── Hostel Allocations ────────────────────────────────────────────────
+export type AllocationStatus = 'active' | 'vacated';
+
+export interface HostelAllocation {
+  id: string;
+  student_id: string;
+  room_id: string;
+  status: AllocationStatus;
+  allocated_at?: string;
+  vacated_at: string | null;
+  created_at: string;
+  updated_at: string | null;
+  student_name?: string;
+  student_email?: string;
+  room_number?: string;
+  building_name?: string;
+  building_id?: string;
+  room_capacity?: number;
+  occupied_count?: number;
+}
+
+
+export interface HostelAllocationCreate {
+  student_id: string;
+  room_id: string;
 }

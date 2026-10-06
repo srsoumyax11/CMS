@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Application Status Update</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 40px 20px;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .header {
+            background-color: #f8fafc;
+            padding: 24px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+        .badge-approved {
+            display: inline-block;
+            background-color: #dcfce7;
+            color: #15803d;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge-rejected {
+            display: inline-block;
+            background-color: #fee2e2;
+            color: #b91c1c;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .content {
+            padding: 32px 24px;
+            text-align: center;
+        }
+        h2 {
+            margin-top: 0;
+            font-size: 22px;
+            font-weight: 600;
+            color: #111827;
+        }
+        p {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #4b5563;
+            margin-bottom: 20px;
+        }
+        .details-box {
+            background-color: #f8fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 24px 0;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+        .details-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+        .details-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+        .details-val {
+            color: #0f172a;
+            font-weight: 600;
+        }
+        .notes-box {
+            background-color: #fffbe6;
+            border-left: 4px solid #f59e0b;
+            padding: 12px 16px;
+            border-radius: 4px;
+            text-align: left;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #78350f;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #0f172a;
+            color: #ffffff !important;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 12px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 16px;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 16px;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="logo">BPUT CMS</h1>
+            {% if status == 'approved' %}
+                <span class="badge-approved">Role Request Approved</span>
+            {% else %}
+                <span class="badge-rejected">Role Request Declined</span>
+            {% endif %}
+        </div>
+        <div class="content">
+            {% if status == 'approved' %}
+                <h2>Congratulations, {{ name }}! 🎉</h2>
+                <p>Your campus role request for <strong>{{ target_role }}</strong> has been reviewed and approved by administration.</p>
+            {% else %}
+                <h2>Hello {{ name }},</h2>
+                <p>Your campus role request for <strong>{{ target_role }}</strong> has been reviewed.</p>
+            {% endif %}
+
+            <div class="details-box">
+                <div class="details-item">
+                    <span class="details-label">Requested Role:</span>
+                    <span class="details-val">{{ target_role }}</span>
+                </div>
+                <div class="details-item" style="border: none;">
+                    <span class="details-label">Status:</span>
+                    <span class="details-val" style="text-transform: capitalize;">{{ status }}</span>
+                </div>
+            </div>
+
+            {% if admin_notes %}
+                <div class="notes-box">
+                    <strong>Admin Note:</strong> {{ admin_notes }}
+                </div>
+            {% endif %}
+
+            {% if status == 'approved' %}
+                <p style="margin-top: 24px;">Your role-specific features and permissions are now active.</p>
+                <a href="{{ dashboard_url | default('http://localhost:5173/dashboard') }}" class="btn">Go to Dashboard →</a>
+            {% else %}
+                <p style="margin-top: 24px;">Please update your profile information or contact administration if you need further assistance.</p>
+                <a href="{{ dashboard_url | default('http://localhost:5173/user') }}" class="btn">View Profile →</a>
+            {% endif %}
+        </div>
+        <div class="footer">
+            &copy; 2026 Biju Patnaik University of Technology (BPUT). All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

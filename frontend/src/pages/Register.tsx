@@ -1,303 +1,336 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
 import { authApi } from '@/api/authApi';
-import { metadataApi } from '@/api/metadataApi';
 import { useAuth } from '@/context/AuthContext';
-import { STORAGE_KEYS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { GraduationCap, Loader2, AlertCircle, ArrowLeft,CheckCircle2, Eye, EyeOff } from 'lucide-react';
-
+import { 
+  GraduationCap, 
+  Loader2, 
+  AlertCircle, 
+  ArrowLeft, 
+  ArrowRight, 
+  CheckCircle2, 
+  Eye, 
+  EyeOff, 
+  Mail, 
+  Key, 
+  Edit2, 
+  PartyPopper, 
+  Sparkles 
+} from 'lucide-react';
+import { getErrorMessage } from '@/lib/error-utils';
+import { triggerPartyPopper } from '@/lib/confetti';
+import { toast } from 'sonner';
 
 export function Register() {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { user, finishLogin } = useAuth();
+
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [countdown, setCountdown] = useState(3);
+
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [name, setName] = useState('');
-  const [courseId, setCourseId] = useState('');
-  const [departmentId, setDepartmentId] = useState('');
-  const [year, setYear] = useState('');
+  
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [otp, setOtp] = useState('');
+  
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: coursesData } = useQuery({
-    queryKey: ['metadata', 'courses'],
-    queryFn: () => metadataApi.getCourses().then(res => res.data.data || []),
-  });
-
-  const { data: departmentsData } = useQuery({
-    queryKey: ['metadata', 'departments'],
-    queryFn: () => metadataApi.getDepartments().then(res => res.data.data || []),
-  });
-
-  const academicDepts = departmentsData?.filter(d => d.department_type === 'academic') || [];
-
-  const [userIdError, setUserIdError] = useState<string | null>(null);
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
-
+  // If user is already logged in before starting signup, redirect to dashboard
   useEffect(() => {
-    if (!userId) {
-      setUserIdError(null);
-      setIsUsernameAvailable(null);
-      return;
+    if (user && step === 1) {
+      navigate('/dashboard', { replace: true });
     }
-    const timer = setTimeout(async () => {
-      setIsCheckingUsername(true);
-      try {
-        const res = await authApi.checkUsername(userId);
-        if (res.data.data) {
-          setUserIdError(null);
-          setIsUsernameAvailable(true);
-        } else {
-          setUserIdError('User ID is already taken');
-          setIsUsernameAvailable(false);
+  }, [user, step, navigate]);
+
+  // Handle Step 3 Celebration & 3-2-1 Countdown Timer
+  useEffect(() => {
+    if (step !== 3) return;
+
+    // Trigger Party Popper Blast immediately when entering Step 3
+    triggerPartyPopper();
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          navigate('/dashboard', { replace: true });
+          return 0;
         }
-      } catch (_err) {
-        // ignore network error for live validation
-      } finally {
-        setIsCheckingUsername(false);
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [userId]);
+        return prev - 1;
+      });
+    }, 1000);
 
-  const registerMutation = useMutation({
-    mutationFn: () =>
-      authApi.register({
-        email,
-        password,
-        name,
-        user_id: userId,
-        course_id: courseId,
-        department_id: departmentId,
-        year: parseInt(year),
-      }),
-    onSuccess: async (response) => {
-      const tokenData = response.data.data;
-      if (tokenData) {
-        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokenData.access_token);
-        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refresh_token);
-        await refreshUser();
-        navigate('/onboarding', { replace: true });
-      }
-    },
-    onError: (err: Error | unknown) => {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Registration failed. Please try again.';
-      setError(message);
-    },
-  });
+    return () => clearInterval(timer);
+  }, [step, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChangeEmail = () => {
+    setStep(1);
+    setError(null);
+    setOtp('');
+  };
+
+  const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (userIdError) {
-      setError('Please choose an available User ID.');
+    if (!name || !email || !password) {
+      setError('Please fill out all fields.');
       return;
     }
-    registerMutation.mutate();
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await authApi.openSignup({ email, password, name });
+      if (!res.data.success || !res.data.data?.session_token) {
+        setError(res.data.error || 'Registration failed. Email may already be registered.');
+        return;
+      }
+      setSessionToken(res.data.data.session_token);
+      setStep(2);
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Registration failed. Email may already be registered.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStep2Verify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!otp || !sessionToken) {
+      setError('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await authApi.verifySignupOtp({
+        email,
+        otp,
+        session_token: sessionToken,
+        name,
+        password
+      });
+
+      if (!res.data.success || !res.data.data) {
+        setError(res.data.error || 'Invalid or expired OTP code. Please try again.');
+        return;
+      }
+
+      const tokenData = res.data.data;
+      if (tokenData?.access_token && tokenData?.refresh_token) {
+        toast.success('Account created! Welcome to BPUT CMS 🎉');
+        setStep(3); // Switch to celebration & countdown step!
+        await finishLogin(tokenData.access_token, tokenData.refresh_token);
+      } else {
+        setError(res.data.error || 'Failed to complete login. Please try logging in.');
+      }
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Invalid or expired OTP code. Please try again.'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-soft px-4 py-8">
-      <div className="w-full max-w-lg">
-        <div className="mb-6 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-            <GraduationCap className="h-7 w-7" />
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
+      <Card className="w-full max-w-md shadow-card bg-card text-card-foreground border-border rounded-2xl overflow-hidden">
+        <CardHeader className="text-center space-y-2 pb-6 border-b border-border">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-md">
+            {step === 3 ? <PartyPopper className="w-7 h-7" /> : <GraduationCap className="w-7 h-7" />}
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Synergy CMS</h1>
-          <p className="text-sm text-muted-foreground">Student Registration</p>
-        </div>
+          <CardTitle className="text-2xl font-bold font-editorial tracking-tight text-foreground">
+            {step === 3 ? 'Welcome Aboard! 🎉' : 'Create Account'}
+          </CardTitle>
+          <CardDescription className="text-muted-foreground">
+            {step === 1 && 'Enter your details to sign up for BPUT CMS'}
+            {step === 2 && 'Email verification required'}
+            {step === 3 && 'Your account has been successfully created'}
+          </CardDescription>
+        </CardHeader>
 
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="text-xl">Create Account</CardTitle>
-            <CardDescription>
-              Register as a student. Your account will be reviewed by an administrator.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+        <CardContent className="pt-6">
+          {error && step !== 3 && (
+            <div className="mb-4 p-3.5 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {step === 1 && (
+            <form onSubmit={handleStep1Submit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-foreground">Full Name</Label>
                 <Input
-                  id="name"
+                  placeholder="e.g. Rahul Sharma"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  placeholder="Your full name"
+                  className="rounded-xl bg-background border-input text-foreground"
                 />
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="userId">Registration No.</Label>
-                  {isCheckingUsername && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-                  {!isCheckingUsername && isUsernameAvailable && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
-                </div>
+              <div className="space-y-1.5">
+                <Label className="text-foreground">Email Address</Label>
                 <Input
-                  id="userId"
-                  type="text"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  required
-                  placeholder="e.g. 2301230114"
-                  className={userIdError ? "border-destructive focus-visible:ring-destructive" : ""}
-                />
-                {userIdError && (
-                  <p className="text-xs text-destructive">{userIdError}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
                   type="email"
+                  placeholder="name@domain.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="you@synergyinstitute.net"
+                  className="rounded-xl bg-background border-input text-foreground"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+              <div className="space-y-1.5">
+                <Label className="text-foreground">Password</Label>
                 <div className="relative">
                   <Input
-                    id="password"
                     type={showPassword ? 'text' : 'password'}
+                    placeholder="At least 8 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    placeholder="Choose a password"
-                    className="pr-10"
+                    className="rounded-xl pr-10 bg-background border-input text-foreground"
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground"
                     onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">
-                      {showPassword ? 'Hide password' : 'Show password'}
-                    </span>
-                  </Button>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="courseId">Course</Label>
-                  <Select value={courseId} onValueChange={setCourseId} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Course" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {coursesData?.map((course) => (
-                        <SelectItem key={course.id} value={course.id}>
-                          {course.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="departmentId">Department</Label>
-                  <Select value={departmentId} onValueChange={setDepartmentId} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {academicDepts.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="year">Admission Year</Label>
-                <Select value={year} onValueChange={setYear} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 7 }).map((_, i) => {
-                      const y = new Date().getFullYear() - i + 4;
-                      return (
-                        <SelectItem key={y} value={y.toString()}>
-                          {y}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {error && (
-                <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
 
               <Button
                 type="submit"
-                className="w-full"
-                disabled={registerMutation.isPending || !email || !userId || !password || !name || !courseId || !departmentId || !year}
+                disabled={loading}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2.5 rounded-xl transition-all shadow-md"
               >
-                {registerMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Registering...
-                  </>
-                ) : (
-                  'Register'
-                )}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Send Verification OTP
               </Button>
-            </form>
 
-            <div className="mt-4 border-t pt-4">
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="text-xs text-primary hover:underline font-medium"
+                >
+                  Already have an account? Sign in
+                </button>
+              </div>
+            </form>
+          )}
+
+          {step === 2 && (
+            <form onSubmit={handleStep2Verify} className="space-y-4">
+              <div className="p-4 bg-secondary/50 rounded-xl border border-border text-center space-y-2">
+                <Mail className="w-8 h-8 text-primary mx-auto" />
+                <h4 className="font-bold text-foreground text-sm font-editorial">Check your inbox</h4>
+                <p className="text-xs text-muted-foreground">
+                  Enter the 6-digit OTP code sent to:
+                </p>
+                <div className="flex items-center justify-center gap-2 pt-0.5">
+                  <span className="text-xs font-semibold text-foreground px-2.5 py-1 bg-background rounded-md border border-border font-mono">
+                    {email}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleChangeEmail}
+                    className="text-xs text-primary hover:underline font-medium flex items-center gap-1 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-md transition-colors"
+                    title="Change email address"
+                  >
+                    <Edit2 className="w-3 h-3" /> Change
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-foreground">Enter OTP Code</Label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    maxLength={6}
+                    placeholder="123456"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.trim())}
+                    required
+                    className="rounded-xl text-center font-mono text-lg tracking-widest bg-background border-input text-foreground"
+                  />
+                  <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                </div>
+              </div>
+
               <Button
-                variant="ghost"
-                size="sm"
-                className="w-full"
-                onClick={() => navigate('/login')}
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2.5 rounded-xl transition-all shadow-md"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Login
+                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2 text-primary-foreground" />}
+                Verify & Create Account
+              </Button>
+
+              <div className="text-center pt-2 flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={handleChangeEmail}
+                  className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Change email / Back to details
+                </button>
+              </div>
+            </form>
+          )}
+
+          {step === 3 && (
+            <div className="text-center space-y-6 py-2">
+              <div className="relative mx-auto w-20 h-20 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center text-primary shadow-lg">
+                <PartyPopper className="w-10 h-10 animate-bounce text-primary" />
+                <Sparkles className="w-5 h-5 absolute -top-1 -right-1 text-amber-500 animate-pulse" />
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-xl font-bold font-editorial text-foreground">
+                  Account Verified! 🎉
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Welcome to Synergy CMS, <strong className="text-foreground">{name || email}</strong>!
+                </p>
+              </div>
+
+              {/* Animated 3-2-1 Countdown Display */}
+              <div className="p-5 bg-secondary/50 rounded-2xl border border-border space-y-2 shadow-inner">
+                <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-serif text-3xl font-extrabold shadow-md transform transition-transform duration-300 scale-105">
+                  {countdown}
+                </div>
+                <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Redirecting to dashboard in {countdown} {countdown === 1 ? 'second' : 'seconds'}...
+                </p>
+              </div>
+
+              <Button
+                onClick={() => navigate('/dashboard', { replace: true })}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                Go to Dashboard Now <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

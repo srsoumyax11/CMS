@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { GraduationCap, LogOut, Menu, User as UserIcon, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 export function DashboardLayout() {
   const { user, role, logout } = useAuth();
@@ -62,7 +63,7 @@ export function DashboardLayout() {
             "text-lg font-bold text-foreground whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out",
             collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
           )}>
-            Synergy CMS
+            BPUT CMS
           </span>
         </div>
         
@@ -277,7 +278,9 @@ export function DashboardLayout() {
             </Alert>
           )}
           
-          <Outlet />
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

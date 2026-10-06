@@ -5,6 +5,7 @@ import { noticesApi } from '@/api/noticesApi';
 import { complaintsApi } from '@/api/complaintsApi';
 import { outpassesApi } from '@/api/outpassesApi';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import {
   Megaphone,
   ClipboardList,
@@ -13,10 +14,15 @@ import {
   UtensilsCrossed,
   BookOpen,
   ChevronRight,
+  LayoutDashboard,
   type LucideIcon,
 } from 'lucide-react';
 
+import { QuickGatePassWidget } from '@/components/gate_pass/QuickGatePassWidget';
+import { StudentGuardianPrivacyWidget } from '@/components/StudentGuardianPrivacyWidget';
+
 export function StudentDashboard() {
+
   const { user, role } = useAuth();
   const navigate = useNavigate();
   const basePath = role ? `/${role}` : '';
@@ -86,14 +92,23 @@ export function StudentDashboard() {
         </div>
       )}
 
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">
-          Welcome back, {user.name?.split(' ')[0] || 'Student'}
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Here's your campus digest.
-        </p>
-      </div>
+      <PageHeader
+        title={`Welcome back, ${user.name?.split(' ')[0] || 'Student'}`}
+        description="Here's your campus digest."
+        icon={LayoutDashboard}
+      />
+
+      {/* Student Guardian Privacy & Data Consent Center */}
+      {user.account_status === 'active' && (
+        <StudentGuardianPrivacyWidget />
+      )}
+
+      {/* High Impact Hackathon Feature: Quick Gate Pass Widget */}
+      {user.account_status === 'active' && (
+        <QuickGatePassWidget />
+      )}
+
+
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {links.map((link) => (

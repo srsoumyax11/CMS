@@ -14,6 +14,10 @@ import { toast } from 'sonner';
 import { ProfilePhotoCropper } from '@/components/shared/ProfilePhotoCropper';
 import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import { getErrorMessage } from '@/lib/error-utils';
+import { RoleElevationWidget } from '@/components/RoleElevationWidget';
+import { StudentHostelCard } from '@/components/StudentHostelCard';
+
+
 
 import {
   AlertDialog,
@@ -102,14 +106,11 @@ export function Profile() {
   const handleEditProfile = () => {
     setEditNameValue(user.name || '');
     setEditEmailValue(user.email || '');
-    setEditUserIdValue(user.user_id || '');
-    setUserIdError(null);
     setIsEditingProfile(true);
   };
 
   const handleSaveProfile = async () => {
     setIsSavingProfile(true);
-    setUserIdError(null);
     let success = true;
     let emailUpdateRequested = false;
 
@@ -119,22 +120,7 @@ export function Profile() {
         await authApi.updateName({ name: editNameValue.trim() });
       }
 
-      // 2. Update User ID
-      if (editUserIdValue.trim() !== user.user_id) {
-        try {
-          await authApi.updateUserId({ user_id: editUserIdValue.trim() });
-        } catch (err: any) {
-          if (err.response?.data?.error === "User ID is already taken") {
-            setUserIdError("User ID is already taken");
-            success = false;
-          } else {
-            toast.error('Failed to update User ID');
-            success = false;
-          }
-        }
-      }
-
-      // 3. Update Email
+      // 2. Update Email
       if (editEmailValue.trim() !== user.email && success) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(editEmailValue)) {
@@ -282,6 +268,7 @@ export function Profile() {
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">
+
           <Card className="shadow-sm">
             <CardContent className="flex flex-col md:flex-row gap-8 p-8">
               {/* Left Side: Avatar and Role */}
@@ -447,28 +434,6 @@ export function Profile() {
                 </div>
 
                 <div className="grid gap-6">
-                  {/* User ID Field */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
-                    <div className="text-sm font-medium text-muted-foreground">Registration / User ID</div>
-                    <div className="md:col-span-2">
-                      {isEditingProfile ? (
-                        <div className="flex flex-col gap-1 max-w-sm">
-                          <Input 
-                            value={editUserIdValue} 
-                            onChange={(e) => { setEditUserIdValue(e.target.value); setUserIdError(null); }} 
-                            className={`h-9 font-mono text-sm ${userIdError ? 'border-red-500' : ''}`}
-                            placeholder="Enter User ID"
-                            disabled={isSavingProfile}
-                          />
-                          {userIdError && <span className="text-xs text-red-500">{userIdError}</span>}
-                        </div>
-                      ) : (
-                        <span className="text-sm font-mono bg-muted px-2 py-1 rounded-md border text-muted-foreground">
-                          {user.user_id || 'Not Set'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
 
                   {/* Status Field */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
@@ -480,7 +445,15 @@ export function Profile() {
                       </div>
                     </div>
                   </div>
+
+                  {user.user_type === 'student' && (
+                    <div className="pt-4 border-t">
+                      <h4 className="text-sm font-semibold text-foreground mb-3">Hostel Accommodation</h4>
+                      <StudentHostelCard />
+                    </div>
+                  )}
                 </div>
+
                 </>
               )}
               </div>

@@ -96,3 +96,19 @@ class OptOutAgg(BaseModel):
 class MessAnalyticsResponse(BaseModel):
     today_average_ratings: List[MealRatingAgg]
     opt_outs_today_tomorrow: List[OptOutAgg]
+
+
+# ================= Mess Scan Verification Schemas =================
+
+class MessScanRequest(BaseModel):
+    student_identifier: str  # Roll number, student email, or user UUID
+    meal_type: MealType
+
+class MessScanResponse(BaseModel):
+    success: bool
+    message: str
+    student_name: Optional[str] = None
+    student_roll: Optional[str] = None
+    meal_type: MealType
+    scanned_at: datetime.datetime
+

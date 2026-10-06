@@ -57,19 +57,22 @@ def run_attendance_tests():
     assert att_future.status_code == 422
     print("✅ Time-Traveler bug blocked (future date rejected).")
 
+    import random
     tomorrow_day = (now + timedelta(days=1)).strftime("%A").lower()
+    test_room_tmrw = f"Room {random.randint(100, 999)}"
     slot_tmrw_data = {
         "course_id": course_id,
         "department_id": state.get("department_id"),
-        "year": 2024,
+        "year": 1,
         "subject_name": "Database Systems",
         "faculty_id": fac_id,
         "day_of_week": tomorrow_day,
         "start_time": "14:00:00",
         "end_time": "15:00:00",
-        "room": "Room 101"
+        "room": test_room_tmrw
     }
     ts_tmrw = requests.post(f"{BASE_URL}/timetable", headers=admin_headers, json=slot_tmrw_data)
+    assert ts_tmrw.status_code == 200, ts_tmrw.text
     slot_tmrw_id = ts_tmrw.json()["data"]["id"]
 
     batch_mismatch = {

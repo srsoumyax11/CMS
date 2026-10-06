@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Enum, Time, Date, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
 
@@ -10,7 +10,7 @@ class Department(Base, UUIDMixin, TimestampMixin):
 
     name = Column(String, unique=True, nullable=False)
     code = Column(String, unique=True, nullable=False)
-    department_type = Column(
+    department_type: Mapped[str] = mapped_column(
         Enum('academic', 'administrative', name='departmenttype'),
         nullable=False,
         server_default='academic'
@@ -36,13 +36,16 @@ class TimetableSlot(Base, UUIDMixin, TimestampMixin):
     year = Column(Integer, nullable=False)
     subject_name = Column(String, nullable=False)
     faculty_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    day_of_week = Column(
+    day_of_week: Mapped[str] = mapped_column(
         Enum('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', name='dayofweek'),
         nullable=False
     )
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
     room = Column(String, nullable=True)
+    room_id = Column(UUID(as_uuid=True), ForeignKey("rooms.id", ondelete="SET NULL"), nullable=True)
+
+    room_rel = relationship("Room", foreign_keys=[room_id])
 
 class AttendanceRecord(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "attendance_records"
@@ -50,10 +53,11 @@ class AttendanceRecord(Base, UUIDMixin, TimestampMixin):
     timetable_slot_id = Column(UUID(as_uuid=True), ForeignKey("timetable_slots.id", ondelete="CASCADE"), nullable=False)
     student_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     date = Column(Date, nullable=False)
-    status = Column(
+    status: Mapped[str] = mapped_column(
         Enum('present', 'absent', 'late', 'excused', name='attendancestatus'),
         nullable=False
     )
+
     marked_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     __table_args__ = (

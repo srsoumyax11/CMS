@@ -5,15 +5,16 @@ from app.models.user import User, UserType, AccountStatus
 from app.schemas.attendance import AttendanceBatchRequest, AttendanceStatsResponse
 from app.repositories.attendance_repository import AttendanceRepository
 from app.core.uow import UnitOfWork
-from app.api.deps import can_mark_attendance
 
 class AttendanceService:
+
     def __init__(self, uow: UnitOfWork):
         self.uow = uow
         self.db = uow.db
         self.repository = AttendanceRepository(self.db)
 
     async def get_attendance_roster(self, slot_id: UUID, current_user: User, user_permissions: Set[str]) -> List[Dict[str, Any]]:
+        from app.api.deps import can_mark_attendance
         slot = await self.repository.get_slot(slot_id)
         if not slot:
             raise ValueError("Timetable slot not found")
@@ -26,10 +27,11 @@ class AttendanceService:
         roster = []
         for sp in students:
             if sp.user.account_status == AccountStatus.active:
+                roll_num = getattr(sp, 'roll_number', None) or (sp.user.email.split('@')[0].upper() if sp.user and sp.user.email else "STU-N/A")
                 roster.append({
                     "student_id": sp.user_id,
                     "name": sp.user.name,
-                    "roll_number": None
+                    "roll_number": roll_num
                 })
         return roster
 
@@ -39,7 +41,9 @@ class AttendanceService:
         current_user: User, 
         user_permissions: Set[str]
     ) -> None:
+        from app.api.deps import can_mark_attendance
         slot = await self.repository.get_slot(payload.slot_id)
+
         if not slot:
             raise ValueError("Timetable slot not found")
 
@@ -76,13 +80,25 @@ class AttendanceService:
         
         stats = []
         for row in rows:
+            total = row.total or 0
+            present = row.present or 0
+            absent = row.absent or 0
+            late = row.late or 0
+            excused = row.excused or 0
+            attended = present + late
+            percentage = round((attended / total) * 100) if total > 0 else 0
+
             stats.append(AttendanceStatsResponse(
                 subject_name=row.subject_name,
-                total=row.total or 0,
-                present=row.present or 0,
-                absent=row.absent or 0,
-                late=row.late or 0,
-                excused=row.excused or 0
+                total_classes=total,
+                attended=attended,
+                percentage=percentage,
+                present=present,
+                absent=absent,
+                late=late,
+                excused=excused,
+                total=total
             ).model_dump())
             
         return stats
+

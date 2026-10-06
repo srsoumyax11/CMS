@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { metadataApi } from '@/api/metadataApi';
 import { adminApi } from '@/api/adminApi';
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { PERMISSIONS } from '@/config/permissions';
-import { Check, X, Plus, MoreVertical, Edit2, User, Users } from 'lucide-react';
+import { Check, X, Plus, MoreVertical, Edit2 } from 'lucide-react';
 import type { StudentItemResponse, AccountStatus, AcademicStatus, Course, Department } from '@/types/api';
 import { useAdminList } from '@/hooks/useAdminList';
 import { useDialogState } from '@/hooks/useDialogState';
@@ -32,8 +32,6 @@ export function StudentManagement() {
     items: students,
     isLoading,
     error,
-    filter: statusFilter,
-    setFilter: setStatusFilter,
     refetch,
   } = useAdminList<StudentItemResponse, string | undefined>(
     [QUERY_KEYS.STUDENTS],
@@ -262,7 +260,7 @@ export function StudentManagement() {
     {
       id: 'account_status',
       label: 'Status',
-      defaultValue: statusFilter || 'all',
+      defaultValue: 'all',
       options: [
         { label: 'All', value: 'all' },
         { label: 'Pending', value: 'pending' },

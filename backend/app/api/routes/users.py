@@ -8,7 +8,6 @@ from app.schemas.auth import (
     EmailVerifyOTPRequest,
     NameUpdateRequest, 
     PasswordChangeRequest, 
-    UserIdUpdateRequest, 
     StudentProfileCreateRequest,
     UserPreferencesUpdateRequest
 )
@@ -54,7 +53,7 @@ async def get_my_student_profile(
             "course_id": str(profile.course_id),
             "department_id": str(profile.department_id),
             "year": profile.year,
-            "hostel": profile.hostel,
+            "hostel": profile.room.building.name if (profile.room and profile.room.building) else None,
             "academic_status": profile.academic_status.value if profile.academic_status else None,
         }, error=None)
     except ValueError as e:
@@ -96,24 +95,6 @@ async def update_student_profile(
     except ValueError as e:
         if "not found" in str(e):
             raise HTTPException(status_code=404, detail=str(e))
-        raise HTTPException(status_code=400, detail=str(e))
-
-@router.patch(
-    "/me/user-id",
-    summary="Update User ID",
-    description="Updates the user's User ID (username/roll number).",
-    response_model=APIResponse[dict]
-)
-async def update_user_id(
-    data: UserIdUpdateRequest,
-    current_user: User = Depends(get_current_user),
-    uow: UnitOfWork = Depends(get_uow)
-):
-    service = UserService(uow)
-    try:
-        user = await service.update_user_id(current_user, data.user_id)
-        return APIResponse(success=True, data={"user_id": user.user_id}, error=None)
-    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.patch(

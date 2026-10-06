@@ -12,14 +12,19 @@ async def client() -> AsyncGenerator[httpx.AsyncClient, None]:
         yield ac
 
 async def create_and_approve_student(client: httpx.AsyncClient, email: str, name: str) -> str:
-    # Get course and branch (assuming one exists)
+    # Get course and department
     metadata_res = await client.get(f"{BASE_URL}/api/metadata/courses")
     courses = metadata_res.json()["data"]
     if not courses:
         pytest.fail("No courses found in database. Run seed script first.")
     
+    dept_res = await client.get(f"{BASE_URL}/api/metadata/departments")
+    departments = dept_res.json()["data"]
+    if not departments:
+        pytest.fail("No departments found in database.")
+    
     course_id = courses[0]["id"]
-    branch_id = courses[0]["branches"][0]["id"]
+    department_id = departments[0]["id"]
 
     # Register student
     reg_data = {
@@ -29,6 +34,7 @@ async def create_and_approve_student(client: httpx.AsyncClient, email: str, name
         "user_id": f"STU_{uuid.uuid4().hex[:8].upper()}",
         "phone": "1234567890",
         "course_id": course_id,
+        "department_id": department_id,
         "year": 2024,
         "hostel": "block_a"
     }
@@ -61,7 +67,7 @@ async def create_and_approve_student(client: httpx.AsyncClient, email: str, name
     if student_profile_id:
         approve_res = await client.patch(
             f"{BASE_URL}/api/admin/students/{student_profile_id}/status",
-            json={"status": "approved"},
+            json={"account_status": "active"},
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         assert approve_res.status_code == 200, f"Approval failed: {approve_res.text}"

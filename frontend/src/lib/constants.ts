@@ -108,6 +108,12 @@ export const API_ROUTES = {
   ADMIN_DEPARTMENTS: '/api/admin/departments',
   ADMIN_DEPARTMENT_DETAIL: (id: string) => `/api/admin/departments/${id}`,
 
+  // Gate Pass & Parent Safety Matrix
+  GATE_PASS_QUICK_EXIT: '/api/gate-pass/quick-exit',
+  GATE_PASS_MY_ACTIVE: '/api/gate-pass/my-active',
+  GATE_PASS_SCAN: '/api/gate-pass/scan',
+  PARENT_SAFETY_DASHBOARD: '/api/gate-pass/parent-safety',
+
   // Roles & Permissions
   ROLES: '/api/roles',
   ROLE_TEMPLATES: '/api/roles/templates',
@@ -157,8 +163,11 @@ export const QUERY_KEYS = {
   NOTICES: 'notices',
   NOTICE: 'notice',
   MY_OUTPASSES: 'my-outpasses',
+  MY_GATE_PASS: 'my-gate-pass',
+  PARENT_SAFETY: 'parent-safety',
   OUTPASS: 'outpass',
   ADMIN_OUTPASSES: 'admin-outpasses',
+
   MY_TIMETABLE: 'my-timetable',
   ATTENDANCE_ROSTER: 'attendance-roster',
   MY_ATTENDANCE_STATS: 'my-attendance-stats',

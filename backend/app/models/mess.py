@@ -4,7 +4,12 @@ import datetime
 from sqlalchemy import String, Enum, ForeignKey, Date, Integer, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
 from app.models.base import Base, TimestampMixin, UUIDMixin
+
+if TYPE_CHECKING:
+    from app.models.user import User
+
 
 class MealType(str, enum.Enum):
     breakfast = "breakfast"
@@ -59,3 +64,19 @@ class MessOptOut(Base, UUIDMixin, TimestampMixin):
     __table_args__ = (
         UniqueConstraint('student_id', 'date', 'meal_type', name='uq_mess_optout_student_date_meal'),
     )
+
+
+class MessScanLog(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "mess_scan_logs"
+
+    student_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    date: Mapped[datetime.date] = mapped_column(Date, nullable=False, index=True)
+    meal_type: Mapped[MealType] = mapped_column(Enum(MealType, name="meal_type_enum", create_type=False), nullable=False, index=True)
+    scanned_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    user: Mapped["User"] = relationship("User", foreign_keys=[student_id])
+
+    __table_args__ = (
+        UniqueConstraint('student_id', 'date', 'meal_type', name='uq_mess_scan_student_date_meal'),
+    )
+

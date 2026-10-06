@@ -1,12 +1,11 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { GraduationCap, Loader2, AlertCircle, Eye, EyeOff, Key } from 'lucide-react';
 import { authApi } from '@/api/authApi';
 import type { LoginRequest } from '@/types/api';
 
@@ -16,10 +15,16 @@ interface RegistrationState {
 }
 
 export function Login() {
-  const { login, finishLogin } = useAuth();
+  const { user, login, finishLogin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const regState = (location.state ?? {}) as RegistrationState;
+
+  React.useEffect(() => {
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
   
   const [email, setEmail] = useState(regState.registeredEmail ?? '');
   const [password, setPassword] = useState('');
@@ -88,172 +93,129 @@ export function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-soft px-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-            <GraduationCap className="h-7 w-7" />
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
+      <Card className="w-full max-w-md shadow-card bg-card text-card-foreground border-border rounded-2xl">
+        <CardHeader className="text-center space-y-2 pb-6 border-b border-border">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-md">
+            <GraduationCap className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Synergy CMS</h1>
-          <p className="text-sm text-muted-foreground">
-            Campus Management System
-          </p>
-        </div>
+          <CardTitle className="text-2xl font-bold font-editorial tracking-tight text-foreground">
+            {requires2FA ? 'Two-Factor Authentication' : 'Welcome Back'}
+          </CardTitle>
+          <CardDescription className="text-muted-foreground">
+            {requires2FA ? 'Enter the 6-digit code sent to your email' : 'Sign in to access your BPUT CMS Dashboard'}
+          </CardDescription>
+        </CardHeader>
 
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="text-xl">{requires2FA ? 'Two-Factor Authentication' : 'Sign in'}</CardTitle>
-            <CardDescription>
-              {requires2FA ? 'Enter the 6-digit code sent to your email.' : 'Enter your credentials to access the dashboard'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!requires2FA ? (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+        <CardContent className="pt-6">
+          {error && (
+            <div className="mb-4 p-3.5 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {!requires2FA ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-foreground">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@domain.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  disabled={isLoading}
+                  className="rounded-xl bg-background border-input text-foreground"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-foreground">Password</Label>
+                <div className="relative">
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@synergyinstitute.net"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
-                    autoComplete="email"
+                    autoComplete="current-password"
                     disabled={isLoading}
+                    className="rounded-xl pr-10 bg-background border-input text-foreground"
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      autoComplete="current-password"
-                      disabled={isLoading}
-                      className="pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground"
-                      onClick={() => setShowPassword(!showPassword)}
-                      tabIndex={-1}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                      <span className="sr-only">
-                        {showPassword ? 'Hide password' : 'Show password'}
-                      </span>
-                    </Button>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading || !email || !password}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    'Sign in'
-                  )}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handle2FASubmit} className="space-y-6">
-                <div className="flex justify-center">
-                  <InputOTP 
-                    maxLength={6} 
-                    value={otpCode}
-                    onChange={(val) => setOtpCode(val)}
-                    disabled={isLoading}
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-                
-                {error && (
-                  <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      setRequires2FA(false);
-                      setSessionToken(null);
-                      setOtpCode('');
-                      setError(null);
-                    }}
-                    disabled={isLoading}
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    Back
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isLoading || otpCode.length !== 6}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      'Verify'
-                    )}
-                  </Button>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+              </div>
 
-        {!requires2FA && (
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Don't have an account?</p>
-            <a
-              href="/register"
-              className="font-medium text-primary hover:underline"
-            >
-              Register as a student
-            </a>
-          </div>
-        )}
-      </div>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2.5 rounded-xl transition-all shadow-md"
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Sign In
+              </Button>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/register')}
+                  className="text-xs text-primary hover:underline font-medium"
+                >
+                  Don't have an account? Sign up
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handle2FASubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-foreground">Enter 2FA Code</Label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    maxLength={6}
+                    placeholder="123456"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.trim())}
+                    required
+                    disabled={isLoading}
+                    className="rounded-xl text-center font-mono text-lg tracking-widest bg-background border-input text-foreground pl-10"
+                  />
+                  <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading || otpCode.length !== 6}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2.5 rounded-xl transition-all shadow-md"
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Verify & Login
+              </Button>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setRequires2FA(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

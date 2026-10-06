@@ -33,7 +33,8 @@ async def list_roles(
     response_model=APIResponse[PermissionMatrixResponse]
 )
 async def get_permission_matrix(
-    role_id: UUID = None,
+    role_id: Optional[UUID] = None,
+
     service: RoleService = Depends(get_role_service),
     _ = Depends(require_permission(Perms.ROLE_VIEW))
 ):

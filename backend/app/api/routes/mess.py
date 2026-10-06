@@ -10,6 +10,8 @@ from app.schemas.mess import (
     MessFeedbackCreate,
     MessFeedbackResponse,
     MessOptOutCreate,
+    MessScanRequest,
+    MessScanResponse
 )
 from app.schemas.common import APIResponse
 from app.services.mess_service import MessService
@@ -104,3 +106,22 @@ async def get_analytics_today(
 ) -> Any:
     data = await service.get_analytics_today()
     return APIResponse(success=True, data=data)
+
+@router.post(
+    "/scan",
+    summary="Mess Guard & Staff Digital Meal Pass Verification",
+    description="Mess staff scans student QR code or enters roll number to verify meal pass entitlement, prevent double redemption, check opt-outs, and verify outpass status.",
+    response_model=APIResponse[MessScanResponse]
+)
+async def scan_meal_pass(
+    payload: MessScanRequest,
+    service: MessService = Depends(get_mess_service),
+    current_user: User = Depends(require_permission(Perms.MESS_MANAGE))
+) -> Any:
+    try:
+        async with service.uow.transaction():
+            res = await service.scan_meal_pass(payload, current_user)
+            return APIResponse(success=True, data=res)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

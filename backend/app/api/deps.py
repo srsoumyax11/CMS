@@ -1,4 +1,5 @@
-from typing import Generator, Callable, Set, Dict, Tuple
+from typing import Generator, Callable, Set, Dict, Tuple, Optional
+from uuid import UUID
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 import time
@@ -79,14 +80,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     if payload is None:
         raise credentials_exception
         
-    user_id: str = payload.get("sub")
-    if user_id is None:
+    user_id = payload.get("sub")
+    if not user_id:
         raise credentials_exception
+
         
     # Eager load the profiles and full RBAC tree
     stmt = select(User).options(
         selectinload(User.student_profile),
         selectinload(User.faculty_profile),
+        selectinload(User.staff_profile),
         selectinload(User.role).selectinload(Role.permissions).selectinload(Permission.asset),
         selectinload(User.role).selectinload(Role.permissions).selectinload(Permission.action)
     ).where(User.id == user_id)
@@ -97,6 +100,27 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     if user is None:
         raise credentials_exception
     return user
+
+async def get_department_scope(
+    current_user: User = Depends(get_current_user)
+) -> Optional[UUID]:
+    """
+    Returns the department_id scope for the current user.
+    - Admin (SuperAdmin / Admin): None (unscoped, global visibility).
+    - Faculty / HOD: faculty_profile.department_id
+    - Student: student_profile.department_id
+    - Staff: staff_profile.department_id (if assigned)
+    """
+    if current_user.user_type == UserType.admin:
+        return None
+    if current_user.user_type == UserType.faculty and current_user.faculty_profile:
+        return current_user.faculty_profile.department_id
+    if current_user.user_type == UserType.student and current_user.student_profile:
+        return current_user.student_profile.department_id
+    if current_user.user_type == UserType.staff and getattr(current_user, 'staff_profile', None):
+        return current_user.staff_profile.department_id
+    return None
+
 
 async def get_user_permissions(current_user: User = Depends(get_current_user)) -> Set[str]:
     permissions = set()
@@ -182,14 +206,26 @@ from app.services.attendance_service import AttendanceService
 from app.services.mess_service import MessService
 from app.services.notification_service import NotificationService
 from app.services.metadata_service import MetadataService
-from app.services.role_service import RoleService
 from app.services.complaint_service import ComplaintService
+from app.services.role_service import RoleService
+from app.services.gate_pass_service import GatePassService
+from app.services.parent_link_service import ParentLinkService
+
+
 
 def get_complaint_service(uow: UnitOfWork = Depends(get_uow)) -> ComplaintService:
     return ComplaintService(uow)
 
 def get_outpass_service(uow: UnitOfWork = Depends(get_uow)) -> OutpassService:
     return OutpassService(uow)
+
+def get_gate_pass_service(uow: UnitOfWork = Depends(get_uow)) -> GatePassService:
+    return GatePassService(uow)
+
+def get_parent_link_service(uow: UnitOfWork = Depends(get_uow)) -> ParentLinkService:
+    return ParentLinkService(uow)
+
+
 
 def get_timetable_service(uow: UnitOfWork = Depends(get_uow)) -> TimetableService:
     return TimetableService(uow)

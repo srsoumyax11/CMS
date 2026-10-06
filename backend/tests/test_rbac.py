@@ -1,5 +1,5 @@
 import requests
-from .config import BASE_URL, print_step, FACULTY_EMAIL, FACULTY_PASSWORD, random_suffix
+from .config import BASE_URL, print_step, FACULTY_EMAIL, FACULTY_PASSWORD, STUDENT_EMAIL, random_suffix
 from .state import state
 
 def run_rbac_tests():
@@ -15,7 +15,7 @@ def run_rbac_tests():
     assert r.status_code == 200
     students = r.json()["data"]
     # Find our specific student
-    student_profile = next((s for s in students if s["user_id"] == student_id), None)
+    student_profile = next((s for s in students if s["email"] == STUDENT_EMAIL), None)
     assert student_profile is not None, "Newly registered student not found in pending list"
     profile_id = student_profile["id"]
     print(f"✅ Found student in pending list. Profile ID: {profile_id}")
@@ -38,6 +38,9 @@ def run_rbac_tests():
                        json={"account_status": "active", "status_note": "Welcome!"})
     assert r.status_code == 200
     assert r.json()["data"]["account_status"] == "active"
+    if state.get("room_id"):
+        r_patch = requests.patch(f"{BASE_URL}/admin/students/{profile_id}", headers=admin_headers, json={"room_id": state["room_id"]})
+        assert r_patch.status_code == 200, f"Failed to patch student room_id: {r_patch.text}"
     print("✅ Student approved successfully!")
 
     # ---------------------------------------------------------
@@ -121,18 +124,25 @@ def run_rbac_tests():
     print_step("11. Create Second Student for Privacy Testing")
     student2_email = f"test_student2_{random_suffix}@example.com"
     student2_password = "Securepassword123!"
+    import random
+    reg_no_dynamic2 = f"2302{random.randint(100000, 999999)}"
     register_s2_data = {
         "email": student2_email,
         "password": student2_password,
         "name": "Test Student 2",
-        "user_id": f"STU2{random_suffix.upper()}",
+        "registration_no": reg_no_dynamic2,
+        "roll_no": f"23/CSE/{random.randint(100, 999)}",
         "course_id": course_id,
         "department_id": state["department_id"],
-        "year": 2024,
-        "hostel": "Hostel B"
+        "admission_year": 2024,
+        "current_semester": 1,
+        "section": "A",
+        "year": 1
     }
     r = requests.post(f"{BASE_URL}/auth/register", json=register_s2_data)
-    assert r.status_code == 200
+    if r.status_code != 200:
+        print("S2 Register Error:", r.status_code, r.text)
+    assert r.status_code == 200, f"S2 Register failed: {r.status_code} {r.text}"
     s2_str_id = f"STU2{random_suffix.upper()}"
     
     # Login S2
@@ -146,7 +156,7 @@ def run_rbac_tests():
     # Fetch from Admin Pending list
     r = requests.get(f"{BASE_URL}/admin/students?status=pending", headers=admin_headers)
     students = r.json()["data"]
-    s2_profile = next((s for s in students if s["user_id"] == s2_str_id), None)
+    s2_profile = next((s for s in students if s["email"] == student2_email), None)
     assert s2_profile is not None
     
     # Approve S2

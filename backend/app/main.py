@@ -34,8 +34,21 @@ from app.api.routes import (
     attendance,
     mess,
     notifications,
-    health
+    health,
+    documents,
+    infrastructure,
+    audience_groups,
+    finance,
+    visitors,
+    hostel,
+    applications,
+    gate_pass,
+    parent_link
 )
+
+
+
+
 
 tags_metadata = [
     {
@@ -47,36 +60,28 @@ tags_metadata = [
         "description": "User profile management and metadata.",
     },
     {
-        "name": "Complaints (Student/Public)",
-        "description": "Endpoints for students to raise and track complaints.",
+        "name": "Admin",
+        "description": "SuperAdmin routes for managing users, faculty, and system configuration.",
     },
     {
-        "name": "Complaints (Admin/Faculty)",
-        "description": "Administrative endpoints for resolving and assigning complaints.",
+        "name": "Complaints",
+        "description": "Endpoints for resolving, assigning, raising, and tracking complaints.",
     },
     {
         "name": "Outpasses",
-        "description": "Student endpoints for requesting and tracking gate passes.",
-    },
-    {
-        "name": "Admin Outpasses",
-        "description": "Administrative endpoints for approving, rejecting, and tracking outpasses.",
+        "description": "Endpoints for requesting, tracking, approving, and rejecting outpasses.",
     },
     {
         "name": "Notices",
         "description": "Digital notice board for targeted announcements.",
     },
     {
-        "name": "Admin",
-        "description": "SuperAdmin routes for managing users, faculty, and system configuration.",
+        "name": "Mess",
+        "description": "Endpoints for mess menu, feedback, opt-outs, and analytics.",
     },
     {
-        "name": "Mess (Student/Public)",
-        "description": "Endpoints for student mess feedback and opt-outs.",
-    },
-    {
-        "name": "Mess (Admin)",
-        "description": "Administrative endpoints for mess menu and analytics.",
+        "name": "Documents",
+        "description": "Endpoints for requesting and issuing documents and certificates.",
     }
 ]
 
@@ -107,9 +112,9 @@ async def lifespan(app: FastAPI):
     await close_redis()
 
 app = FastAPI(
-    title="Campus Management System API",
+    title="BPUT Campus Management System API",
     description="""
-A robust, asynchronous REST API powering the Campus Management System (CMS).
+A robust, asynchronous REST API powering the BPUT Campus Management System (BPUT CMS).
 
 ## Security & RBAC
 This API uses a strict Role-Based Access Control (RBAC) engine. 
@@ -127,36 +132,39 @@ Routes are heavily guarded by `require_permission` capabilities and explicit row
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         req_id = str(uuid.uuid4())
-        # Set the correlation ID for this async context
         request_id_var.set(req_id)
         
         start_time = time.time()
         
-        # Log request
-        logger.info(f"Request started: {request.method} {request.url.path}")
+        method_emoji = "📥" if request.method == "GET" else "📤" if request.method == "POST" else "🔄"
+        logger.info(f"{method_emoji} {request.method} {request.url.path}")
         
         try:
             response = await call_next(request)
             process_time = time.time() - start_time
+            ms = round(process_time * 1000, 2)
+            
+            status_emoji = "✅" if response.status_code < 300 else "🟡" if response.status_code < 500 else "🚨"
             logger.info(
-                f"Request completed: {request.method} {request.url.path}",
-                extra={"status_code": response.status_code, "process_time_ms": round(process_time * 1000, 2)}
+                f"{status_emoji} {request.method} {request.url.path}",
+                extra={"status_code": response.status_code, "process_time_ms": ms}
             )
             
-            # Attach correlation ID to response headers
             response.headers["X-Request-ID"] = req_id
             return response
             
         except Exception as e:
             process_time = time.time() - start_time
+            ms = round(process_time * 1000, 2)
             logger.error(
-                f"Request failed: {request.method} {request.url.path}",
-                extra={"process_time_ms": round(process_time * 1000, 2)},
+                f"💥 FAILED {request.method} {request.url.path}",
+                extra={"process_time_ms": ms},
                 exc_info=True
             )
             raise e
 
 app.add_middleware(RequestLoggingMiddleware)
+
 
 # Setup CORS
 app.add_middleware(
@@ -172,6 +180,8 @@ app.include_router(health.router, tags=["System"])
 app.include_router(metadata.router, prefix="/api/metadata", tags=["Metadata"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
+app.include_router(applications.router, prefix="/api", tags=["Applications"])
+
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(roles.router, prefix="/api/roles", tags=["Roles & Permissions"])
 app.include_router(complaints.router, prefix="/api/complaints", tags=["Complaints"])
@@ -181,6 +191,18 @@ app.include_router(timetable.router, prefix="/api/timetable", tags=["Timetable"]
 app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
 app.include_router(mess.router, prefix="/api/mess", tags=["Mess"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
+app.include_router(documents.admin_router, prefix="/api/admin/documents", tags=["Documents (Admin)"])
+app.include_router(infrastructure.router, prefix="/api/infrastructure", tags=["Infrastructure"])
+app.include_router(audience_groups.router, prefix="/api", tags=["Audience Groups"])
+app.include_router(finance.router, prefix="/api/finance", tags=["Finance"])
+app.include_router(visitors.router, prefix="/api/visitors", tags=["Visitors"])
+app.include_router(hostel.router, prefix="/api/hostel", tags=["Hostel"])
+app.include_router(gate_pass.router, prefix="/api", tags=["Quick Gate Pass & Safety Matrix"])
+app.include_router(parent_link.router, prefix="/api", tags=["Parent Guardian Consent & Privacy Matrix"])
+
+
+
 
 from fastapi.staticfiles import StaticFiles
 

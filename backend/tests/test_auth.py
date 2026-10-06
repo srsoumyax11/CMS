@@ -17,7 +17,8 @@ def run_auth_tests():
         "email": STUDENT_EMAIL,
         "password": STUDENT_PASSWORD,
         "name": "Test Student",
-        "year": 2024,
+        "admission_year": 2024,
+        "year": 1,
         "hostel": "Hostel B"
     }
     r = requests.post(f"{BASE_URL}/auth/register", json=bad_reg_data)
@@ -42,16 +43,20 @@ def run_auth_tests():
     assert r.status_code == 400, f"Expected 400 for weak password, got {r.status_code}: {r.text}"
     print("✅ Negative test passed: Weak password caught (400)")
 
-    # Positive Test: Register successful
+    import random
+    reg_no_dynamic = f"2301{random.randint(100000, 999999)}"
     reg_data = {
         "email": STUDENT_EMAIL,
         "password": STUDENT_PASSWORD,
         "name": "Test Student",
-        "user_id": f"STU{random_suffix.upper()}",
+        "registration_no": reg_no_dynamic,
+        "roll_no": f"23/CSE/{random.randint(100, 999)}",
         "course_id": course_id,
         "department_id": state["department_id"],
-        "year": 2024,
-        "hostel": "Hostel A"
+        "admission_year": 2023,
+        "current_semester": 1,
+        "section": "A",
+        "year": 1
     }
     r = requests.post(f"{BASE_URL}/auth/register", json=reg_data)
     if r.status_code != 200:

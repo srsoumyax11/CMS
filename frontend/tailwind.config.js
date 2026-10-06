@@ -18,6 +18,8 @@ export default {
           'Helvetica Neue',
           'sans-serif',
         ],
+        serif: ['Newsreader', 'Playfair Display', 'Georgia', 'Cambria', 'Times New Roman', 'serif'],
+        editorial: ['Newsreader', 'Playfair Display', 'serif'],
       },
       container: {
         center: true,

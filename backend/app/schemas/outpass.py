@@ -36,7 +36,7 @@ class OutpassResponse(BaseModel):
     @computed_field
     def is_overdue(self) -> bool:
         now = datetime.now(timezone.utc)
-        if self.status == OutpassStatus.active:
+        if self.status in [OutpassStatus.active, OutpassStatus.overdue]:
             return now > self.expected_return_time
         if self.status == OutpassStatus.completed and self.actual_return_time:
             return self.actual_return_time > self.expected_return_time

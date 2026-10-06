@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error caught by ErrorBoundary:', error, errorInfo);
+    console.error('Uncaught component error caught by ErrorBoundary:', error, errorInfo);
     this.setState({ errorInfo });
   }
 
@@ -40,27 +40,35 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      const isDev = import.meta.env.DEV;
+
       return (
-        <div className="min-h-[50vh] flex flex-col items-center justify-center p-6 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-4">
-            <AlertTriangle className="h-8 w-8" />
+        <div className="min-h-[400px] w-full flex flex-col items-center justify-center p-8 text-center bg-card border border-border rounded-xl shadow-xs">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-4">
+            <AlertTriangle className="h-7 w-7" />
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground mb-1">
-            Something went wrong
+          <h2 className="text-lg font-semibold tracking-tight text-foreground mb-1">
+            Section Temporarily Unavailable
           </h2>
-          <p className="text-sm text-muted-foreground max-w-md mb-4">
-            {this.state.error?.message || 'An unexpected error occurred while rendering this component.'}
+          <p className="text-xs text-muted-foreground max-w-md mb-6 leading-relaxed">
+            An unexpected error occurred while loading this view. Please try reloading the page. If the problem persists, contact your system administrator.
           </p>
           <div className="flex gap-2">
-            <Button onClick={this.handleReset} className="gap-2">
-              <RefreshCw className="h-4 w-4" />
+            <Button size="sm" onClick={this.handleReset} className="gap-2 rounded-full">
+              <RefreshCw className="h-3.5 w-3.5" />
               Reload Page
             </Button>
           </div>
-          {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
-            <details className="mt-6 text-left max-w-2xl w-full p-4 rounded-lg bg-muted text-xs font-mono overflow-auto max-h-60 border">
-              <summary className="cursor-pointer font-bold text-foreground mb-2">Component Stack Trace</summary>
-              <pre>{this.state.errorInfo.componentStack}</pre>
+
+          {isDev && this.state.error && (
+            <details className="mt-6 text-left max-w-2xl w-full p-4 rounded-lg bg-muted text-xs font-mono border border-border overflow-auto max-h-48">
+              <summary className="cursor-pointer font-semibold text-foreground mb-2 text-xs">
+                Developer Diagnostics (Dev Mode Only)
+              </summary>
+              <div className="text-destructive font-medium mb-1">{this.state.error.message}</div>
+              {this.state.errorInfo?.componentStack && (
+                <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap">{this.state.errorInfo.componentStack}</pre>
+              )}
             </details>
           )}
         </div>

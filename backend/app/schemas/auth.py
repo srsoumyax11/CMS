@@ -8,10 +8,15 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     name: str
-    user_id: str
+    registration_no: Optional[str] = Field(None, pattern=r"^\d{10}$")
+    roll_no: Optional[str] = None
+    user_id: Optional[str] = None
     course_id: uuid.UUID
     department_id: uuid.UUID
-    year: int
+    admission_year: int = Field(default=2024, ge=2000, le=2100)
+    current_semester: int = Field(default=1, ge=1, le=10)
+    section: Optional[str] = Field(default="A")
+    year: int = Field(default=1, ge=1, le=7)
     hostel: Optional[str] = None
     photo_url: Optional[str] = None
 
@@ -43,7 +48,6 @@ class RegisterResponseData(BaseModel):
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: EmailStr
-    user_id: Optional[str] = None
     account_status: AccountStatus
     status_note: Optional[str] = None
     user_type: UserType
@@ -64,9 +68,6 @@ class UserPreferencesUpdateRequest(BaseModel):
 class NameUpdateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
 
-class UserIdUpdateRequest(BaseModel):
-    user_id: str
-
 class StudentProfileCreateRequest(BaseModel):
     course_id: uuid.UUID
     department_id: uuid.UUID
@@ -83,3 +84,24 @@ class EmailUpdateRequest(BaseModel):
 class EmailVerifyOTPRequest(BaseModel):
     otp: str
     session_token: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str
+
+class OpenSignUpRequest(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+
+class VerifySignUpOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    session_token: str
+    name: str
+    password: str
+

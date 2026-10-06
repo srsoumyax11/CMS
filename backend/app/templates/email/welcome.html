@@ -1,16 +1,137 @@
-{% extends "base.html" %}
-
-{% block content %}
-<h2>Welcome to Synergy CMS, {{ name }}! 🎉</h2>
-<p>Your account has been successfully created.</p>
-<p>Here are your registration details:</p>
-<ul>
-    <li><strong>Email:</strong> {{ email }}</li>
-    <li><strong>User ID:</strong> {{ user_id }}</li>
-    <li><strong>Role:</strong> {{ role }}</li>
-</ul>
-<p>You can now log in to the dashboard using your email and password.</p>
-<p style="text-align: center; margin-top: 30px;">
-    <a href="{{ login_url | default('http://localhost:5173/login') }}" class="button">Log In to Dashboard</a>
-</p>
-{% endblock %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to CMS Portal</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 40px 20px;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .header {
+            background-color: #f8fafc;
+            padding: 24px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+        .badge {
+            display: inline-block;
+            background-color: #dcfce7;
+            color: #15803d;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .content {
+            padding: 32px 24px;
+            text-align: center;
+        }
+        h2 {
+            margin-top: 0;
+            font-size: 22px;
+            font-weight: 600;
+            color: #111827;
+        }
+        p {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #4b5563;
+            margin-bottom: 20px;
+        }
+        .account-box {
+            background-color: #f8fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 24px 0;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+        .account-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+        .account-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+        .account-val {
+            color: #0f172a;
+            font-weight: 600;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #0f172a;
+            color: #ffffff !important;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 12px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 16px;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 16px;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="logo">BPUT CMS</h1>
+            <span class="badge">Account Activated</span>
+        </div>
+        <div class="content">
+            <h2>Welcome aboard, {{ name }}! 🎉</h2>
+            <p>Your email address has been verified and your BPUT Campus Management System account is active.</p>
+            
+            <div class="account-box">
+                <div class="account-item">
+                    <span class="account-label">Full Name:</span>
+                    <span class="account-val">{{ name }}</span>
+                </div>
+                <div class="account-item" style="border: none;">
+                    <span class="account-label">Email Address:</span>
+                    <span class="account-val">{{ email }}</span>
+                </div>
+            </div>
+            
+            <p>From your dashboard, you can view your profile and request your account role (Student, Faculty, Staff, or Parent).</p>
+            
+            <a href="http://localhost:5173/dashboard" class="btn">Go to Dashboard →</a>
+        </div>
+        <div class="footer">
+            &copy; 2026 Biju Patnaik University of Technology (BPUT). All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

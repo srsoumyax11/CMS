@@ -30,7 +30,7 @@ class NoticeService:
             count = await self.uow.db.scalar(count_stmt)
             
             result = await self.uow.db.execute(stmt.offset(skip).limit(limit))
-            return result.all(), count or 0
+            return [(row[0], bool(row[1])) for row in result.all()], count or 0
 
         return await self.repo.get_feed_for_user(user_id, user_type, profile, skip, limit)
 
@@ -40,9 +40,24 @@ class NoticeService:
             return None
             
         notice, is_read = row
+
+        if notice.target_audience_group_id:
+            from app.models.audience_group import AudienceGroupMember
+            from sqlalchemy import select, and_
+            stmt = select(AudienceGroupMember.id).where(
+                and_(
+                    AudienceGroupMember.group_id == notice.target_audience_group_id,
+                    AudienceGroupMember.user_id == user_id
+                )
+            )
+            is_member = (await self.uow.db.scalar(stmt)) is not None
+            if not is_member:
+                raise ValueError("You do not have access to this notice")
+            return notice, is_read
         
         # Apply viewing logic
         if user_type == UserType.student:
+
             if not profile:
                 raise ValueError("Student profile not found")
                 
@@ -55,7 +70,8 @@ class NoticeService:
                 can_view = False
             if notice.target_year and notice.target_year != profile.year:
                 can_view = False
-            if notice.target_hostel and notice.target_hostel != profile.hostel:
+            student_hostel = profile.room.building.name if (profile and getattr(profile, 'room', None) and getattr(profile.room, 'building', None)) else None
+            if notice.target_hostel and notice.target_hostel != student_hostel:
                 can_view = False
                 
             if not can_view:
@@ -69,6 +85,9 @@ class NoticeService:
 
     async def mark_as_read(self, notice_id: UUID, user_id: UUID) -> bool:
         async with self.uow.transaction():
+            notice = await self.repo.get_by_id(notice_id)
+            if not notice:
+                raise ValueError("Notice not found")
             return await self.repo.mark_as_read(notice_id, user_id)
 
     async def delete_notice(self, id: UUID, user_id: UUID, has_delete_permission: bool) -> Optional[Notice]:

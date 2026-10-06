@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
+    <h2 style="color: #1e40af; margin-top: 0; margin-bottom: 8px;">☕ Quick Pass Exit Confirmation</h2>
+    <p style="margin: 0; color: #1e3a8a;">Your Ward/Child has temporarily checked out of the college campus.</p>
+</div>
+
+<p>Dear Parent/Guardian,</p>
+
+<p>This is a real-time safety notification from BPUT Campus Security. Your ward <strong>{{ student_name }}</strong> (Roll No: <strong>{{ student_roll }}</strong>) has checked out through the Main Gate for a short casual break.</p>
+
+<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <h4 style="margin-top: 0; color: #334155; margin-bottom: 12px;">Pass Movement Details:</h4>
+    <ul style="padding-left: 20px; margin: 0; color: #475569;">
+        <li><strong>Reason:</strong> {{ reason }}</li>
+        <li><strong>Exit Time:</strong> {{ exit_time }}</li>
+        <li><strong>Expected Return:</strong> <span style="color: #d97706; font-weight: 600;">{{ expected_return_time }}</span> (Max 2 Hours)</li>
+        <li><strong>Pass Code:</strong> <code>{{ pass_code }}</code></li>
+    </ul>
+</div>
+
+<p style="font-size: 14px; color: #64748b;">If you did not authorize this outing or have any safety concerns, you can view the live student safety portal or contact the campus security control room immediately.</p>
+
+<p style="text-align: center; margin-top: 24px;">
+    <a href="{{ portal_url }}" class="button" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: 600;">Open Parent Safety Dashboard</a>
+</p>
+{% endblock %}

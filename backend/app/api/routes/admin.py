@@ -7,11 +7,11 @@ from typing import List, Optional
 
 from app.core.database import get_db
 from app.core.uow import UnitOfWork, get_uow
-from app.api.deps import require_permission
+from app.api.deps import require_permission, require_admin, get_department_scope
 from app.core.permissions import Perms
 from app.core.security import hash_password
 from app.models.user import User, UserType, AccountStatus
-from app.models.profiles import StudentProfile, FacultyProfile
+from app.models.profiles import StudentProfile, FacultyProfile, StaffProfile
 from app.models.rbac import Role
 from app.models.academic import Department, Course
 from app.schemas.common import APIResponse
@@ -23,12 +23,19 @@ from app.schemas.admin import (
     StudentStatusUpdateRequest, StudentItemResponse, StudentAdminUpdateRequest,
     StudentCreateRequest,
     FacultyCreateRequest, FacultyItemResponse,
-    FacultyUpdateRequest, AdminItemResponse,
+    FacultyUpdateRequest, FacultyStatusUpdateRequest, AdminItemResponse,
     DepartmentResponse, DepartmentCreateRequest, DepartmentUpdateRequest,
     OnboardingStatusResponse, OnboardingTask,
     CourseCreateRequest, CourseUpdateRequest, CourseItemResponse,
     SystemSettingResponse, SystemSettingUpdateRequest
 )
+from app.schemas.staff import (
+    StaffCreateRequest,
+    StaffUpdateRequest,
+    StaffStatusUpdateRequest,
+    StaffItemResponse
+)
+
 
 router = APIRouter()
 
@@ -44,29 +51,40 @@ def get_metadata_service(uow: UnitOfWork = Depends(get_uow)) -> MetadataService:
 )
 async def list_students(
     status: Optional[str] = Query(None, description="Filter by account status (pending, active, rejected)"),
+    department_id: Optional[UUID] = Query(None, description="Filter by department"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    scope_dept_id: Optional[UUID] = Depends(get_department_scope),
     service: AdminService = Depends(get_admin_service),
     _ = Depends(require_permission(Perms.STUDENT_PROFILE_LIST))
 ):
-    students, _ = await service.list_students(status=status, skip=skip, limit=limit)
+    effective_dept_id = scope_dept_id if scope_dept_id is not None else department_id
+    students, _ = await service.list_students(status=status, department_id=effective_dept_id, skip=skip, limit=limit)
     items = []
     for s in students:
         profile = s.student_profile
         course = profile.course if profile else None
         dept = profile.department if profile else None
+        hostel_bldg = profile.room.building.name if (profile and profile.room and profile.room.building) else None
         
         items.append(StudentItemResponse(
             id=s.id,
-            user_id=s.user_id,
-            name=s.name,
+            user_id=str(s.id),
+            registration_no=profile.registration_no if profile else "",
+            roll_no=profile.roll_no if profile else None,
+            name=s.name or s.email.split('@')[0],
             email=s.email,
             course_id=course.id if course else None,
-            course_name=course.name if course else "Unknown",
+            course_name=str(course.name) if course else "Unknown",
             department_id=dept.id if dept else None,
-            department_name=dept.name if dept else "Unknown",
+            department_name=str(dept.name) if dept else "Unknown",
+            admission_year=profile.admission_year if profile else 2024,
+            current_semester=profile.current_semester if profile else 1,
+            section=profile.section if profile else "A",
             year=profile.year if profile else 0,
-            hostel=profile.hostel if profile else None,
+            hostel=hostel_bldg,
+            hostel_name=hostel_bldg,
+            room_id=profile.room_id if profile else None,
             account_status=s.account_status,
             academic_status=profile.academic_status if profile else None,
             status_note=s.status_note
@@ -85,10 +103,11 @@ async def create_student(
 ):
     try:
         user = await service.create_student(request, current_user)
-        # Fetch it again to load relationships (or just use fake response for now)
         return APIResponse(success=True, message="Student created", data=StudentItemResponse(
-            id=user.id, user_id=user.user_id, name=user.name, email=user.email,
-            course_name="...", department_name="...", year=request.year,
+            id=user.id, user_id=str(user.id), registration_no=request.registration_no, roll_no=request.roll_no,
+            name=user.name or user.email.split('@')[0], email=user.email,
+            course_name="...", department_name="...", admission_year=request.admission_year,
+            current_semester=request.current_semester, section=request.section, year=request.year,
             account_status=user.account_status
         ))
     except ValueError as e:
@@ -100,9 +119,11 @@ async def get_student(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.STUDENT_PROFILE_VIEW))
 ):
+    from app.models.infrastructure import Room
     stmt = select(User).outerjoin(StudentProfile).options(
         selectinload(User.student_profile).selectinload(StudentProfile.course),
-        selectinload(User.student_profile).selectinload(StudentProfile.department)
+        selectinload(User.student_profile).selectinload(StudentProfile.department),
+        selectinload(User.student_profile).selectinload(StudentProfile.room).selectinload(Room.building)
     ).where(User.id == id, User.user_type == UserType.student)
     result = await db.execute(stmt)
     s = result.scalar_one_or_none()
@@ -112,12 +133,16 @@ async def get_student(
     profile = s.student_profile
     course = profile.course if profile else None
     dept = profile.department if profile else None
+    hostel_bldg = profile.room.building.name if (profile and profile.room and profile.room.building) else None
     
     return APIResponse(success=True, data=StudentItemResponse(
-        id=s.id, user_id=s.user_id, name=s.name, email=s.email,
-        course_id=course.id if course else None, course_name=course.name if course else "Unknown",
-        department_id=dept.id if dept else None, department_name=dept.name if dept else "Unknown",
-        year=profile.year if profile else 0, hostel=profile.hostel if profile else None,
+        id=s.id, user_id=str(s.id), registration_no=profile.registration_no if profile else "",
+        roll_no=profile.roll_no if profile else None, name=s.name or s.email.split('@')[0], email=s.email,
+        course_id=course.id if course else None, course_name=str(course.name) if course else "Unknown",
+        department_id=dept.id if dept else None, department_name=str(dept.name) if dept else "Unknown",
+        admission_year=profile.admission_year if profile else 2024, current_semester=profile.current_semester if profile else 1,
+        section=profile.section if profile else "A", year=profile.year if profile else 0,
+        hostel=hostel_bldg, hostel_name=hostel_bldg, room_id=profile.room_id if profile else None,
         account_status=s.account_status, academic_status=profile.academic_status if profile else None,
         status_note=s.status_note
     ))
@@ -149,41 +174,190 @@ async def update_student_details(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.post("/faculty")
+def map_faculty_response(f: User) -> FacultyItemResponse:
+    profile = f.faculty_profile
+    course = profile.course if profile else None
+    dept = profile.department if profile else None
+    
+    staff_code = f"FAC-2026-{str(f.id).split('-')[0].upper()}"
+
+    return FacultyItemResponse(
+        id=f.id,
+        user_id=staff_code,
+        name=f.name or f.email.split('@')[0],
+        email=f.email,
+        photo_url=f.photo_url,
+        course_id=course.id if course else UUID('00000000-0000-0000-0000-000000000000'),
+        course_name=str(course.name) if course else "Unknown",
+        department_id=dept.id if dept else UUID('00000000-0000-0000-0000-000000000000'),
+        department_name=str(dept.name) if dept else "Unknown",
+        designation=profile.designation if profile else "Unknown",
+        is_hod=False,
+        account_status=f.account_status,
+        employment_status=profile.employment_status if profile else None,
+        status_note=f.status_note
+    )
+
+def map_staff_response(user: User) -> StaffItemResponse:
+    profile = user.staff_profile
+    dept = profile.department if profile else None
+    role = user.role
+    return StaffItemResponse(
+        id=user.id,
+        user_id=str(user.id),
+        name=user.name or user.email.split('@')[0],
+        email=user.email,
+        photo_url=user.photo_url,
+        department_id=dept.id if dept else None,
+        department_name=str(dept.name) if dept else None,
+        designation=profile.designation if profile else "Unknown",
+        role_id=role.id if role else user.role_id,
+        role_name=role.name if role else None,
+        account_status=user.account_status,
+        employment_status=profile.employment_status if profile else None,
+        status_note=user.status_note,
+        created_at=user.created_at
+    )
+
+@router.post(
+    "/faculty", 
+    response_model=APIResponse[FacultyItemResponse]
+)
 async def create_faculty(
     request: FacultyCreateRequest,
     service: AdminService = Depends(get_admin_service),
-    current_user: User = Depends(require_permission(Perms.STUDENT_PROFILE_CREATE))
+    current_user: User = Depends(require_permission(Perms.FACULTY_PROFILE_CREATE))
 ):
     try:
         user = await service.create_faculty(request, current_user)
-        return APIResponse(success=True, message="Faculty created successfully", data={"id": str(user.id)})
+        f = await service.get_faculty(user.id)
+        return APIResponse(success=True, message="Faculty created successfully", data=map_faculty_response(f))
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @router.get("/faculty", response_model=APIResponse[List[FacultyItemResponse]])
 async def list_faculty(
     status: Optional[str] = Query(None),
+    department_id: Optional[UUID] = Query(None, description="Filter by department"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    scope_dept_id: Optional[UUID] = Depends(get_department_scope),
     service: AdminService = Depends(get_admin_service),
-    _ = Depends(require_permission(Perms.FACULTY_PROFILE_LIST))
+    _ = Depends(require_admin)
 ):
-    faculty, _ = await service.list_faculty(status=status, skip=skip, limit=limit)
-    items = []
-    for f in faculty:
-        profile = f.faculty_profile
-        course = profile.course if profile else None
-        dept = profile.department if profile else None
-        items.append(FacultyItemResponse(
-            id=f.id, user_id=f.user_id, name=f.name, email=f.email, photo_url=f.photo_url,
-            course_id=course.id if course else None, course_name=course.name if course else "Unknown",
-            department_id=dept.id if dept else None, department_name=dept.name if dept else "Unknown",
-            designation=profile.designation if profile else "Unknown", is_hod=False,
-            account_status=f.account_status, employment_status=profile.employment_status if profile else None,
-            status_note=f.status_note
-        ))
-    return APIResponse(success=True, data=items)
+    effective_dept_id = scope_dept_id if scope_dept_id is not None else department_id
+    faculty, _ = await service.list_faculty(status=status, department_id=effective_dept_id, skip=skip, limit=limit)
+    return APIResponse(success=True, data=[map_faculty_response(f) for f in faculty])
+
+@router.get("/faculty/{id}", response_model=APIResponse[FacultyItemResponse])
+async def get_faculty(
+    id: UUID,
+    service: AdminService = Depends(get_admin_service),
+    _ = Depends(require_permission(Perms.FACULTY_PROFILE_VIEW))
+):
+    try:
+        f = await service.get_faculty(id)
+        return APIResponse(success=True, data=map_faculty_response(f))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+@router.patch("/faculty/{id}", response_model=APIResponse[FacultyItemResponse])
+async def update_faculty(
+    id: UUID,
+    request: FacultyUpdateRequest,
+    service: AdminService = Depends(get_admin_service),
+    current_user: User = Depends(require_permission(Perms.FACULTY_PROFILE_EDIT))
+):
+    try:
+        await service.update_faculty(id, request, current_user)
+        f = await service.get_faculty(id)
+        return APIResponse(success=True, message="Faculty updated successfully", data=map_faculty_response(f))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.patch("/faculty/{id}/status")
+async def update_faculty_status(
+    id: UUID,
+    request: FacultyStatusUpdateRequest,
+    service: AdminService = Depends(get_admin_service),
+    current_user: User = Depends(require_permission(Perms.FACULTY_PROFILE_EDIT))
+):
+    try:
+        user = await service.update_faculty_status(id, request, current_user)
+        return APIResponse(success=True, message="Faculty status updated successfully", data={"account_status": user.account_status})
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.get("/staff", response_model=APIResponse[List[StaffItemResponse]])
+async def list_staff(
+    status: Optional[str] = Query(None, description="Filter by account status"),
+    department_id: Optional[UUID] = Query(None, description="Filter by department"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    scope_dept_id: Optional[UUID] = Depends(get_department_scope),
+    service: AdminService = Depends(get_admin_service),
+    _ = Depends(require_permission(Perms.STAFF_PROFILE_LIST))
+):
+    effective_dept_id = scope_dept_id if scope_dept_id is not None else department_id
+    staff_members, _ = await service.list_staff(status=status, department_id=effective_dept_id, skip=skip, limit=limit)
+    return APIResponse(success=True, data=[map_staff_response(s) for s in staff_members])
+
+@router.post(
+    "/staff",
+    response_model=APIResponse[StaffItemResponse]
+)
+async def create_staff(
+    request: StaffCreateRequest,
+    service: AdminService = Depends(get_admin_service),
+    current_user: User = Depends(require_permission(Perms.STAFF_PROFILE_CREATE))
+):
+
+    try:
+        user = await service.create_staff(request, current_user)
+        staff = await service.get_staff(user.id)
+        return APIResponse(success=True, message="Staff member created successfully", data=map_staff_response(staff))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.get("/staff/{id}", response_model=APIResponse[StaffItemResponse])
+async def get_staff(
+    id: UUID,
+    service: AdminService = Depends(get_admin_service),
+    _ = Depends(require_permission(Perms.STAFF_PROFILE_VIEW))
+):
+    try:
+        staff = await service.get_staff(id)
+        return APIResponse(success=True, data=map_staff_response(staff))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+@router.patch("/staff/{id}", response_model=APIResponse[StaffItemResponse])
+async def update_staff(
+    id: UUID,
+    request: StaffUpdateRequest,
+    service: AdminService = Depends(get_admin_service),
+    current_user: User = Depends(require_permission(Perms.STAFF_PROFILE_EDIT))
+):
+    try:
+        await service.update_staff(id, request, current_user)
+        staff = await service.get_staff(id)
+        return APIResponse(success=True, message="Staff member updated successfully", data=map_staff_response(staff))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.patch("/staff/{id}/status")
+async def update_staff_status(
+    id: UUID,
+    request: StaffStatusUpdateRequest,
+    service: AdminService = Depends(get_admin_service),
+    current_user: User = Depends(require_permission(Perms.STAFF_PROFILE_EDIT))
+):
+    try:
+        user = await service.update_staff_status(id, request, current_user)
+        return APIResponse(success=True, message="Staff status updated successfully", data={"account_status": user.account_status})
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
 
 @router.put("/users/{user_id}/photo")
 async def admin_upload_user_photo(
@@ -196,7 +370,7 @@ async def admin_upload_user_photo(
     await validate_upload_file(file, max_size_mb=settings.MAX_UPLOAD_FILE_SIZE_MB, allowed_types=["image/jpeg", "image/png", "image/webp"])
     user = await db.get(User, user_id)
     if not user: raise HTTPException(404, "User not found")
-    url = await upload_avatar(file, user.id)
+    url = await upload_avatar(file, str(user.id))
     user.photo_url = url
     await db.commit()
     return APIResponse(success=True, message="Photo uploaded", data={"photo_url": url})
@@ -245,7 +419,9 @@ async def update_department(id: UUID, req: DepartmentUpdateRequest, service: Met
         dept = await service.update_department(str(id), req)
         return APIResponse(success=True, data=DepartmentResponse.model_validate(dept))
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        status_code = status.HTTP_404_NOT_FOUND if "not found" in str(e).lower() else status.HTTP_400_BAD_REQUEST
+        raise HTTPException(status_code=status_code, detail=str(e))
+
 
 @router.delete("/departments/{id}")
 async def delete_department(id: UUID, service: MetadataService = Depends(get_metadata_service), _ = Depends(require_permission(Perms.DEPARTMENT_MANAGE))):
@@ -287,13 +463,13 @@ async def delete_course(id: UUID, service: MetadataService = Depends(get_metadat
 @router.get("/onboarding-status")
 async def get_onboarding_status(db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(func.count(User.id)))
-    has_users = res.scalar() > 1
+    has_users = (res.scalar() or 0) > 1
     res = await db.execute(select(func.count(Role.id)))
-    has_roles = res.scalar() > 2
+    has_roles = (res.scalar() or 0) > 2
     res = await db.execute(select(func.count(Department.id)))
-    has_depts = res.scalar() > 0
+    has_depts = (res.scalar() or 0) > 0
     res = await db.execute(select(func.count(Course.id)))
-    has_courses = res.scalar() > 0
+    has_courses = (res.scalar() or 0) > 0
     
     tasks = [
         OnboardingTask(id="users", title="Create Users", description="Add first users", is_completed=has_users, action_url="/admin/users/create"),

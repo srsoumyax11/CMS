@@ -19,7 +19,21 @@ import type {
   OnboardingStatusResponse,
   Course,
   CourseCreateRequest,
-  CourseUpdateRequest
+  CourseUpdateRequest,
+  AudienceGroup,
+  AudienceGroupCreateRequest,
+  AudienceGroupUpdateRequest,
+  DocumentRequest,
+  DocumentRequestUpdate,
+  Building,
+  BuildingCreateRequest,
+  Room,
+  RoomCreateRequest,
+  VisitorLog,
+  VisitorLogCreate,
+  FeeDue,
+  HostelAllocation,
+  HostelAllocationCreate
 } from '@/types/api';
 
 export const adminApi = {
@@ -98,4 +112,69 @@ export const adminApi = {
   // Onboarding
   getOnboardingStatus: () =>
     client.get<APIResponse<OnboardingStatusResponse>>(API_ROUTES.ADMIN_ONBOARDING_STATUS),
+
+  // ── Audience Groups ──
+  listAudienceGroups: () =>
+    client.get<APIResponse<AudienceGroup[]>>('/api/audience-groups'),
+  createAudienceGroup: (data: AudienceGroupCreateRequest) =>
+    client.post<APIResponse<AudienceGroup>>('/api/audience-groups', data),
+  updateAudienceGroup: (id: string, data: AudienceGroupUpdateRequest) =>
+    client.patch<APIResponse<AudienceGroup>>(`/api/audience-groups/${id}`, data),
+  deleteAudienceGroup: (id: string) =>
+    client.delete<APIResponse<{message: string}>>(`/api/audience-groups/${id}`),
+  syncAudienceGroup: (id: string) =>
+    client.post<APIResponse<AudienceGroup>>(`/api/audience-groups/${id}/sync`, {}),
+
+  // ── Document Requests (Admin) ──
+  listDocumentRequests: (params?: PaginationParams) =>
+    client.get<APIResponse<{total: number; items: DocumentRequest[]}>>('/api/admin/documents/requests', { params }),
+  approveDocumentRequest: (id: string, data: { issued_file_url?: string; admin_notes?: string }) =>
+    client.patch<APIResponse<DocumentRequest>>(`/api/admin/documents/requests/${id}/approve`, data),
+  rejectDocumentRequest: (id: string, data: { rejection_reason: string; admin_notes?: string }) =>
+    client.patch<APIResponse<DocumentRequest>>(`/api/admin/documents/requests/${id}/reject`, data),
+  markDocumentReady: (id: string, data: { issued_file_url: string; admin_notes?: string }) =>
+    client.patch<APIResponse<DocumentRequest>>(`/api/admin/documents/requests/${id}/ready`, data),
+
+  // ── Infrastructure (Buildings & Rooms) ──
+  listBuildings: () =>
+    client.get<APIResponse<Building[]>>('/api/infrastructure/buildings'),
+  createBuilding: (data: BuildingCreateRequest) =>
+    client.post<APIResponse<Building>>('/api/infrastructure/buildings', data),
+  updateBuilding: (id: string, data: Partial<BuildingCreateRequest>) =>
+    client.patch<APIResponse<Building>>(`/api/infrastructure/buildings/${id}`, data),
+  deleteBuilding: (id: string) =>
+    client.delete<APIResponse<{message: string}>>(`/api/infrastructure/buildings/${id}`),
+
+  listRooms: (buildingId?: string) =>
+    client.get<APIResponse<Room[]>>('/api/infrastructure/rooms', { params: buildingId ? { building_id: buildingId } : undefined }),
+  createRoom: (data: RoomCreateRequest) =>
+    client.post<APIResponse<Room>>('/api/infrastructure/rooms', data),
+  updateRoom: (id: string, data: Partial<RoomCreateRequest>) =>
+    client.patch<APIResponse<Room>>(`/api/infrastructure/rooms/${id}`, data),
+  deleteRoom: (id: string) =>
+    client.delete<APIResponse<{message: string}>>(`/api/infrastructure/rooms/${id}`),
+
+  // ── Facilities (Gate Logs) ──
+  listVisitorLogs: (params?: PaginationParams) =>
+    client.get<APIResponse<VisitorLog[]>>('/api/visitors', { params }),
+  createVisitorLog: (data: VisitorLogCreate) =>
+    client.post<APIResponse<VisitorLog>>('/api/visitors/enter', data),
+  markVisitorExit: (id: string) =>
+    client.patch<APIResponse<VisitorLog>>(`/api/visitors/${id}/exit`, {}),
+
+  // ── Facilities (Fee Dues) ──
+  listFeeDues: (params?: PaginationParams) =>
+    client.get<APIResponse<FeeDue[]>>('/api/finance', { params }),
+  createFeeDue: (data: any) =>
+    client.post<APIResponse<FeeDue>>('/api/finance', data),
+  updateFeeDue: (id: string, data: any) =>
+    client.patch<APIResponse<FeeDue>>(`/api/finance/${id}`, data),
+    
+  // ── Hostel Allocations ──
+  listHostelAllocations: (params?: PaginationParams) =>
+    client.get<APIResponse<HostelAllocation[]>>('/api/hostel/allocations', { params }),
+  createHostelAllocation: (data: HostelAllocationCreate) =>
+    client.post<APIResponse<HostelAllocation>>('/api/hostel/allocations', data),
+  vacateHostelRoom: (id: string) =>
+    client.patch<APIResponse<HostelAllocation>>(`/api/hostel/allocations/${id}/vacate`, {}),
 };

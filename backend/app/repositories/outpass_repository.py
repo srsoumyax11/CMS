@@ -40,6 +40,7 @@ class OutpassRepository(GenericRepository[Outpass]):
         self, 
         status: Optional[OutpassStatus] = None, 
         is_overdue: Optional[bool] = None, 
+        department_id: Optional[UUID] = None,
         skip: int = 0, 
         limit: int = 100
     ) -> Tuple[List[Outpass], int]:
@@ -48,6 +49,10 @@ class OutpassRepository(GenericRepository[Outpass]):
             joinedload(Outpass.student).joinedload(User.student_profile).joinedload(StudentProfile.course)
         )
         count_stmt = select(func.count(Outpass.id))
+
+        if department_id is not None:
+            stmt = stmt.join(User, Outpass.student_id == User.id).join(StudentProfile, User.id == StudentProfile.user_id).where(StudentProfile.department_id == department_id)
+            count_stmt = count_stmt.select_from(Outpass).join(User, Outpass.student_id == User.id).join(StudentProfile, User.id == StudentProfile.user_id).where(StudentProfile.department_id == department_id)
         
         if status:
             stmt = stmt.where(Outpass.status == status)
@@ -79,6 +84,8 @@ class OutpassRepository(GenericRepository[Outpass]):
         return items, total
 
     async def get_with_student(self, id: UUID) -> Optional[Outpass]:
-        stmt = select(Outpass).options(selectinload(Outpass.student)).where(Outpass.id == id)
+        stmt = select(Outpass).options(
+            selectinload(Outpass.student).joinedload(User.student_profile)
+        ).where(Outpass.id == id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()

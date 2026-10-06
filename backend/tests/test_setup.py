@@ -20,17 +20,25 @@ def run_setup():
                 res = await conn.execute(text("SELECT id FROM departments LIMIT 1"))
                 d_id = res.scalar()
                 
+                res = await conn.execute(text("SELECT rooms.id, buildings.name FROM rooms JOIN buildings ON rooms.building_id = buildings.id LIMIT 1"))
+                room_row = res.first()
+                
                 # Disable 2FA for superadmin so tests can run without mailpit
                 await conn.execute(text("UPDATE users SET is_2fa_enabled = false WHERE email = 'superadmin@cms.com'"))
                 await conn.commit()
                 
-                return str(c_id), str(d_id)
+                r_id = str(room_row[0]) if room_row else None
+                b_name = str(room_row[1]) if room_row else "Kalam Boys Hostel"
                 
-        course_id, dept_id = asyncio.run(fetch_ids())
-        print(f"Found Course: {course_id} | Dept: {dept_id}")
+                return str(c_id), str(d_id), r_id, b_name
+                
+        course_id, dept_id, room_id, building_name = asyncio.run(fetch_ids())
+        print(f"Found Course: {course_id} | Dept: {dept_id} | Room: {room_id} | Building: {building_name}")
         
         state["course_id"] = course_id
         state["department_id"] = dept_id
+        state["room_id"] = room_id
+        state["building_name"] = building_name
         
     except Exception as e:
         print(f"Failed to connect to database for setup data: {e}")

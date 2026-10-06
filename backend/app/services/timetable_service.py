@@ -17,8 +17,9 @@ class TimetableService:
         if current_user.user_type == UserType.student:
             if not current_user.student_profile:
                 raise ValueError("Student profile not found")
-            sp = current_user.student_profile[0]
+            sp = current_user.student_profile
             return await self.repository.list_by_student_course(sp.course_id, sp.department_id, sp.year)
+
             
         elif current_user.user_type == UserType.faculty:
             return await self.repository.list_by_faculty(current_user.id)
@@ -30,10 +31,13 @@ class TimetableService:
 
     async def create_timetable_slot(self, payload: TimetableSlotCreate) -> TimetableSlot:
         overlapping = await self.repository.get_overlapping(
-            payload.faculty_id, payload.day_of_week, payload.start_time, payload.end_time
+            payload.faculty_id, payload.day_of_week, payload.start_time, payload.end_time, room=payload.room
         )
         if overlapping:
-            raise ValueError("This faculty member is already booked for an overlapping time slot on this day.")
+            if overlapping.faculty_id == payload.faculty_id:
+                raise ValueError("This faculty member is already booked for an overlapping time slot on this day.")
+            else:
+                raise ValueError(f"Room '{payload.room}' is already occupied during this time slot.")
 
         slot = TimetableSlot(**payload.model_dump())
         self.db.add(slot)
@@ -52,13 +56,18 @@ class TimetableService:
         new_day = update_data.get("day_of_week", slot.day_of_week)
         new_start = update_data.get("start_time", slot.start_time)
         new_end = update_data.get("end_time", slot.end_time)
+        new_room = update_data.get("room", slot.room)
 
-        if any(k in update_data for k in ["faculty_id", "day_of_week", "start_time", "end_time"]):
+        if any(k in update_data for k in ["faculty_id", "day_of_week", "start_time", "end_time", "room"]):
             overlapping = await self.repository.get_overlapping(
-                new_faculty, new_day, new_start, new_end, exclude_id=slot_id
+                new_faculty, new_day, new_start, new_end, exclude_id=slot_id, room=new_room
             )
             if overlapping:
-                raise ValueError("This faculty member is already booked for an overlapping time slot on this day.")
+                if overlapping.faculty_id == new_faculty:
+                    raise ValueError("This faculty member is already booked for an overlapping time slot on this day.")
+                else:
+                    raise ValueError(f"Room '{new_room}' is already occupied during this time slot.")
+
 
         for key, value in update_data.items():
             setattr(slot, key, value)

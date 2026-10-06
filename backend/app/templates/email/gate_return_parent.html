@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
+    <h2 style="color: #15803d; margin-top: 0; margin-bottom: 8px;">✅ Safe Return Confirmation</h2>
+    <p style="margin: 0; color: #166534;">Your Ward/Child has safely returned back inside the campus.</p>
+</div>
+
+<p>Dear Parent/Guardian,</p>
+
+<p>This is to confirm that your ward <strong>{{ student_name }}</strong> (Roll No: <strong>{{ student_roll }}</strong>) has safely re-entered the campus through the Main Gate and checked in with campus security.</p>
+
+<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <h4 style="margin-top: 0; color: #334155; margin-bottom: 12px;">Return Summary:</h4>
+    <ul style="padding-left: 20px; margin: 0; color: #475569;">
+        <li><strong>Exit Time:</strong> {{ exit_time }}</li>
+        <li><strong>Actual Return Time:</strong> <span style="color: #16a34a; font-weight: 600;">{{ actual_return_time }}</span></li>
+        <li><strong>Duration Out:</strong> {{ duration_str }}</li>
+        <li><strong>Status:</strong> <span style="background-color: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 12px; font-size: 13px; font-weight: 600;">Safe & Sound</span></li>
+    </ul>
+</div>
+
+<p style="font-size: 14px; color: #64748b;">Thank you for utilizing the BPUT Parent Safety Matrix.</p>
+
+<p style="text-align: center; margin-top: 24px;">
+    <a href="{{ portal_url }}" class="button" style="background-color: #16a34a; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: 600;">View Safety Portal</a>
+</p>
+{% endblock %}

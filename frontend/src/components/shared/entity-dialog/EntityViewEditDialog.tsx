@@ -164,10 +164,10 @@ export function EntityViewEditDialog<T>({
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
                 {mode === 'view'
-                  ? `Viewing comprehensive properties and values for this ${entityName.toLowerCase()}.`
+                  ? `Profile information, assignment, and status details.`
                   : mode === 'edit'
-                  ? `Update the details below and save your changes.`
-                  : `Fill in the required information to create a new ${entityName.toLowerCase()}.`}
+                  ? `Update details and save changes.`
+                  : `Enter information to create a new ${entityName.toLowerCase()}.`}
               </DialogDescription>
             </div>
 

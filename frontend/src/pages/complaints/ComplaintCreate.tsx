@@ -18,7 +18,7 @@ import {
 import { FileUpload } from '@/components/shared/FileUpload';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { ComplaintCategory, ComplaintVisibility } from '@/types/api';
+import type { ComplaintCategory } from '@/types/api';
 
 const categories: { value: ComplaintCategory; label: string }[] = [
   { value: 'electrical', label: 'Electrical' },

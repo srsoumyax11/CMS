@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PERMISSIONS } from '@/config/permissions';
 import { PageHeader } from '@/components/shared/page-header/PageHeader';
@@ -44,7 +44,6 @@ import {
   Loader2,
   Lock,
   Trash2,
-  AlertTriangle,
   Users,
   MoreVertical,
   Edit2,
@@ -217,15 +216,8 @@ export function RolesPermissions() {
   };
 
   const selectedRoleData = roles.find((r) => r.id === selectedRoleId) ?? null;
-  const selectedRoleName = selectedRoleData?.name;
 
-  const currentPermissions = new Set(
-    matrix?.assets.flatMap((a) => a.actions.filter((ac) => ac.granted).map((ac) => ac.id)) || []
-  );
-
-  const activePermissions = draftPermissions !== null ? draftPermissions : currentPermissions;
-
-  const togglePermission = (actionId: string, currentlyGranted: boolean) => {
+  const togglePermission = (actionId: string) => {
     if (selectedRoleData?.name === 'SuperAdmin') return;
     if (selectedRoleData?.is_system_role && !isSuperAdmin) return;
     if (!matrix) return;
@@ -484,7 +476,7 @@ export function RolesPermissions() {
                                 <Checkbox
                                   id={action.id}
                                   checked={isChecked}
-                                  onCheckedChange={() => togglePermission(action.id, action.granted)}
+                                  onCheckedChange={() => togglePermission(action.id)}
                                   disabled={(selectedRoleData?.is_system_role && !isSuperAdmin) || selectedRoleData?.name === 'SuperAdmin'}
                                   className="mt-0.5 h-4 w-4"
                                 />

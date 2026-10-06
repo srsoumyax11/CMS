@@ -64,7 +64,22 @@ class MetadataService:
             existing = await self.dept_repo.get_by_code(data.code)
             if existing:
                 raise ValueError(f"Department code '{data.code}' already exists")
-                
+
+            candidate = None
+            if data.hod_user_id:
+                from app.repositories.user_repository import UserRepository
+                from app.models.user import UserType, AccountStatus
+                from app.models.profiles import EmploymentStatus
+
+                user_repo = UserRepository(self.uow.db)
+                candidate = await user_repo.get_faculty_with_profile(data.hod_user_id)
+                if not candidate or candidate.user_type != UserType.faculty:
+                    raise ValueError("Assigned HOD must be a valid faculty member")
+                if candidate.account_status != AccountStatus.active:
+                    raise ValueError("Assigned HOD account must be active")
+                if not candidate.faculty_profile or candidate.faculty_profile.employment_status != EmploymentStatus.active:
+                    raise ValueError("Assigned HOD must have active employment status")
+
             dept = Department(
                 name=data.name,
                 code=data.code,
@@ -72,7 +87,16 @@ class MetadataService:
                 hod_user_id=data.hod_user_id,
                 is_active=data.is_active
             )
-            return await self.dept_repo.create(dept)
+            created = await self.dept_repo.create(dept)
+            if candidate and candidate.faculty_profile:
+                candidate.faculty_profile.department_id = created.id
+                from app.models.rbac import Role
+                from sqlalchemy import select
+                hod_role = await self.uow.db.scalar(select(Role).where(Role.name == "HOD"))
+                if hod_role:
+                    candidate.role_id = hod_role.id
+
+            return created
 
     async def update_department(self, dept_id: str, data: DepartmentUpdateRequest) -> Department:
         async with self.uow.transaction():
@@ -83,8 +107,36 @@ class MetadataService:
             if data.code: dept.code = data.code
             if data.department_type: dept.department_type = data.department_type
             if data.is_active is not None: dept.is_active = data.is_active
-            if data.hod_user_id: dept.hod_user_id = data.hod_user_id
+
+            if 'hod_user_id' in data.model_fields_set:
+                if data.hod_user_id is None:
+                    dept.hod_user_id = None
+                else:
+                    from app.repositories.user_repository import UserRepository
+                    from app.models.user import UserType, AccountStatus
+                    from app.models.profiles import EmploymentStatus
+                    from app.models.rbac import Role
+                    from sqlalchemy import select
+
+                    user_repo = UserRepository(self.uow.db)
+                    candidate = await user_repo.get_faculty_with_profile(data.hod_user_id)
+                    if not candidate or candidate.user_type != UserType.faculty:
+                        raise ValueError("Assigned HOD must be a valid faculty member")
+                    if candidate.account_status != AccountStatus.active:
+                        raise ValueError("Assigned HOD account must be active")
+                    if not candidate.faculty_profile or candidate.faculty_profile.employment_status != EmploymentStatus.active:
+                        raise ValueError("Assigned HOD must have active employment status")
+                    if str(candidate.faculty_profile.department_id) != str(dept.id):
+                        raise ValueError("Assigned HOD must belong to the target department")
+
+                    dept.hod_user_id = data.hod_user_id
+
+                    hod_role = await self.uow.db.scalar(select(Role).where(Role.name == "HOD"))
+                    if hod_role:
+                        candidate.role_id = hod_role.id
+
             return dept
+
 
     async def delete_department(self, dept_id: str) -> bool:
         async with self.uow.transaction():

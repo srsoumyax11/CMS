@@ -17,18 +17,24 @@ export const ROLE_ROUTES: Record<UserRole, string> = {
   student: '/student',
   faculty: '/faculty',
   admin: '/admin',
+  user: '/user',
+  parent: '/parent',
 };
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   student: 'Student',
   faculty: 'Faculty',
   admin: 'Administrator',
+  user: 'General User',
+  parent: 'Parent',
 };
 
 const SECTION_ORDER: NavSection[] = [
   'Overview',
+  'Academic Management',
   'Campus Operations',
-  'Administration',
+  'Campus Facilities',
+  'Administration & System',
   'Account',
 ];
 
@@ -61,6 +67,8 @@ export const NAV_GROUPS: Record<UserRole, NavGroup[]> = {
   student: buildNavGroupsForRole('student'),
   faculty: buildNavGroupsForRole('faculty'),
   admin: buildNavGroupsForRole('admin'),
+  user: buildNavGroupsForRole('user'),
+  parent: buildNavGroupsForRole('parent'),
 };
 
 /**

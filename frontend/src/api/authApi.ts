@@ -11,7 +11,6 @@ import type {
   RegisterResponseData,
   NameUpdateRequest,
   PasswordChangeRequest,
-  UserIdUpdateRequest,
   StudentProfileCreateRequest,
   UserPreferencesUpdateRequest,
   EmailUpdateRequest,
@@ -58,9 +57,6 @@ export const authApi = {
   updateName: (data: NameUpdateRequest) =>
     client.patch<APIResponse<{ name: string }>>(API_ROUTES.UPDATE_NAME, data),
 
-  updateUserId: (data: UserIdUpdateRequest) =>
-    client.patch<APIResponse<{ user_id: string }>>(API_ROUTES.UPDATE_USER_ID, data),
-
   changePassword: (data: PasswordChangeRequest) =>
     client.post<APIResponse<{ message: string }>>(API_ROUTES.CHANGE_PASSWORD, data),
 
@@ -88,4 +84,11 @@ export const authApi = {
 
   disable2FA: () =>
     client.post<APIResponse<{ message: string }>>('/api/users/me/2fa/disable', {}),
+
+  openSignup: (data: { email: string; password: string; name: string }) =>
+    client.post<APIResponse<{ session_token: string; email: string; message: string }>>('/api/auth/open-signup', data),
+
+  verifySignupOtp: (data: { email: string; otp: string; session_token: string; name: string; password: string }) =>
+    client.post<APIResponse<TokenResponse>>('/api/auth/verify-signup-otp', data),
 };
+

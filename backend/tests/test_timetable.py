@@ -1,4 +1,5 @@
 import requests
+import random
 from datetime import datetime, timezone
 from .config import BASE_URL, print_step
 from .state import state
@@ -10,18 +11,19 @@ def run_timetable_tests():
     fac_id = state["faculty_uuid"]
     
     now = datetime.now(timezone.utc)
+    test_room = f"Room {random.randint(100, 999)}"
 
     print_step("30. POST /api/timetable (Admin creates Timetable Slot)")
     slot_data = {
         "course_id": course_id,
         "department_id": state.get("department_id"),
-        "year": 2024,
+        "year": 1,
         "subject_name": "Database Systems",
         "faculty_id": fac_id,
         "day_of_week": now.strftime("%A").lower(), 
         "start_time": "10:00:00",
         "end_time": "11:00:00",
-        "room": "Room 101"
+        "room": test_room
     }
 
     ts_stud = requests.post(f"{BASE_URL}/timetable", headers=student_headers, json=slot_data)
@@ -42,3 +44,4 @@ def run_timetable_tests():
     overlap_res = requests.post(f"{BASE_URL}/timetable", headers=admin_headers, json=overlap_slot_data)
     assert overlap_res.status_code == 400
     print("✅ Double-booking bug successfully caught.")
+

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
+    <h2 style="color: #b91c1c; margin-top: 0; margin-bottom: 8px;">🚨 URGENT: Campus Gate Overdue Alert</h2>
+    <p style="margin: 0; color: #991b1b;">Student has exceeded expected casual gate pass duration without checking back in.</p>
+</div>
+
+<p>Dear Parent/Guardian,</p>
+
+<p><strong style="color: #dc2626;">ALERT:</strong> Your ward <strong>{{ student_name }}</strong> (Roll No: <strong>{{ student_roll }}</strong>) checked out on a casual gate pass at <strong>{{ exit_time }}</strong> and was scheduled to return by <strong>{{ expected_return_time }}</strong>.</p>
+
+<p>As of now, campus security has not registered their re-entry, and the pass status is officially marked as <strong>OVERDUE</strong>.</p>
+
+<div style="background-color: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <h4 style="margin-top: 0; color: #9f1239; margin-bottom: 12px;">Automated Security Actions Taken:</h4>
+    <ul style="padding-left: 20px; margin: 0; color: #881337;">
+        <li>Hostel Warden & Campus Security Team notified.</li>
+        <li>Student's registered mobile line queued for check-in call.</li>
+        <li>Pass Code: <code>{{ pass_code }}</code></li>
+    </ul>
+</div>
+
+<p style="font-size: 14px; color: #475569;">Please contact your ward or call the Campus Security Control Desk directly.</p>
+
+<p style="text-align: center; margin-top: 24px;">
+    <a href="{{ portal_url }}" class="button" style="background-color: #dc2626; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: 600;">Open Safety Portal Immediately</a>
+</p>
+{% endblock %}

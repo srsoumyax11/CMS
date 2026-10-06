@@ -13,6 +13,7 @@ class TimetableSlotBase(BaseModel):
     start_time: time
     end_time: time
     room: Optional[str] = None
+    room_id: Optional[UUID] = None
 
 class TimetableSlotCreate(TimetableSlotBase):
     @model_validator(mode="after")
@@ -31,6 +32,7 @@ class TimetableSlotUpdate(BaseModel):
     start_time: Optional[time] = None
     end_time: Optional[time] = None
     room: Optional[str] = None
+    room_id: Optional[UUID] = None
     
     @model_validator(mode="after")
     def check_time(self) -> 'TimetableSlotUpdate':

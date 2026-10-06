@@ -84,3 +84,18 @@ class MessRepository:
         
         res = await self.db.execute(stmt)
         return res.all()
+
+    async def get_scan_log(self, student_id: Any, date: datetime.date, meal_type: str) -> Optional[Any]:
+        from app.models.mess import MessScanLog
+        stmt = select(MessScanLog).where(
+            MessScanLog.student_id == student_id,
+            MessScanLog.date == date,
+            MessScanLog.meal_type == meal_type
+        )
+        res = await self.db.execute(stmt)
+        return res.scalar_one_or_none()
+
+    async def add_scan_log(self, scan_log: Any) -> None:
+        self.db.add(scan_log)
+        await self.db.flush()
+

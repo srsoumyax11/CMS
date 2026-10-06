@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import Column, String, ForeignKey, Text, Enum, DateTime
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.models.base import Base, TimestampMixin, UUIDMixin
 
 class ComplaintCategory(str, enum.Enum):
@@ -30,27 +30,33 @@ class Complaint(Base, UUIDMixin, TimestampMixin):
 
     raised_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
-    category = Column(Enum(ComplaintCategory, name="complaint_category_enum", create_type=True), nullable=False, index=True)
+    category: Mapped[ComplaintCategory] = mapped_column(Enum(ComplaintCategory, name="complaint_category_enum", create_type=True), nullable=False, index=True)
     location_hostel = Column(String, nullable=False, index=True)
     location_room = Column(String, nullable=True, index=True)
+    building_id = Column(UUID(as_uuid=True), ForeignKey("buildings.id", ondelete="SET NULL"), nullable=True, index=True)
+    room_id = Column(UUID(as_uuid=True), ForeignKey("rooms.id", ondelete="SET NULL"), nullable=True, index=True)
     description = Column(Text, nullable=False)
     photo_url = Column(String, nullable=True)
     
-    visibility = Column(Enum(ComplaintVisibility, name="complaint_visibility_enum", create_type=True), nullable=False, default=ComplaintVisibility.public)
-    status = Column(Enum(ComplaintStatus, name="complaint_status_enum", create_type=True), nullable=False, default=ComplaintStatus.open, index=True)
-    
+    visibility: Mapped[ComplaintVisibility] = mapped_column(Enum(ComplaintVisibility, name="complaint_visibility_enum", create_type=True), nullable=False, default=ComplaintVisibility.public)
+    status: Mapped[ComplaintStatus] = mapped_column(Enum(ComplaintStatus, name="complaint_status_enum", create_type=True), nullable=False, default=ComplaintStatus.open, index=True)
+
     assigned_to = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    
+
     # Relationships
     raiser = relationship("User", foreign_keys=[raised_by], backref="raised_complaints")
     assignee = relationship("User", foreign_keys=[assigned_to], backref="assigned_complaints")
+    building = relationship("Building", foreign_keys=[building_id])
+    room = relationship("Room", foreign_keys=[room_id])
     status_logs = relationship("ComplaintStatusLog", back_populates="complaint", cascade="all, delete-orphan", order_by="ComplaintStatusLog.created_at")
 
 class ComplaintStatusLog(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "complaint_status_logs"
 
     complaint_id = Column(UUID(as_uuid=True), ForeignKey("complaints.id", ondelete="CASCADE"), nullable=False)
-    status = Column(Enum(ComplaintStatus, name="complaint_status_enum", create_type=False), nullable=False)
+    status: Mapped[ComplaintStatus] = mapped_column(Enum(ComplaintStatus, name="complaint_status_enum", create_type=False), nullable=False)
+
+
     changed_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     note = Column(Text, nullable=True)
     

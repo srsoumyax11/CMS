@@ -14,9 +14,11 @@ class NoticeResponse(BaseModel):
     target_year: Optional[int] = None
     target_hostel: Optional[str] = None
     target_user_types: Optional[str] = None
+    target_audience_group_id: Optional[UUID] = None
     is_read: bool = False
     created_at: datetime
     updated_at: datetime
+
 
     model_config = ConfigDict(from_attributes=True)
 

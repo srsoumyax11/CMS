@@ -5,6 +5,7 @@ import { complaintsApi } from '@/api/complaintsApi';
 import { outpassesApi } from '@/api/outpassesApi';
 import { adminApi } from '@/api/adminApi';
 import { StatCard } from '@/components/shared/StatCard';
+import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import { OnboardingWidget } from '@/components/admin/OnboardingWidget';
 import {
   Megaphone,
@@ -16,6 +17,8 @@ import {
   Activity,
   AlertTriangle,
   Clock,
+  LayoutDashboard,
+  UserCheck,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -34,12 +37,12 @@ const adminModules: {
   desc: string;
   path: string;
 }[] = [
+  { icon: UserCheck, label: 'Role Requests', desc: 'Approve applications', path: '/admin/role-applications' },
   { icon: Megaphone, label: 'Notices', desc: 'Manage announcements', path: '/admin/notices' },
   { icon: ClipboardList, label: 'Complaints', desc: 'Resolve issues', path: '/admin/complaints' },
   { icon: CheckSquare, label: 'Outpasses', desc: 'Approve requests', path: '/admin/outpasses' },
   { icon: Users, label: 'Users', desc: 'Manage students', path: '/admin/users' },
   { icon: ShieldCheck, label: 'Permissions', desc: 'Access control', path: '/admin/permissions' },
-  { icon: UtensilsCrossed, label: 'Mess', desc: 'Menus & schedules', path: '/admin/mess' },
 ];
 
 export function AdminDashboard() {
@@ -88,16 +91,12 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">
-          Admin Overview
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Real-time campus operational intelligence.
-        </p>
-      </div>
+      <PageHeader
+        title="Admin Overview"
+        description="Real-time campus operational intelligence."
+        icon={LayoutDashboard}
+      />
 
-      <OnboardingWidget />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard

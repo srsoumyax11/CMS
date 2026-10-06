@@ -36,7 +36,7 @@ export function PageHeader({
   badge,
   actions,
   breadcrumbs,
-  showBreadcrumbs = true,
+  showBreadcrumbs = false,
   className,
 }: PageHeaderProps) {
   const location = useLocation();

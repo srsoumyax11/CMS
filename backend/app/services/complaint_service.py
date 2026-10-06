@@ -35,16 +35,23 @@ class ComplaintService:
         filters = {"visibility": ComplaintVisibility.public}
         return await self.repo.list(filters=filters, skip=skip, limit=limit, order_by=Complaint.created_at.desc())
         
-    async def get_all_complaints(self, status: Optional[ComplaintStatus] = None, category: Optional[ComplaintCategory] = None, hostel: Optional[str] = None, skip: int = 0, limit: int = 100) -> Tuple[List[Complaint], int]:
-        filters = {}
-        if status:
-            filters["status"] = status
-        if category:
-            filters["category"] = category
-        if hostel:
-            filters["location_hostel"] = hostel
-            
-        return await self.repo.list(filters=filters, skip=skip, limit=limit, order_by=Complaint.created_at.desc())
+    async def get_all_complaints(
+        self, 
+        status: Optional[ComplaintStatus] = None, 
+        category: Optional[ComplaintCategory] = None, 
+        hostel: Optional[str] = None, 
+        department_id: Optional[UUID] = None,
+        skip: int = 0, 
+        limit: int = 100
+    ) -> Tuple[List[Complaint], int]:
+        return await self.repo.list_all(
+            status=status,
+            category=category,
+            hostel=hostel,
+            department_id=department_id,
+            skip=skip,
+            limit=limit
+        )
 
     async def get_complaint(self, id: UUID) -> Optional[Complaint]:
         return await self.repo.get_by_id(id)

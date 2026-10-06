@@ -4,18 +4,26 @@ export const studentCreateSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  registration_no: z.string().regex(/^\d{10}$/, 'BPUT Registration Number must be exactly 10 digits'),
+  roll_no: z.string().optional(),
   department_id: z.string().min(1, 'Department is required'),
   course_id: z.string().min(1, 'Course is required'),
-  year: z.coerce.number().int().min(1).max(5),
-  hostel: z.string().optional(),
+  admission_year: z.coerce.number().int().min(2000).max(2100).default(2024),
+  current_semester: z.coerce.number().int().min(1).max(10).default(1),
+  section: z.string().optional().default('A'),
+  year: z.coerce.number().int().min(1).max(5).default(1),
 });
 
 export const studentUpdateSchema = z.object({
   name: z.string().min(2, 'Name is required').optional(),
+  registration_no: z.string().regex(/^\d{10}$/, 'BPUT Registration Number must be exactly 10 digits').optional(),
+  roll_no: z.string().optional(),
   department_id: z.string().optional(),
   course_id: z.string().optional(),
+  admission_year: z.coerce.number().int().min(2000).max(2100).optional(),
+  current_semester: z.coerce.number().int().min(1).max(10).optional(),
+  section: z.string().optional(),
   year: z.coerce.number().int().min(1).max(5).optional(),
-  hostel: z.string().optional(),
 });
 
 export const complaintCreateSchema = z.object({

@@ -19,10 +19,19 @@ class AttendanceBatchRequest(BaseModel):
             raise ValueError("date cannot be in the future")
         return v
 
+class AttendanceRosterStudentResponse(BaseModel):
+    student_id: UUID
+    name: str
+    roll_number: str
+
 class AttendanceStatsResponse(BaseModel):
     subject_name: str
+    total_classes: int
+    attended: int
+    percentage: int
     present: int
     absent: int
     late: int
     excused: int
     total: int
+

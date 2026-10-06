@@ -59,16 +59,14 @@ def upgrade() -> None:
             """))
 
     # ==========================================
-    # 3. SYSTEM ROLES
+    # 3. SYSTEM ROLES (5 Core Roles)
     # ==========================================
     system_roles = [
-        ('SuperAdmin', 'Unrestricted administrative access to all system modules.'),
-        ('Admin', 'Administrative access excluding role management.'),
-        ('HOD', 'Head of Department - administrative access within a specific department.'),
-        ('Faculty', 'Default role for all active teaching staff members'),
-        ('Non-Teaching Staff', 'Role for administrative and technical support staff (e.g., Lab Assistants)'),
-        ('Support Staff', 'Role for maintenance, facilities, and general workers'),
-        ('Student', 'Default role for all enrolled students')
+        ('Admin', 'Full administrative and system management access.'),
+        ('Faculty', 'Teaching staff and academic management.'),
+        ('Student', 'Default role for all enrolled students.'),
+        ('Parent', 'Linked parent/guardian access.'),
+        ('Staff', 'Administrative, technical, and facility support staff.')
     ]
     
     for r_name, r_desc in system_roles:
@@ -81,23 +79,11 @@ def upgrade() -> None:
     # ==========================================
     # 4. ROLE PERMISSIONS ASSIGNMENTS
     # ==========================================
-    # SuperAdmin: Gets ALL permissions
+    # Admin: Gets ALL permissions
     conn.execute(text("""
         INSERT INTO role_permissions (role_id, permission_id)
         SELECT r.id, p.id FROM roles r, permissions p
-        WHERE r.name = 'SuperAdmin'
-        ON CONFLICT DO NOTHING;
-    """))
-    
-    # Admin: Gets all permissions EXCEPT role management (create, edit, delete on 'role' asset)
-    conn.execute(text("""
-        INSERT INTO role_permissions (role_id, permission_id)
-        SELECT r.id, p.id 
-        FROM roles r, permissions p
-        JOIN assets ast ON p.asset_id = ast.id
-        JOIN actions a ON p.action_id = a.id
-        WHERE r.name = 'Admin' 
-        AND NOT (ast.name = 'role' AND a.code IN ('create', 'edit', 'delete'))
+        WHERE r.name = 'Admin'
         ON CONFLICT DO NOTHING;
     """))
 
@@ -134,7 +120,8 @@ def upgrade() -> None:
         ("outpass", ["view", "list", "approve", "reject"]),
         ("timetable", ["view"]),
         ("attendance", ["view", "mark"]),
-        ("mess", ["view", "feedback"])
+        ("mess", ["view", "feedback"]),
+        ("department", ["manage", "view"])
     ]
     
     for asset, acts in faculty_perms:
@@ -149,23 +136,6 @@ def upgrade() -> None:
                 ON CONFLICT DO NOTHING;
             """))
 
-    # HOD Permissions (Faculty Perms + Department Management)
-    hod_perms = faculty_perms + [
-        ("department", ["manage", "view"])
-    ]
-    
-    for asset, acts in hod_perms:
-        for act in acts:
-            conn.execute(text(f"""
-                INSERT INTO role_permissions (role_id, permission_id)
-                SELECT r.id, p.id 
-                FROM roles r, permissions p
-                JOIN assets ast ON p.asset_id = ast.id
-                JOIN actions a ON p.action_id = a.id
-                WHERE r.name = 'HOD' AND ast.name = '{asset}' AND a.code = '{act}'
-                ON CONFLICT DO NOTHING;
-            """))
-
     # ==========================================
     # 5. DEFAULT SUPER ADMIN USER
     # ==========================================
@@ -176,7 +146,7 @@ def upgrade() -> None:
         text("""
             INSERT INTO users (id, email, hashed_password, account_status, user_type, name, user_id, email_notifications, in_app_alerts, role_id)
             SELECT gen_random_uuid(), :email, :password, 'active', 'admin', 'Super Admin', 'superadmin', true, true, r.id
-            FROM roles r WHERE r.name = 'SuperAdmin'
+            FROM roles r WHERE r.name = 'Admin'
             ON CONFLICT (email) DO UPDATE SET user_id = 'superadmin', hashed_password = :password, role_id = EXCLUDED.role_id;
         """),
         {"email": super_email, "password": super_password}

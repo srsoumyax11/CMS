@@ -8,11 +8,16 @@ from app.schemas.auth import (
     RegisterRequest, 
     LoginRequest, 
     TokenResponse, 
-    RefreshTokenRequest, 
+    RefreshTokenRequest,
     RefreshTokenResponse,
     UserResponse,
-    EmailVerifyOTPRequest
+    EmailVerifyOTPRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    OpenSignUpRequest,
+    VerifySignUpOTPRequest
 )
+
 from app.schemas.common import APIResponse
 from app.services.auth_service import AuthService
 
@@ -20,16 +25,6 @@ router = APIRouter()
 
 def get_auth_service(uow: UnitOfWork = Depends(get_uow)) -> AuthService:
     return AuthService(uow)
-
-@router.get(
-    "/check-username",
-    summary="Check Username Availability",
-    description="Checks if a user_id is available for registration.",
-    response_model=APIResponse[bool]
-)
-async def check_username(user_id: str, service: AuthService = Depends(get_auth_service)):
-    is_available = await service.check_username(user_id)
-    return APIResponse(success=True, data=is_available, error=None)
 
 @router.get(
     "/check-email",
@@ -40,6 +35,57 @@ async def check_username(user_id: str, service: AuthService = Depends(get_auth_s
 async def check_email(email: str, service: AuthService = Depends(get_auth_service)):
     is_available = await service.check_email(email)
     return APIResponse(success=True, data=is_available, error=None)
+
+@router.post(
+    "/open-signup",
+    summary="Open Registration Step 1: Send Verification OTP",
+    description="Validates email/password and sends a 6-digit verification code to the email address.",
+    response_model=APIResponse[dict]
+)
+async def open_signup(
+    data: OpenSignUpRequest,
+    background_tasks: BackgroundTasks,
+    service: AuthService = Depends(get_auth_service)
+):
+    try:
+        session_token = await service.request_signup_otp(data.email, data.password, data.name, background_tasks)
+        return APIResponse(
+            success=True,
+            data={"session_token": session_token, "email": data.email, "message": "Verification OTP sent to email"},
+            error=None
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post(
+    "/verify-signup-otp",
+    summary="Open Registration Step 2: Verify OTP & Create Account",
+    description="Verifies the OTP code, creates an active base user account, and returns JWT tokens for automatic login.",
+    response_model=APIResponse[TokenResponse]
+)
+async def verify_signup_otp(
+    data: VerifySignUpOTPRequest,
+    background_tasks: BackgroundTasks,
+    service: AuthService = Depends(get_auth_service)
+):
+    try:
+        new_user, access_token, refresh_token = await service.verify_signup_otp(
+            data.email, data.otp, data.session_token, data.password, data.name, background_tasks
+        )
+        return APIResponse(
+            success=True,
+            data=TokenResponse(
+                access_token=access_token,
+                refresh_token=refresh_token,
+                user_type=new_user.user_type,
+                account_status=new_user.account_status,
+                academic_status=None,
+                employment_status=None
+            ),
+            error=None
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post(
     "/register", 
@@ -69,6 +115,7 @@ async def register(
         ), 
         error=None
     )
+
 
 
 @router.post(
@@ -167,11 +214,12 @@ async def verify_2fa_login(
     user_id = payload.get("sub")
     otp_hash = payload.get("otp_hash")
     
-    if not verify_password(data.otp, otp_hash):
+    if not user_id or not otp_hash or not verify_password(data.otp, str(otp_hash)):
         raise HTTPException(status_code=400, detail="Incorrect 2FA code.")
         
     # We can just fetch user with profiles using repo inside service
-    user = await service.repo.get_by_id_with_profiles(user_id)
+    from uuid import UUID
+    user = await service.repo.get_by_id_with_profiles(UUID(user_id))
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
         
@@ -216,10 +264,55 @@ async def refresh_token(
         raise HTTPException(status_code=400, detail=str(e))
     
     return APIResponse(
-        success=True, 
+        success=True,
         data=RefreshTokenResponse(access_token=new_access_token), 
         error=None
     )
+
+
+@router.post(
+    "/logout",
+    summary="Logout User",
+    description="Revokes the provided refresh token.",
+    response_model=APIResponse[None]
+)
+async def logout(
+    data: RefreshTokenRequest,
+    service: AuthService = Depends(get_auth_service)
+):
+    await service.logout(data.refresh_token)
+    return APIResponse(success=True, message="Successfully logged out")
+
+@router.post(
+    "/forgot-password",
+    summary="Forgot Password",
+    description="Sends an OTP to the user's email if the account exists.",
+    response_model=APIResponse[None]
+)
+async def forgot_password(
+    data: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    service: AuthService = Depends(get_auth_service)
+):
+    await service.forgot_password(data.email, background_tasks)
+    return APIResponse(success=True, message="If an account exists, an OTP has been sent.")
+
+@router.post(
+    "/reset-password",
+    summary="Reset Password",
+    description="Verifies the OTP and resets the user's password.",
+    response_model=APIResponse[None]
+)
+async def reset_password(
+    data: ResetPasswordRequest,
+    service: AuthService = Depends(get_auth_service)
+):
+    try:
+        await service.reset_password(data.email, data.otp, data.new_password)
+        return APIResponse(success=True, message="Password reset successfully")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 
 @router.get(
@@ -244,7 +337,6 @@ async def get_me(current_user: User = Depends(get_current_user)):
         data=UserResponse(
             id=current_user.id,
             email=current_user.email,
-            user_id=current_user.user_id,
             account_status=current_user.account_status,
             status_note=current_user.status_note,
             user_type=current_user.user_type,

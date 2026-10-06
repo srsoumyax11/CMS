@@ -8,6 +8,8 @@ class ComplaintCreateRequest(BaseModel):
     category: ComplaintCategory
     location_hostel: str
     location_room: Optional[str] = None
+    building_id: Optional[UUID] = None
+    room_id: Optional[UUID] = None
     description: str
     visibility: ComplaintVisibility = ComplaintVisibility.public
     
@@ -25,7 +27,9 @@ class ComplaintResponse(BaseModel):
     raised_by: UUID
     category: ComplaintCategory
     location_hostel: str
-    location_room: Optional[str]
+    location_room: Optional[str] = None
+    building_id: Optional[UUID] = None
+    room_id: Optional[UUID] = None
     description: str
     photo_url: Optional[str] # Will be a signed URL
     visibility: ComplaintVisibility

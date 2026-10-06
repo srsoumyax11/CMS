@@ -1,4 +1,5 @@
 from typing import Optional, Dict, Any
+import uuid
 from uuid import UUID
 from fastapi import UploadFile, BackgroundTasks
 import random
@@ -13,7 +14,6 @@ from app.models.profiles import StudentProfile, AcademicStatus
 from app.models.academic import Course, Department
 from app.schemas.auth import (
     StudentProfileCreateRequest, 
-    UserIdUpdateRequest, 
     NameUpdateRequest, 
     PasswordChangeRequest,
     EmailUpdateRequest,
@@ -51,10 +51,10 @@ class UserService:
                 
             profile = StudentProfile(
                 user_id=current_user.id,
+                registration_no=f"230123{str(uuid.uuid4().int)[:4]}",
                 course_id=data.course_id,
                 department_id=data.department_id,
                 year=data.year,
-                hostel=data.hostel.strip().lower() if data.hostel else None,
                 academic_status=AcademicStatus.enrolled
             )
             return await self.repo.add_student_profile(profile)
@@ -77,24 +77,7 @@ class UserService:
             profile.course_id = data.course_id
             profile.department_id = data.department_id
             profile.year = data.year
-            profile.hostel = data.hostel.strip().lower() if data.hostel else None
             return profile
-
-    async def update_user_id(self, current_user: User, new_user_id: str) -> User:
-        async with self.uow.transaction():
-            user = await self.repo.get_by_id(current_user.id)
-            if not user:
-                raise ValueError("User not found")
-            
-            try:
-                user.user_id = new_user_id
-                await self.uow.db.flush()
-                return user
-            except IntegrityError as e:
-                error_msg = str(e.orig).lower() if e.orig else ""
-                if "users_user_id_key" in error_msg or "user_id" in error_msg:
-                    raise ValueError("User ID is already taken")
-                raise ValueError("Database Integrity Error")
 
     async def update_profile_name(self, current_user: User, new_name: str) -> User:
         async with self.uow.transaction():

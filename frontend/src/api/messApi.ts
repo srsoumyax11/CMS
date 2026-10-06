@@ -8,6 +8,20 @@ import type {
   MessOptOutCreate,
 } from '@/types/api';
 
+export interface MessScanRequest {
+  student_identifier: string;
+  meal_type: 'breakfast' | 'lunch' | 'snacks' | 'dinner';
+}
+
+export interface MessScanResponse {
+  success: boolean;
+  message: string;
+  student_name?: string;
+  student_roll?: string;
+  meal_type: string;
+  scanned_at: string;
+}
+
 export const messApi = {
   // Student/Public
   getMenuToday: () =>
@@ -28,10 +42,14 @@ export const messApi = {
   cancelOptOut: (data: MessOptOutCreate) =>
     client.delete<APIResponse<MessOptOutCreate>>(API_ROUTES.MESS_OPTOUT, { data }),
 
-  // Admin
+  // Admin / Guard Scan
+  scanMealPass: (data: MessScanRequest) =>
+    client.post<APIResponse<MessScanResponse>>('/api/mess/scan', data),
+
   createOrUpdateMenu: (data: MessMenuCreate) =>
     client.post<APIResponse<MessMenu>>(API_ROUTES.ADMIN_MESS_MENU, data),
 
   getAnalyticsToday: () =>
     client.get<APIResponse<Record<string, unknown>>>(API_ROUTES.ADMIN_MESS_ANALYTICS_TODAY),
 };
+

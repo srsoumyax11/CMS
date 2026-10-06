@@ -7,7 +7,7 @@ from typing import Optional, List
 import magic
 from app.core.config import settings
 
-async def validate_password(password: str, db: AsyncSession = None) -> None:
+async def validate_password(password: str, db: Optional[AsyncSession] = None) -> None:
     """
     Validates a password against standard rules.
     Raises HTTPException 400 if validation fails.

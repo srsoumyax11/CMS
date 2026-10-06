@@ -51,9 +51,10 @@ class GenericRepository(Generic[T]):
         
         # Paginate
         result = await self.db.execute(stmt.offset(skip).limit(limit))
-        items = result.scalars().all()
+        items = list(result.scalars().all())
         
         return items, count or 0
+
 
     async def create(self, obj_in: T) -> T:
         self.db.add(obj_in)

@@ -82,7 +82,7 @@ export function OutpassTable({ outpasses, isLoading, onApproveClick, onRejectCli
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-green-600 hover:text-green-700 hover:bg-green-100"
+                className="h-7 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-500/10"
                 onClick={(e) => {
                   e.stopPropagation();
                   onApproveClick(row);
@@ -111,7 +111,7 @@ export function OutpassTable({ outpasses, isLoading, onApproveClick, onRejectCli
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                className="h-7 text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:bg-blue-500/10"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDepartClick(row);
@@ -127,7 +127,7 @@ export function OutpassTable({ outpasses, isLoading, onApproveClick, onRejectCli
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-amber-600 hover:text-amber-700 hover:bg-amber-100"
+                className="h-7 text-amber-600 dark:text-amber-400 hover:text-amber-700 hover:bg-amber-500/10"
                 onClick={(e) => {
                   e.stopPropagation();
                   onReturnClick(row);

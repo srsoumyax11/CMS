@@ -24,9 +24,12 @@ class Notice(Base, UUIDMixin, TimestampMixin):
     target_year = Column(Integer, nullable=True)
     target_hostel = Column(String(255), nullable=True)
     target_user_types = Column(String(255), nullable=True)
+    target_audience_group_id = Column(UUID(as_uuid=True), ForeignKey("audience_groups.id", ondelete="SET NULL"), nullable=True)
 
     # Relationships
     author = relationship("User", foreign_keys=[author_id])
     target_course = relationship("Course", foreign_keys=[target_course_id])
     target_department = relationship("Department", foreign_keys=[target_department_id])
+    target_audience_group = relationship("AudienceGroup", foreign_keys=[target_audience_group_id])
     reads = relationship("NoticeRead", cascade="all, delete-orphan")
+

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from app.core.database import get_db
 from app.core.uow import UnitOfWork
 from app.core.security import get_current_user
-from app.api.deps import require_permission, get_user_permissions, can_view_complaint_detail, RateLimiter, get_uow
+from app.api.deps import require_permission, get_user_permissions, can_view_complaint_detail, RateLimiter, get_uow, get_department_scope
 from app.core.permissions import Perms
 from app.core.storage import upload_complaint_photo, get_signed_url
 from app.services.complaint_service import ComplaintService
@@ -147,17 +147,21 @@ async def list_all_complaints(
     status_filter: Optional[ComplaintStatus] = Query(None, alias="status"),
     category: Optional[ComplaintCategory] = None,
     hostel: Optional[str] = None,
+    department_id: Optional[UUID] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     uow: UnitOfWork = Depends(get_uow),
+    scope_dept_id: Optional[UUID] = Depends(get_department_scope),
     _ = Depends(require_permission(Perms.COMPLAINT_LIST)),
     user_permissions: set = Depends(get_user_permissions)
 ):
+    effective_dept_id = scope_dept_id if scope_dept_id is not None else department_id
     service = ComplaintService(uow)
     complaints, total = await service.get_all_complaints(
         status=status_filter,
         category=category,
         hostel=hostel,
+        department_id=effective_dept_id,
         skip=skip,
         limit=limit
     )

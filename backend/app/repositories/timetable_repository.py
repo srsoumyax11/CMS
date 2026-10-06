@@ -39,16 +39,23 @@ class TimetableRepository:
         day_of_week: str, 
         start_time, 
         end_time, 
-        exclude_id: Optional[UUID] = None
+        exclude_id: Optional[UUID] = None,
+        room: Optional[str] = None
     ) -> Optional[TimetableSlot]:
+        from sqlalchemy import or_
+        conds = [TimetableSlot.faculty_id == faculty_id]
+        if room:
+            conds.append(TimetableSlot.room == room)
+
         stmt = select(TimetableSlot).where(
-            TimetableSlot.faculty_id == faculty_id,
             TimetableSlot.day_of_week == day_of_week,
             TimetableSlot.start_time < end_time,
-            TimetableSlot.end_time > start_time
+            TimetableSlot.end_time > start_time,
+            or_(*conds)
         )
         if exclude_id:
             stmt = stmt.where(TimetableSlot.id != exclude_id)
             
         result = await self.db.execute(stmt)
-        return result.first()
+        return result.scalars().first()
+

@@ -13,10 +13,11 @@ class AuditService:
         resource_type: str,
         resource_id: UUID,
         action: str,
-        new_values: Dict[str, Any],
+        new_values: Optional[Dict[str, Any]] = None,
         old_values: Optional[Dict[str, Any]] = None,
         reason: Optional[str] = None
     ):
+
         """
         Logs an action into the audit trail.
         """

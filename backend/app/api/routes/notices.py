@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 from typing import Optional, List
@@ -34,6 +35,7 @@ async def create_notice(
     target_year: Optional[int] = Form(None),
     target_hostel: Optional[str] = Form(None),
     target_user_types: Optional[str] = Form(None),
+    target_audience_group_id: Optional[UUID] = Form(None),
     file: Optional[UploadFile] = File(None),
     uow: UnitOfWork = Depends(get_uow),
     current_user: User = Depends(require_permission(Perms.NOTICE_CREATE))
@@ -46,7 +48,7 @@ async def create_notice(
         await validate_upload_file(file, allowed_types=ALLOWED_MIME_TYPES, max_size_mb=settings.MAX_UPLOAD_FILE_SIZE_MB)
         
         file_content = await file.read()
-        attachment_url = await upload_notice_attachment(file_content, file.content_type)
+        attachment_url = await upload_notice_attachment(file_content, file.content_type or "application/octet-stream")
         
     if target_hostel:
         target_hostel = target_hostel.strip()
@@ -60,8 +62,10 @@ async def create_notice(
         target_department_id=target_department_id,
         target_year=target_year,
         target_hostel=target_hostel,
-        target_user_types=target_user_types
+        target_user_types=target_user_types,
+        target_audience_group_id=target_audience_group_id
     )
+
     
     notice = await service.create_notice(notice)
     
@@ -85,7 +89,10 @@ async def list_notices(
     
     profile = None
     if current_user.user_type == UserType.student:
-        profile_stmt = select(StudentProfile).where(StudentProfile.user_id == current_user.id)
+        from app.models.infrastructure import Room
+        profile_stmt = select(StudentProfile).options(
+            selectinload(StudentProfile.room).selectinload(Room.building)
+        ).where(StudentProfile.user_id == current_user.id)
         profile_result = await uow.db.execute(profile_stmt)
         profile = profile_result.scalar_one_or_none()
         if not profile:
@@ -123,7 +130,10 @@ async def get_notice(
     
     profile = None
     if current_user.user_type == UserType.student:
-        profile_stmt = select(StudentProfile).where(StudentProfile.user_id == current_user.id)
+        from app.models.infrastructure import Room
+        profile_stmt = select(StudentProfile).options(
+            selectinload(StudentProfile.room).selectinload(Room.building)
+        ).where(StudentProfile.user_id == current_user.id)
         profile_result = await uow.db.execute(profile_stmt)
         profile = profile_result.scalar_one_or_none()
 
@@ -155,6 +165,8 @@ async def mark_notice_read(
     service = NoticeService(uow)
     try:
         await service.mark_as_read(id, current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except IntegrityError:
         pass
         

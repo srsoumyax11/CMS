@@ -6,7 +6,7 @@ from app.models.user import User
 from app.models.outpass import OutpassStatus
 from app.schemas.outpass import OutpassCreateRequest, OutpassResponse, OutpassListResponse, OutpassRejectRequest, OutpassApprovalActionResponse
 from app.schemas.common import APIResponse
-from app.api.deps import require_permission, get_user_permissions, can_view_outpass, get_outpass_service
+from app.api.deps import require_permission, get_user_permissions, can_view_outpass, get_outpass_service, get_department_scope
 from app.api.middleware import verify_ownership
 from app.core.permissions import Perms
 from app.services.outpass_service import OutpassService
@@ -55,19 +55,28 @@ async def list_my_outpasses(
 
 @router.get(
     "", 
-    summary="List All Outpasses (Admin)", 
-    description="Fetches outpasses across the system. Supports filtering by status and dynamic overdue status. **Requires:** `outpass:list`",
+    summary="List All Outpasses (Admin/Faculty)", 
+    description="Fetches outpasses across the system. Supports filtering by status, department, and dynamic overdue status. **Requires:** `outpass:list`",
     response_model=APIResponse[OutpassListResponse]
 )
 async def list_outpasses(
     status: Optional[OutpassStatus] = None,
     is_overdue: Optional[bool] = None,
+    department_id: Optional[UUID] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     service: OutpassService = Depends(get_outpass_service),
+    scope_dept_id: Optional[UUID] = Depends(get_department_scope),
     _ = Depends(require_permission(Perms.OUTPASS_LIST))
 ):
-    items, total = await service.list_all_outpasses(status, is_overdue, skip, limit)
+    effective_dept_id = scope_dept_id if scope_dept_id is not None else department_id
+    items, total = await service.list_all_outpasses(
+        status=status, 
+        is_overdue=is_overdue, 
+        department_id=effective_dept_id, 
+        skip=skip, 
+        limit=limit
+    )
     
     response_data = OutpassListResponse(
         total=total,
@@ -125,13 +134,14 @@ async def cancel_outpass(
 @router.patch(
     "/{id}/approve", 
     summary="Approve Outpass", 
-    description="Transitions a pending outpass to approved status. Logs the transition transactionally. **Requires:** `outpass:approve`",
+    description="Transitions a pending outpass to approved status. Logs the transition transactionally. Enforces department scoping. **Requires:** `outpass:approve`",
     response_model=OutpassApprovalActionResponse
 )
 async def approve_outpass(
     id: UUID,
     background_tasks: BackgroundTasks,
     service: OutpassService = Depends(get_outpass_service),
+    scope_dept_id: Optional[UUID] = Depends(get_department_scope),
     current_user: User = Depends(require_permission(Perms.OUTPASS_APPROVE))
 ):
     outpass = await service.get_outpass_with_student(id)
@@ -140,8 +150,10 @@ async def approve_outpass(
         
     try:
         async with service.uow.transaction():
-            updated = await service.approve_outpass(outpass, current_user, background_tasks)
+            updated = await service.approve_outpass(outpass, current_user, background_tasks, scope_dept_id=scope_dept_id)
             return OutpassApprovalActionResponse(success=True, data=OutpassResponse.model_validate(updated))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
@@ -149,7 +161,7 @@ async def approve_outpass(
 @router.patch(
     "/{id}/reject", 
     summary="Reject Outpass", 
-    description="Rejects an outpass. Includes an optional rejection note. Logs the transition transactionally. **Requires:** `outpass:approve`",
+    description="Rejects an outpass. Includes an optional rejection note. Enforces department scoping. **Requires:** `outpass:approve`",
     response_model=OutpassApprovalActionResponse
 )
 async def reject_outpass(
@@ -157,6 +169,7 @@ async def reject_outpass(
     request: OutpassRejectRequest,
     background_tasks: BackgroundTasks,
     service: OutpassService = Depends(get_outpass_service),
+    scope_dept_id: Optional[UUID] = Depends(get_department_scope),
     current_user: User = Depends(require_permission(Perms.OUTPASS_APPROVE))
 ):
     outpass = await service.get_outpass_with_student(id)
@@ -165,8 +178,10 @@ async def reject_outpass(
         
     try:
         async with service.uow.transaction():
-            updated = await service.reject_outpass(outpass, request, current_user, background_tasks)
+            updated = await service.reject_outpass(outpass, request, current_user, background_tasks, scope_dept_id=scope_dept_id)
             return OutpassApprovalActionResponse(success=True, data=OutpassResponse.model_validate(updated))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
@@ -182,7 +197,7 @@ async def depart_outpass(
     service: OutpassService = Depends(get_outpass_service),
     current_user: User = Depends(require_permission(Perms.OUTPASS_APPROVE))
 ):
-    outpass = await service.get_outpass(id)
+    outpass = await service.get_outpass_with_student(id)
     if not outpass:
         raise HTTPException(status_code=404, detail="Outpass not found")
         
@@ -205,7 +220,7 @@ async def return_outpass(
     service: OutpassService = Depends(get_outpass_service),
     current_user: User = Depends(require_permission(Perms.OUTPASS_APPROVE))
 ):
-    outpass = await service.get_outpass(id)
+    outpass = await service.get_outpass_with_student(id)
     if not outpass:
         raise HTTPException(status_code=404, detail="Outpass not found")
         
@@ -215,3 +230,20 @@ async def return_outpass(
             return OutpassApprovalActionResponse(success=True, data=OutpassResponse.model_validate(updated))
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
+
+
+@router.post(
+    "/trigger-overdue",
+    summary="Trigger Overdue Checks for Active Outpasses",
+    description="System endpoint to check and flag active outpasses that have passed their expected return time. **Requires:** `outpass:approve`",
+    response_model=APIResponse[dict]
+)
+async def trigger_outpass_overdue_checks(
+    background_tasks: BackgroundTasks,
+    service: OutpassService = Depends(get_outpass_service),
+    current_user: User = Depends(require_permission(Perms.OUTPASS_APPROVE))
+):
+    async with service.uow.transaction():
+        count = await service.trigger_overdue_checks(background_tasks)
+        return APIResponse(success=True, data={"overdue_flagged_count": count})
+
