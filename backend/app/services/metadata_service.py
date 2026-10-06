@@ -23,12 +23,18 @@ class MetadataService:
 
     async def create_course(self, data: CourseCreateRequest) -> Course:
         async with self.uow.transaction():
-            existing = await self.course_repo.get_by_name(data.name)
-            if existing:
+            clean_code = data.code.upper().strip()
+            existing_code = await self.course_repo.get_by_code(clean_code)
+            if existing_code:
+                raise ValueError(f"Course code '{clean_code}' already exists")
+
+            existing_name = await self.course_repo.get_by_name(data.name)
+            if existing_name:
                 raise ValueError(f"Course '{data.name}' already exists")
                 
             course = Course(
-                name=data.name,
+                name=data.name.strip(),
+                code=clean_code,
                 duration_years=data.duration_years,
                 is_active=data.is_active
             )
@@ -39,7 +45,18 @@ class MetadataService:
             course = await self.course_repo.get_by_id(course_id)
             if not course:
                 raise ValueError("Course not found")
-            if data.name: course.name = data.name
+            if data.code:
+                clean_code = data.code.upper().strip()
+                existing_code = await self.course_repo.get_by_code(clean_code)
+                if existing_code and str(existing_code.id) != str(course.id):
+                    raise ValueError(f"Course code '{clean_code}' is already taken by another course")
+                course.code = clean_code
+            if data.name:
+                clean_name = data.name.strip()
+                existing_name = await self.course_repo.get_by_name(clean_name)
+                if existing_name and str(existing_name.id) != str(course.id):
+                    raise ValueError(f"Course name '{clean_name}' is already taken by another course")
+                course.name = clean_name
             if data.is_active is not None: course.is_active = data.is_active
             if data.duration_years is not None: course.duration_years = data.duration_years
             return course
@@ -159,9 +176,8 @@ class MetadataService:
             if not setting:
                 raise ValueError("Setting not found")
                 
-            # Perform type conversion validation here if necessary based on setting.data_type
-            # For this simplified version we just assign the string value.
-            setting.value = data.value
+            if data.value is not None:
+                setting.value = data.value
             return setting
 
     async def get_public_settings(self) -> dict:
@@ -227,10 +243,14 @@ class MetadataService:
                 "is_hod": (dept_obj.hod_user_id == f.user_id)
             })
             
-        result_data = []
+        result_data: List[dict] = []
         for c_id, c_data in tree.items():
-            c_data["departments"] = list(c_data["departments"].values())
-            result_data.append(c_data)
+            depts_map = c_data["departments"]
+            result_data.append({
+                "course_id": c_data["course_id"],
+                "course_name": c_data["course_name"],
+                "departments": list(depts_map.values()) if isinstance(depts_map, dict) else depts_map
+            })
             
         return result_data
 

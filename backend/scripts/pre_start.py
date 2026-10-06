@@ -31,6 +31,8 @@ async def check_database():
     finally:
         await engine.dispose()
 
+import socket
+
 def check_and_create_buckets():
     """Verify Supabase buckets exist, create them if they do not."""
     if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
@@ -55,10 +57,36 @@ def check_and_create_buckets():
         logger.error(f"❌ Failed to verify/create Supabase buckets: {e}")
         raise e
 
+async def check_smtp_status():
+    """Verify SMTP server connectivity and log a warning if unreachable."""
+    logger.info("Checking SMTP Server connectivity...")
+    try:
+        engine = create_async_engine(settings.DATABASE_URL)
+        async with engine.begin() as conn:
+            res = await conn.execute(text("SELECT key, value FROM system_settings WHERE key IN ('smtp_host', 'smtp_port', 'global_email_enabled')"))
+            rows = {row[0]: row[1] for row in res.fetchall()}
+        await engine.dispose()
+        
+        if rows.get("global_email_enabled", "true").lower() != "true":
+            logger.info("ℹ️ Global emails are disabled in system_settings. Skipping SMTP ping.")
+            return
+
+        host = rows.get("smtp_host", "127.0.0.1")
+        port = int(rows.get("smtp_port", "54325"))
+
+        try:
+            with socket.create_connection((host, port), timeout=3):
+                logger.info(f"✅ SMTP server ({host}:{port}) connection successful.")
+        except Exception as e:
+            logger.warning(f"⚠️ SMTP server ({host}:{port}) unreachable ({e}). Dev emails will log to terminal.")
+    except Exception as err:
+        logger.warning(f"⚠️ Could not verify SMTP settings from DB: {err}")
+
 async def main():
     logger.info("Starting pre-flight checks...")
     await check_database()
     check_and_create_buckets()
+    await check_smtp_status()
     logger.info("✅ All pre-flight checks passed!")
 
 if __name__ == "__main__":

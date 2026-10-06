@@ -92,7 +92,7 @@ export function StudentCreateModal({ isOpen, onClose, onSubmit, isPending, cours
                     </SelectTrigger>
                     <SelectContent>
                       {courses.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>{c.code ? `${c.code} - ${c.name}` : c.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

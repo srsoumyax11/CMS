@@ -79,6 +79,18 @@ export function CourseManagement() {
       sortable: true,
     },
     {
+      id: 'code',
+      header: 'Course Code',
+      accessorKey: 'code',
+      cell: (val) => (
+        <span className="font-mono text-xs font-semibold bg-muted px-2 py-1 rounded border border-border text-foreground">
+          {val}
+        </span>
+      ),
+      sortable: true,
+      width: '150px',
+    },
+    {
       id: 'duration_years',
       header: 'Duration',
       accessorKey: 'duration_years',
@@ -128,7 +140,14 @@ export function CourseManagement() {
       label: 'Course Name',
       type: 'text',
       required: true,
-      placeholder: 'e.g. Bachelor of Technology (B.Tech)',
+      placeholder: 'e.g. B.Tech in Computer Science & Engineering',
+    },
+    {
+      key: 'code',
+      label: 'Course Code',
+      type: 'text',
+      required: true,
+      placeholder: 'e.g. BTECH-CSE',
     },
     {
       key: 'duration_years',
@@ -156,6 +175,7 @@ export function CourseManagement() {
   const handleSave = async (formData: Record<string, any>, item: Course | null) => {
     const payload = {
       name: formData.name,
+      code: String(formData.code || '').toUpperCase().trim(),
       duration_years: Number(formData.duration_years),
       is_active: Boolean(formData.is_active),
     };

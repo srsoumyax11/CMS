@@ -301,7 +301,7 @@ export function StudentManagement() {
       label: 'Course',
       type: 'select',
       required: true,
-      options: courses.map((c) => ({ label: c.name, value: c.id })),
+      options: courses.map((c) => ({ label: `${c.name} (${c.code || 'N/A'})`, value: c.id })),
       renderView: (_, item) => (
         <span className="text-sm font-medium">{item.course_name}</span>
       ),

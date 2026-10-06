@@ -77,15 +77,23 @@ export const RoleElevationWidget: React.FC = () => {
     let payload: Record<string, any> = {};
     if (selectedRole === 'student') {
       if (!rollNumber || !courseId || !departmentId) {
-        setError('Please fill out all required fields: Roll Number, Course, and Department.');
+        setError('Please fill out all required fields: Registration / Roll Number, Course, and Department.');
         setSubmitting(false);
         return;
       }
+      const trimmedRoll = rollNumber.trim();
+      const yr = parseInt(year) || 1;
+      const admYear = new Date().getFullYear() - (yr - 1);
       payload = {
-        user_id_str: rollNumber,
+        registration_no: trimmedRoll,
+        roll_no: trimmedRoll,
+        user_id_str: trimmedRoll,
         course_id: courseId,
         department_id: departmentId,
-        year: parseInt(year),
+        year: yr,
+        admission_year: admYear,
+        current_semester: (yr - 1) * 2 + 1,
+        section: 'A',
       };
     } else if (selectedRole === 'parent') {
       if (!childStudentId) {
@@ -346,8 +354,8 @@ export const RoleElevationWidget: React.FC = () => {
             {selectedRole === 'student' && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Roll Number / Student ID *</Label>
-                  <Input placeholder="e.g. 2101102034" value={rollNumber} onChange={(e) => setRollNumber(e.target.value)} required className="h-9" />
+                  <Label className="text-xs font-medium text-muted-foreground">BPUT Registration No. / Roll Number *</Label>
+                  <Input placeholder="e.g. 2101102034 or 23/CSE/042" value={rollNumber} onChange={(e) => setRollNumber(e.target.value)} required className="h-9" />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -369,7 +377,7 @@ export const RoleElevationWidget: React.FC = () => {
                       <SelectTrigger className="h-9"><SelectValue placeholder="Select Course" /></SelectTrigger>
                       <SelectContent>
                         {courses.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          <SelectItem key={c.id} value={c.id}>{(c as any).code ? `${(c as any).code} - ${c.name}` : c.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

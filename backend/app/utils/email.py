@@ -54,6 +54,7 @@ async def _send_email_worker(to_email: str, subject: str, template_name: str, co
     """
     The actual async worker that fetches settings, renders the template, and sends the email.
     """
+    logger.info(f"📧 [DEV EMAIL TRIGGER] To: {to_email} | Subject: '{subject}' | Context: {context}")
     try:
         # 1. Fetch DB Settings
         smtp_config = await _get_smtp_settings()
@@ -88,24 +89,39 @@ async def _send_email_worker(to_email: str, subject: str, template_name: str, co
         msg["Subject"] = subject
         msg.add_alternative(html_content, subtype="html")
         
-        # 4. Send Email via aiosmtplib
+        # 4. Send Email via aiosmtplib with fallback for network/local SMTP variants
         use_tls = (port == 465)
         start_tls = (port == 587)
         
-        # Only include auth credentials if they are present
         send_kwargs = {
             "hostname": host,
             "port": port,
             "use_tls": use_tls,
             "start_tls": start_tls,
-            "timeout": 5
+            "timeout": 10
         }
         if user and password:
             send_kwargs["username"] = user
             send_kwargs["password"] = password
             
-        await aiosmtplib.send(msg, **send_kwargs)
-        logger.info(f"Successfully sent email '{subject}' to {to_email}")
+        try:
+            await aiosmtplib.send(msg, **send_kwargs)
+            logger.info(f"Successfully sent email '{subject}' to {to_email}")
+        except Exception as conn_err:
+            if start_tls:
+                logger.warning(f"STARTTLS delivery attempt to {host}:{port} failed ({conn_err}). Retrying with direct TLS...")
+                try:
+                    send_kwargs["start_tls"] = False
+                    send_kwargs["use_tls"] = True
+                    await aiosmtplib.send(msg, **send_kwargs)
+                    logger.info(f"Successfully sent email '{subject}' to {to_email}")
+                except Exception as secondary_err:
+                    logger.warning(f"Secondary TLS attempt failed ({secondary_err}). Retrying plain SMTP...")
+                    send_kwargs["use_tls"] = False
+                    await aiosmtplib.send(msg, **send_kwargs)
+                    logger.info(f"Successfully sent email '{subject}' to {to_email}")
+            else:
+                raise conn_err
         
     except Exception as e:
         logger.error(f"Failed to send email to {to_email}: {str(e)}")

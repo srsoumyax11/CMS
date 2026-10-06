@@ -5,18 +5,21 @@ from app.models.profiles import AcademicStatus, EmploymentStatus
 
 # --- Course Management ---
 class CourseCreateRequest(BaseModel):
-    name: str = Field(..., description="Name of the course (e.g., B.Tech, M.Tech)")
+    name: str = Field(..., min_length=2, max_length=255, description="Name of the course (e.g., B.Tech in Computer Science & Engineering)")
+    code: str = Field(..., min_length=2, max_length=50, description="Short code of the course (e.g., BTECH-CSE)")
     is_active: Optional[bool] = True
     duration_years: int = Field(default=4, ge=1, le=7, description="Duration of the course in years")
 
 class CourseUpdateRequest(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=2, max_length=255)
+    code: Optional[str] = Field(None, min_length=2, max_length=50)
     is_active: Optional[bool] = None
     duration_years: Optional[int] = Field(None, ge=1, le=7)
 
 class CourseItemResponse(BaseModel):
     id: UUID4
     name: str
+    code: str
     is_active: bool
     duration_years: int
 

@@ -17,6 +17,15 @@ cd .\backend\
 uvicorn app.main:app --reload --port 8000
 ```
 
+
+cd backend
+supabase stop --no-backup
+supabase start
+.\venv\Scripts\activate
+alembic upgrade head
+python -m scripts.pre_start
+uvicorn app.main:app --reload --port 8000
+
 ### Start Frontend
 ```bash
 cd .\frontend\

@@ -28,18 +28,21 @@ export interface Department {
 export interface Course {
   id: string;
   name: string;
+  code: string;
   is_active: boolean;
   duration_years: number;
 }
 
 export interface CourseCreateRequest {
   name: string;
+  code: string;
   is_active?: boolean;
   duration_years?: number;
 }
 
 export interface CourseUpdateRequest {
   name?: string;
+  code?: string;
   is_active?: boolean;
   duration_years?: number;
 }

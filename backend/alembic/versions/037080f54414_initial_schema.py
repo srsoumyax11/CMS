@@ -60,14 +60,17 @@ def upgrade() -> None:
     )
     op.create_table('courses',
     sa.Column('name', sa.String(), nullable=False),
+    sa.Column('code', sa.String(length=50), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('duration_years', sa.Integer(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('name')
+    sa.UniqueConstraint('name'),
+    sa.UniqueConstraint('code')
     )
+    op.create_index(op.f('ix_courses_code'), 'courses', ['code'], unique=True)
     op.create_table('departments',
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('code', sa.String(), nullable=False),
