@@ -36,28 +36,24 @@ class StudentProfile(Base, UUIDMixin, TimestampMixin):
     current_semester: Mapped[int] = mapped_column(nullable=False, default=1)
     section: Mapped[Optional[str]] = mapped_column(String(10), default="A", nullable=True)
     year: Mapped[int] = mapped_column(nullable=False, default=1)
-    room_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("rooms.id", ondelete="SET NULL"), nullable=True)
 
     academic_status: Mapped[AcademicStatus] = mapped_column(Enum(AcademicStatus, name="academic_status_enum"), default=AcademicStatus.enrolled, nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="student_profile")
     course: Mapped["Course"] = relationship("Course")
     department: Mapped["Department"] = relationship("Department")
-    room: Mapped[Optional["Room"]] = relationship("Room", foreign_keys=[room_id])
 
 
 class FacultyProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "faculty_profiles"
 
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    course_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False)
     department_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="RESTRICT"), nullable=False)
     designation: Mapped[str] = mapped_column(String(255), nullable=False)
 
     employment_status: Mapped[EmploymentStatus] = mapped_column(Enum(EmploymentStatus, name="employment_status_enum"), default=EmploymentStatus.active, nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="faculty_profile")
-    course: Mapped["Course"] = relationship("Course")
     department: Mapped["Department"] = relationship("Department")
 
 

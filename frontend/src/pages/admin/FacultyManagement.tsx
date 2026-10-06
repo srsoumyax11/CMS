@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, UserCog, Edit2, ShieldAlert } from 'lucide-react';
-import type { FacultyItemResponse, AdminItemResponse, AccountStatus, EmploymentStatus } from '@/types/api';
+import { Plus, Edit2 } from 'lucide-react';
+import type { FacultyItemResponse, AccountStatus, EmploymentStatus, Department } from '@/types/api';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { PERMISSIONS } from '@/config/permissions';
 import { useFacultyAdmin } from '@/hooks/useFacultyAdmin';
@@ -18,11 +18,33 @@ import { FacultyCreateModal } from './components/FacultyCreateModal';
 import { useDialogState } from '@/hooks/useDialogState';
 
 export function FacultyManagement() {
-  const { facultyList, adminList, createMutation, editMutation } = useFacultyAdmin();
-  const [roleTab, setRoleTab] = useState<'faculty' | 'admin'>('faculty');
+  const { facultyList, createMutation, editMutation } = useFacultyAdmin();
+  const [deptTab, setDeptTab] = useState<'academic' | 'administrative'>('academic');
 
-  const { courses, departments, roles } = useMetadata();
+  const { departments } = useMetadata();
   const activeDepartments = useMemo(() => departments.filter((d) => d.is_active), [departments]);
+
+  // Map departments by ID to easily inspect department_type
+  const deptMap = useMemo(() => {
+    const map = new Map<string, Department>();
+    departments.forEach((d) => map.set(d.id, d));
+    return map;
+  }, [departments]);
+
+  // Categorize faculty members by department type
+  const academicFaculty = useMemo(() => {
+    return facultyList.items.filter((f) => {
+      const dept = deptMap.get(f.department_id);
+      return !dept || dept.department_type === 'academic';
+    });
+  }, [facultyList.items, deptMap]);
+
+  const administrativeFaculty = useMemo(() => {
+    return facultyList.items.filter((f) => {
+      const dept = deptMap.get(f.department_id);
+      return dept?.department_type === 'administrative';
+    });
+  }, [facultyList.items, deptMap]);
 
   const createModal = useDialogState();
 
@@ -47,7 +69,7 @@ export function FacultyManagement() {
   const facultyColumns: ProColumn<FacultyItemResponse>[] = [
     {
       id: 'name',
-      header: 'Faculty Member',
+      header: 'Faculty / Staff Member',
       accessorKey: 'name',
       cell: (val, row) => (
         <div className="flex items-center gap-2.5">
@@ -137,44 +159,6 @@ export function FacultyManagement() {
       width: '80px',
       align: 'right',
       sortable: false,
-    },
-  ];
-
-  // Admin Table Columns
-  const adminColumns: ProColumn<AdminItemResponse>[] = [
-    {
-      id: 'name',
-      header: 'Administrator Name',
-      accessorKey: 'name',
-      cell: (val, row) => (
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-xs">
-            {row.name.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <span className="font-semibold text-foreground">{row.name}</span>
-            <p className="text-xs text-muted-foreground">{row.email}</p>
-          </div>
-        </div>
-      ),
-      sortable: true,
-    },
-    {
-      id: 'user_id',
-      header: 'Admin ID',
-      accessorKey: 'user_id',
-      cell: (val) => <span className="font-mono text-xs font-semibold text-foreground">{val}</span>,
-      sortable: true,
-      width: '140px',
-    },
-    {
-      id: 'account_status',
-      header: 'Account Status',
-      accessorKey: 'account_status',
-      cell: (val) => <StatusBadge status={val} type="account" />,
-      sortable: true,
-      width: '140px',
-      align: 'center',
     },
   ];
 
@@ -303,16 +287,17 @@ export function FacultyManagement() {
     facultyList.refetch();
   };
 
-  if (facultyList.error || adminList.error) {
+  if (facultyList.error) {
     return (
       <ErrorState
         onRetry={() => {
           facultyList.refetch();
-          adminList.refetch();
         }}
       />
     );
   }
+
+  const currentFacultyData = deptTab === 'academic' ? academicFaculty : administrativeFaculty;
 
   return (
     <div className="space-y-6">
@@ -327,47 +312,48 @@ export function FacultyManagement() {
         }
       />
 
-      {/* Role Navigation Tabs */}
+      {/* Department Navigation Tabs */}
       <Tabs
-        value={roleTab}
-        onValueChange={(val) => setRoleTab(val as 'faculty' | 'admin')}
+        value={deptTab}
+        onValueChange={(val) => setDeptTab(val as 'academic' | 'administrative')}
         className="w-full sm:w-auto"
       >
         <TabsList className="bg-muted/60 p-1">
-          <TabsTrigger value="faculty" className="text-xs font-medium">
-            Faculty Directory ({facultyList.items.length})
+          <TabsTrigger value="academic" className="text-xs font-medium">
+            Academic Departments ({academicFaculty.length})
           </TabsTrigger>
-          <TabsTrigger value="admin" className="text-xs font-medium">
-            System Administrators ({adminList.items.length})
+          <TabsTrigger value="administrative" className="text-xs font-medium">
+            Administrative Departments ({administrativeFaculty.length})
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {roleTab === 'faculty' ? (
-        <ProTable
-          columns={facultyColumns}
-          data={facultyList.items}
-          isLoading={facultyList.isLoading}
-          rowKey={(row) => row.id}
-          onRowClick={handleRowClick}
-          filters={facultyFilters}
-          searchPlaceholder="Search faculty by name, ID, department, designation, or email..."
-          exportFileName="faculty-staff-directory"
-          emptyTitle="No faculty members found"
-          emptyDescription="There are no faculty members matching the selected filters."
-        />
-      ) : (
-        <ProTable
-          columns={adminColumns}
-          data={adminList.items}
-          isLoading={adminList.isLoading}
-          rowKey={(row) => row.id}
-          searchPlaceholder="Search administrators by name, ID, or email..."
-          exportFileName="administrators-directory"
-          emptyTitle="No administrators found"
-          emptyDescription="There are no system administrators registered."
-        />
-      )}
+      <ProTable
+        columns={facultyColumns}
+        data={currentFacultyData}
+        isLoading={facultyList.isLoading}
+        rowKey={(row) => row.id}
+        onRowClick={handleRowClick}
+        filters={facultyFilters}
+        searchPlaceholder={
+          deptTab === 'academic'
+            ? 'Search academic faculty by name, ID, department, designation, or email...'
+            : 'Search administrative staff by name, ID, department, designation, or email...'
+        }
+        exportFileName={
+          deptTab === 'academic' ? 'academic-faculty-directory' : 'administrative-staff-directory'
+        }
+        emptyTitle={
+          deptTab === 'academic'
+            ? 'No academic faculty members found'
+            : 'No administrative staff members found'
+        }
+        emptyDescription={
+          deptTab === 'academic'
+            ? 'There are no academic faculty members matching the selected filters.'
+            : 'There are no administrative staff members matching the selected filters.'
+        }
+      />
 
       {/* Global View + Edit Dialog */}
       <EntityViewEditDialog
@@ -392,9 +378,7 @@ export function FacultyManagement() {
           });
         }}
         isPending={createMutation.isPending}
-        courses={courses}
         departments={activeDepartments}
-        roles={roles}
       />
     </div>
   );

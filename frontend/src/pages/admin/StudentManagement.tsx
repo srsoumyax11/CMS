@@ -327,13 +327,6 @@ export function StudentManagement() {
       section: 'Academic Details',
     },
     {
-      key: 'hostel',
-      label: 'Hostel Name / Room',
-      type: 'text',
-      placeholder: 'e.g. Block A, Room 102',
-      section: 'Campus Accommodation',
-    },
-    {
       key: 'account_status',
       label: 'Account Status',
       type: 'badge',

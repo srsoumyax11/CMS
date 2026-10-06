@@ -7,35 +7,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { authApi } from '@/api/authApi';
-import type { FacultyCreateRequest, Course, Department, MetadataRole } from '@/types/api';
+import type { FacultyCreateRequest, Department } from '@/types/api';
 
 interface FacultyCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: FacultyCreateRequest) => void;
   isPending: boolean;
-  courses: Course[];
   departments: Department[];
-  roles: MetadataRole[];
 }
 
-export function FacultyCreateModal({ isOpen, onClose, onSubmit, isPending, courses, departments, roles }: FacultyCreateModalProps) {
-  const [form, setForm] = useState<Omit<FacultyCreateRequest, 'user_id'>>({
+export function FacultyCreateModal({ isOpen, onClose, onSubmit, isPending, departments }: FacultyCreateModalProps) {
+  const [form, setForm] = useState<FacultyCreateRequest>({
     email: '',
     password: '',
     name: '',
-    course_id: '',
     department_id: '',
     designation: '',
-    role_id: undefined,
   });
-  const [formErrors, setFormErrors] = useState<{ course?: boolean; dept?: boolean }>({});
+  const [formErrors, setFormErrors] = useState<{ dept?: boolean }>({});
   const [emailError, setEmailError] = useState<string | null>(null);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
-      setForm({ email: '', password: '', name: '', course_id: '', department_id: '', designation: '', role_id: undefined });
+      setForm({ email: '', password: '', name: '', department_id: '', designation: '' });
       setFormErrors({});
       setEmailError(null);
     }
@@ -75,12 +71,8 @@ export function FacultyCreateModal({ isOpen, onClose, onSubmit, isPending, cours
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     let hasError = false;
-    const newErrors: { course?: boolean; dept?: boolean } = {};
+    const newErrors: { dept?: boolean } = {};
     
-    if (!form.course_id) {
-      newErrors.course = true;
-      hasError = true;
-    }
     if (!form.department_id) {
       newErrors.dept = true;
       hasError = true;
@@ -97,7 +89,7 @@ export function FacultyCreateModal({ isOpen, onClose, onSubmit, isPending, cours
       return;
     }
     
-    onSubmit(form as FacultyCreateRequest);
+    onSubmit(form);
   };
 
   return (
@@ -111,6 +103,7 @@ export function FacultyCreateModal({ isOpen, onClose, onSubmit, isPending, cours
             <Label htmlFor="f-name">Full Name <span className="text-destructive">*</span></Label>
             <Input
               id="f-name"
+              placeholder="e.g. Dr. Ananya Sharma"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
@@ -123,6 +116,7 @@ export function FacultyCreateModal({ isOpen, onClose, onSubmit, isPending, cours
               <Input
                 id="f-email"
                 type="email"
+                placeholder="e.g. ananya.sharma@cms.edu"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 className={emailError ? "border-destructive pr-10" : "pr-10"}
@@ -143,76 +137,43 @@ export function FacultyCreateModal({ isOpen, onClose, onSubmit, isPending, cours
             <Input
               id="f-password"
               type="password"
+              placeholder="••••••••"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="f-course">Course <span className="text-destructive">*</span></Label>
-              <Select
-                value={form.course_id}
-                onValueChange={(val) => setForm({ ...form, course_id: val })}
-                required
-              >
-                <SelectTrigger id="f-course" className={formErrors.course ? "border-destructive" : ""}>
-                  <SelectValue placeholder="Select Course" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.code ? `${c.code} - ${c.name}` : c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="f-dept">Department <span className="text-destructive">*</span></Label>
-              <Select
-                value={form.department_id}
-                onValueChange={(val) => setForm({ ...form, department_id: val })}
-                required
-              >
-                <SelectTrigger id="f-dept" className={formErrors.dept ? "border-destructive" : ""}>
-                  <SelectValue placeholder="Select Department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map(d => (
-                    <SelectItem key={d.id} value={d.id}>{d.code} - {d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="f-dept">Department <span className="text-destructive">*</span></Label>
+            <Select
+              value={form.department_id}
+              onValueChange={(val) => setForm({ ...form, department_id: val })}
+              required
+            >
+              <SelectTrigger id="f-dept" className={formErrors.dept ? "border-destructive" : ""}>
+                <SelectValue placeholder="Select Department" />
+              </SelectTrigger>
+              <SelectContent>
+                {departments.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>{d.code} - {d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="f-desig">Designation <span className="text-destructive">*</span></Label>
             <Input
               id="f-desig"
+              placeholder="e.g. Associate Professor"
               value={form.designation}
               onChange={(e) => setForm({ ...form, designation: e.target.value })}
               required
             />
           </div>
-          
-          <div className="space-y-3">
-            <Label>System Role</Label>
-            <Select
-              value={form.role_id || 'default'}
-              onValueChange={(value) => setForm({ ...form, role_id: value === 'default' ? undefined : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a role (Defaults to Faculty)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Faculty (Default)</SelectItem>
-                {roles.filter(r => r.name !== 'Faculty' && r.name !== 'SuperAdmin' && r.name !== 'Student' && r.name !== 'HOD').map((role) => (
-                  <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
+
+          <DialogFooter className="pt-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
@@ -223,7 +184,7 @@ export function FacultyCreateModal({ isOpen, onClose, onSubmit, isPending, cours
                   Creating...
                 </>
               ) : (
-                'Create'
+                'Create Faculty'
               )}
             </Button>
           </DialogFooter>

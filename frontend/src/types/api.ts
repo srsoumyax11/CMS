@@ -518,8 +518,6 @@ export interface FacultyItemResponse {
   name: string;
   email: string;
   photo_url?: string | null;
-  course_id: string;
-  course_name: string;
   department_id: string;
   department_name: string;
   designation: string;
@@ -533,10 +531,8 @@ export interface FacultyCreateRequest {
   name: string;
   email: string;
   password?: string;
-  course_id: string;
   department_id: string;
   designation: string;
-  role_id?: string;
 }
 
 export interface FacultyUpdateRequest {

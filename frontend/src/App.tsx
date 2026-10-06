@@ -55,12 +55,7 @@ const CourseManagement = React.lazy(() => import('@/pages/admin/CourseManagement
 const AudienceGroupManagement = React.lazy(() => import('@/pages/admin/AudienceGroupManagement').then(module => ({ default: module.AudienceGroupManagement })));
 const DocumentProcessing = React.lazy(() => import('@/pages/admin/DocumentProcessing').then(module => ({ default: module.DocumentProcessing })));
 const MyDocuments = React.lazy(() => import('@/pages/documents/MyDocuments').then(module => ({ default: module.MyDocuments })));
-const BuildingManagement = React.lazy(() => import('@/pages/admin/BuildingManagement').then(module => ({ default: module.BuildingManagement })));
-const RoomManagement = React.lazy(() => import('@/pages/admin/RoomManagement').then(module => ({ default: module.RoomManagement })));
 const GateLogsManagement = React.lazy(() => import('@/pages/admin/GateLogsManagement').then(module => ({ default: module.GateLogsManagement })));
-const RoleApplicationsManagement = React.lazy(() => import('@/pages/admin/RoleApplicationsManagement').then(module => ({ default: module.RoleApplicationsManagement })));
-const FeeManagement = React.lazy(() => import('@/pages/admin/FeeManagement').then(module => ({ default: module.FeeManagement })));
-const HostelAllocation = React.lazy(() => import('@/pages/admin/HostelAllocation').then(module => ({ default: module.HostelAllocation })));
 
 const MyFees = React.lazy(() => import('@/pages/finance/MyFees').then(module => ({ default: module.MyFees })));
 
@@ -154,9 +149,6 @@ export function AdminRoutes() {
       <Route path="courses" element={<CourseManagement />} />
       <Route path="audience-groups" element={<AudienceGroupManagement />} />
       <Route path="documents" element={<DocumentProcessing />} />
-      <Route path="buildings" element={<BuildingManagement />} />
-      <Route path="rooms" element={<RoomManagement />} />
-      <Route path="hostel-allocations" element={<HostelAllocation />} />
       <Route path="gate-logs" element={<GateLogsManagement />} />
       <Route path="fees" element={<FeeManagement />} />
       <Route path="settings" element={<SystemSettings />} />

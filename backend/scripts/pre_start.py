@@ -82,11 +82,30 @@ async def check_smtp_status():
     except Exception as err:
         logger.warning(f"⚠️ Could not verify SMTP settings from DB: {err}")
 
+def ensure_redis_container():
+    """Ensure local Redis Docker container is running."""
+    import subprocess
+    logger.info("Checking Redis Docker container status...")
+    try:
+        res = subprocess.run(["docker", "ps", "--filter", "name=cms-redis", "--format", "{{.Names}}"], capture_output=True, text=True)
+        if "cms-redis" in res.stdout:
+            logger.info("✅ Local Redis container 'cms-redis' is running.")
+            return
+
+        logger.info("Starting local Redis Docker container ('cms-redis')...")
+        start_res = subprocess.run(["docker", "start", "cms-redis"], capture_output=True, text=True)
+        if start_res.returncode != 0:
+            subprocess.run(["docker", "run", "-d", "--name", "cms-redis", "-p", "6379:6379", "redis:alpine"], capture_output=True, text=True)
+        logger.info("✅ Redis container started successfully!")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not start Redis Docker container ({e}). Rate limiting will fail open cleanly.")
+
 async def main():
     logger.info("Starting pre-flight checks...")
     await check_database()
     check_and_create_buckets()
     await check_smtp_status()
+    ensure_redis_container()
     logger.info("✅ All pre-flight checks passed!")
 
 if __name__ == "__main__":

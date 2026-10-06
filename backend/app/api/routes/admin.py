@@ -119,11 +119,9 @@ async def get_student(
     db: AsyncSession = Depends(get_db),
     _ = Depends(require_permission(Perms.STUDENT_PROFILE_VIEW))
 ):
-    from app.models.infrastructure import Room
     stmt = select(User).outerjoin(StudentProfile).options(
         selectinload(User.student_profile).selectinload(StudentProfile.course),
-        selectinload(User.student_profile).selectinload(StudentProfile.department),
-        selectinload(User.student_profile).selectinload(StudentProfile.room).selectinload(Room.building)
+        selectinload(User.student_profile).selectinload(StudentProfile.department)
     ).where(User.id == id, User.user_type == UserType.student)
     result = await db.execute(stmt)
     s = result.scalar_one_or_none()
@@ -133,7 +131,6 @@ async def get_student(
     profile = s.student_profile
     course = profile.course if profile else None
     dept = profile.department if profile else None
-    hostel_bldg = profile.room.building.name if (profile and profile.room and profile.room.building) else None
     
     return APIResponse(success=True, data=StudentItemResponse(
         id=s.id, user_id=str(s.id), registration_no=profile.registration_no if profile else "",
@@ -142,7 +139,6 @@ async def get_student(
         department_id=dept.id if dept else None, department_name=str(dept.name) if dept else "Unknown",
         admission_year=profile.admission_year if profile else 2024, current_semester=profile.current_semester if profile else 1,
         section=profile.section if profile else "A", year=profile.year if profile else 0,
-        hostel=hostel_bldg, hostel_name=hostel_bldg, room_id=profile.room_id if profile else None,
         account_status=s.account_status, academic_status=profile.academic_status if profile else None,
         status_note=s.status_note
     ))
@@ -176,7 +172,6 @@ async def update_student_details(
 
 def map_faculty_response(f: User) -> FacultyItemResponse:
     profile = f.faculty_profile
-    course = profile.course if profile else None
     dept = profile.department if profile else None
     
     staff_code = f"FAC-2026-{str(f.id).split('-')[0].upper()}"
@@ -187,8 +182,6 @@ def map_faculty_response(f: User) -> FacultyItemResponse:
         name=f.name or f.email.split('@')[0],
         email=f.email,
         photo_url=f.photo_url,
-        course_id=course.id if course else UUID('00000000-0000-0000-0000-000000000000'),
-        course_name=str(course.name) if course else "Unknown",
         department_id=dept.id if dept else UUID('00000000-0000-0000-0000-000000000000'),
         department_name=str(dept.name) if dept else "Unknown",
         designation=profile.designation if profile else "Unknown",

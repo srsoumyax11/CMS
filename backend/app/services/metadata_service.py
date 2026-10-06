@@ -197,7 +197,6 @@ class MetadataService:
         from sqlalchemy.orm import selectinload
         from app.models.profiles import FacultyProfile, EmploymentStatus
 
-        courses = await self.get_active_courses()
         depts = await self.get_active_departments()
         
         faculty_res = await self.uow.db.execute(
@@ -206,53 +205,32 @@ class MetadataService:
             .where(FacultyProfile.employment_status == EmploymentStatus.active)
         )
         
-        courses_dict = {c.id: c for c in courses}
         depts_dict = {d.id: d for d in depts}
         faculties = faculty_res.scalars().all()
         
         tree = {}
+        for d in depts:
+            tree[d.id] = {
+                "department_id": str(d.id),
+                "department_name": d.name,
+                "code": d.code,
+                "hod_user_id": str(d.hod_user_id) if d.hod_user_id else None,
+                "faculty": []
+            }
+            
         for f in faculties:
-            c_id = f.course_id
             d_id = f.department_id
-            
-            if c_id not in courses_dict or d_id not in depts_dict:
-                continue
-                
-            if c_id not in tree:
-                tree[c_id] = {
-                    "course_id": str(c_id),
-                    "course_name": courses_dict[c_id].name,
-                    "departments": {}
-                }
-                
-            if d_id not in tree[c_id]["departments"]:
+            if d_id in tree:
+                user = f.user
                 dept_obj = depts_dict[d_id]
-                tree[c_id]["departments"][d_id] = {
-                    "department_id": str(d_id),
-                    "department_name": dept_obj.name,
-                    "hod_user_id": str(dept_obj.hod_user_id) if dept_obj.hod_user_id else None,
-                    "faculty": []
-                }
-                
-            user = f.user
-            dept_obj = depts_dict[d_id]
-            tree[c_id]["departments"][d_id]["faculty"].append({
-                "id": str(f.user_id),
-                "name": user.name if user else "Unknown",
-                "designation": f.designation,
-                "is_hod": (dept_obj.hod_user_id == f.user_id)
-            })
+                tree[d_id]["faculty"].append({
+                    "id": str(f.user_id),
+                    "name": user.name if user else "Unknown",
+                    "designation": f.designation,
+                    "is_hod": (dept_obj.hod_user_id == f.user_id)
+                })
             
-        result_data: List[dict] = []
-        for c_id, c_data in tree.items():
-            depts_map = c_data["departments"]
-            result_data.append({
-                "course_id": c_data["course_id"],
-                "course_name": c_data["course_name"],
-                "departments": list(depts_map.values()) if isinstance(depts_map, dict) else depts_map
-            })
-            
-        return result_data
+        return list(tree.values())
 
     async def get_roles(self) -> List[dict]:
         from sqlalchemy import select

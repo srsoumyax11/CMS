@@ -12,12 +12,10 @@ from app.models.notification import Notification, NotificationType
 from app.models.audit import AuditLog
 
 from app.models.document import DocumentRequest, DocumentStatusLog, DocumentType, DocumentStatus, DocumentUrgency
-from app.models.infrastructure import Building, Room, BuildingType, RoomType
 from app.models.audience_group import AudienceGroup, AudienceGroupMember
 from app.models.auth import RevokedToken, PasswordResetOTP
 from app.models.finance import FeeDue, FeeStatus
 from app.models.visitor import VisitorLog, VisitorStatus
-from app.models.hostel import HostelAllocation, AllocationStatus
 from app.models.gate_pass import QuickGatePass, GatePassReason, GatePassStatus
 from app.models.parent_link import ParentLinkRequest, ParentLinkStatus
 
@@ -50,10 +48,6 @@ __all__ = [
     "DocumentType",
     "DocumentStatus",
     "DocumentUrgency",
-    "Building",
-    "Room",
-    "BuildingType",
-    "RoomType",
     "AudienceGroup",
     "AudienceGroupMember",
     "RevokedToken",
@@ -62,8 +56,6 @@ __all__ = [
     "FeeStatus",
     "VisitorLog",
     "VisitorStatus",
-    "HostelAllocation",
-    "AllocationStatus",
     "QuickGatePass",
     "GatePassReason",
     "GatePassStatus",

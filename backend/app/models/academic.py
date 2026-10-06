@@ -45,9 +45,6 @@ class TimetableSlot(Base, UUIDMixin, TimestampMixin):
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
     room = Column(String, nullable=True)
-    room_id = Column(UUID(as_uuid=True), ForeignKey("rooms.id", ondelete="SET NULL"), nullable=True)
-
-    room_rel = relationship("Room", foreign_keys=[room_id])
 
 class AttendanceRecord(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "attendance_records"

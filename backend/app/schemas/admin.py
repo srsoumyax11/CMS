@@ -5,8 +5,8 @@ from app.models.profiles import AcademicStatus, EmploymentStatus
 
 # --- Course Management ---
 class CourseCreateRequest(BaseModel):
-    name: str = Field(..., min_length=2, max_length=255, description="Name of the course (e.g., B.Tech in Computer Science & Engineering)")
-    code: str = Field(..., min_length=2, max_length=50, description="Short code of the course (e.g., BTECH-CSE)")
+    name: str = Field(..., min_length=2, max_length=255, description="Name of the course (e.g., Bachelor of Technology)")
+    code: str = Field(..., min_length=2, max_length=50, description="Short code of the course (e.g., BTECH)")
     is_active: Optional[bool] = True
     duration_years: int = Field(default=4, ge=1, le=7, description="Duration of the course in years")
 
@@ -60,9 +60,6 @@ class StudentItemResponse(BaseModel):
     current_semester: int = 1
     section: Optional[str] = "A"
     year: int
-    hostel: Optional[str] = None
-    hostel_name: Optional[str] = None
-    room_id: Optional[UUID4] = None
     account_status: AccountStatus
     academic_status: Optional[AcademicStatus] = None
     status_note: Optional[str] = None
@@ -79,17 +76,13 @@ class StudentAdminUpdateRequest(BaseModel):
     current_semester: Optional[int] = Field(None, ge=1, le=10)
     section: Optional[str] = Field(None)
     year: Optional[int] = Field(None, ge=1, le=5)
-    hostel: Optional[str] = Field(None, max_length=100)
-    room_id: Optional[UUID4] = None
 
 class FacultyCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     password: str = Field(..., min_length=8)
-    course_id: UUID4
     department_id: UUID4
     designation: str = Field(..., min_length=2, max_length=255)
-    role_id: Optional[UUID4] = None
 
 class FacultyItemResponse(BaseModel):
     id: UUID4
@@ -97,8 +90,6 @@ class FacultyItemResponse(BaseModel):
     name: str
     email: str
     photo_url: Optional[str] = None
-    course_id: UUID4
-    course_name: str
     department_id: UUID4
     department_name: str
     designation: str
@@ -113,7 +104,6 @@ class FacultyUpdateRequest(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     photo_url: Optional[str] = None
-    course_id: Optional[UUID4] = None
     department_id: Optional[UUID4] = None
     designation: Optional[str] = None
     account_status: Optional[AccountStatus] = None

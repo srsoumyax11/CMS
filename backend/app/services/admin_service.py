@@ -148,7 +148,6 @@ class AdminService:
                 if data.current_semester: profile.current_semester = data.current_semester
                 if data.section is not None: profile.section = data.section
                 if data.year: profile.year = data.year
-                if data.room_id is not None: profile.room_id = data.room_id
 
             await self.audit_service.log_action(
                 actor_id=current_user.id,
@@ -156,7 +155,7 @@ class AdminService:
                 resource_id=user.id,
                 action="UPDATE_STUDENT",
                 old_values=old_values,
-                new_values={"name": user.name, "course_id": str(profile.course_id) if profile else None, "department_id": str(profile.department_id) if profile else None, "year": profile.year if profile else None, "room_id": str(profile.room_id) if (profile and profile.room_id) else None}
+                new_values={"name": user.name, "course_id": str(profile.course_id) if profile else None, "department_id": str(profile.department_id) if profile else None, "year": profile.year if profile else None}
             )
             return user
 
@@ -167,16 +166,12 @@ class AdminService:
     async def create_faculty(self, data: FacultyCreateRequest, current_user: User) -> User:
         await validate_password(data.password, self.uow.db)
         async with self.uow.transaction():
-            course = await self.course_repo.get_by_id(data.course_id)
             dept = await self.dept_repo.get_by_id(data.department_id)
-            if not course or not course.is_active or not dept or not dept.is_active:
-                raise ValueError("Invalid or inactive course/department")
+            if not dept or not dept.is_active:
+                raise ValueError("Invalid or inactive department")
 
-            role_id = data.role_id
-            if not role_id:
-                faculty_role = await self.uow.db.scalar(select(Role).where(Role.name == "Faculty"))
-                if faculty_role:
-                    role_id = faculty_role.id
+            faculty_role = await self.uow.db.scalar(select(Role).where(Role.name == "Faculty"))
+            role_id = faculty_role.id if faculty_role else None
 
             user_id_str = f"FAC{random.randint(1000, 999999)}"
             user = User(
@@ -191,7 +186,6 @@ class AdminService:
 
             profile = FacultyProfile(
                 user_id=user.id,
-                course_id=data.course_id,
                 department_id=data.department_id,
                 designation=data.designation,
                 employment_status=EmploymentStatus.active
@@ -203,7 +197,7 @@ class AdminService:
                 resource_type="User",
                 resource_id=user.id,
                 action="CREATE_FACULTY",
-                new_values={"email": data.email, "user_id": user_id_str, "role_id": str(data.role_id) if data.role_id else None}
+                new_values={"email": data.email, "user_id": user_id_str, "department_id": str(data.department_id)}
             )
             return user
 
@@ -223,12 +217,10 @@ class AdminService:
             profile = await self.user_repo.get_faculty_profile(user.id)
             if profile:
                 old_values.update({
-                    "course_id": str(profile.course_id),
                     "department_id": str(profile.department_id),
                     "designation": profile.designation,
                     "employment_status": profile.employment_status.value
                 })
-                if data.course_id: profile.course_id = data.course_id
                 if data.department_id: profile.department_id = data.department_id
                 if data.designation: profile.designation = data.designation
                 if data.employment_status: profile.employment_status = data.employment_status

@@ -39,11 +39,9 @@ class UserRepository(GenericRepository[User]):
         return result.scalar_one_or_none()
 
     async def list_students_with_profiles(self, status: Optional[str] = None, department_id: Optional[Any] = None, skip: int = 0, limit: int = 100) -> Tuple[List[User], int]:
-        from app.models.infrastructure import Room
         stmt = select(User).outerjoin(StudentProfile, User.id == StudentProfile.user_id).options(
             selectinload(User.student_profile).selectinload(StudentProfile.course),
-            selectinload(User.student_profile).selectinload(StudentProfile.department),
-            selectinload(User.student_profile).selectinload(StudentProfile.room).selectinload(Room.building)
+            selectinload(User.student_profile).selectinload(StudentProfile.department)
         ).where(User.user_type == UserType.student)
         
         if status:
@@ -59,7 +57,6 @@ class UserRepository(GenericRepository[User]):
     async def list_faculty_with_profiles(self, status: Optional[str] = None, department_id: Optional[Any] = None, skip: int = 0, limit: int = 100) -> Tuple[List[User], int]:
         stmt = select(User).outerjoin(FacultyProfile, User.id == FacultyProfile.user_id).options(
             selectinload(User.faculty_profile).selectinload(FacultyProfile.department),
-            selectinload(User.faculty_profile).selectinload(FacultyProfile.course),
             selectinload(User.role)
         ).where(User.user_type == UserType.faculty)
         
@@ -75,11 +72,8 @@ class UserRepository(GenericRepository[User]):
 
 
     async def get_student_profile(self, user_id: Any) -> Optional[StudentProfile]:
-        from app.models.infrastructure import Room
         result = await self.db.execute(
-            select(StudentProfile).options(
-                selectinload(StudentProfile.room).selectinload(Room.building)
-            ).where(StudentProfile.user_id == user_id)
+            select(StudentProfile).where(StudentProfile.user_id == user_id)
         )
         return result.scalar_one_or_none()
 
@@ -146,9 +140,7 @@ class UserRepository(GenericRepository[User]):
             .where(User.id == user_id, User.user_type == UserType.faculty)
             .options(
                 selectinload(User.faculty_profile).selectinload(FacultyProfile.department),
-                selectinload(User.faculty_profile).selectinload(FacultyProfile.course),
                 selectinload(User.role)
             )
         )
-        res = await self.db.execute(stmt)
-        return res.scalar_one_or_none()
+        return (await self.db.execute(stmt)).scalar_one_or_none()

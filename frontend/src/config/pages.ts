@@ -206,28 +206,6 @@ export const PAGES_CONFIG: Record<string, PageMetadata> = {
   },
 
   // --- Campus Facilities ---
-  'admin.buildings': {
-    id: 'admin.buildings',
-    path: '/admin/buildings',
-    title: 'Buildings',
-    description: 'Manage campus infrastructure and building data.',
-    section: 'Campus Facilities',
-    icon: Landmark,
-    allowedRoles: ['admin'],
-    showInSidebar: true,
-    order: 1,
-  },
-  'admin.rooms': {
-    id: 'admin.rooms',
-    path: '/admin/rooms',
-    title: 'Rooms',
-    description: 'Manage rooms, capacities, and types across buildings.',
-    section: 'Campus Facilities',
-    icon: Key,
-    allowedRoles: ['admin'],
-    showInSidebar: true,
-    order: 2,
-  },
   'admin.gate_logs': {
     id: 'admin.gate_logs',
     path: '/admin/gate-logs',

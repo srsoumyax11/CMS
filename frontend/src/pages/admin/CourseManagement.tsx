@@ -140,14 +140,14 @@ export function CourseManagement() {
       label: 'Course Name',
       type: 'text',
       required: true,
-      placeholder: 'e.g. B.Tech in Computer Science & Engineering',
+      placeholder: 'e.g. Bachelor of Technology',
     },
     {
       key: 'code',
       label: 'Course Code',
       type: 'text',
       required: true,
-      placeholder: 'e.g. BTECH-CSE',
+      placeholder: 'e.g. BTECH',
     },
     {
       key: 'duration_years',

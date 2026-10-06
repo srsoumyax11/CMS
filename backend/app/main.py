@@ -36,7 +36,6 @@ from app.api.routes import (
     notifications,
     health,
     documents,
-    infrastructure,
     audience_groups,
     finance,
     visitors,
@@ -193,7 +192,6 @@ app.include_router(mess.router, prefix="/api/mess", tags=["Mess"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
 app.include_router(documents.admin_router, prefix="/api/admin/documents", tags=["Documents (Admin)"])
-app.include_router(infrastructure.router, prefix="/api/infrastructure", tags=["Infrastructure"])
 app.include_router(audience_groups.router, prefix="/api", tags=["Audience Groups"])
 app.include_router(finance.router, prefix="/api/finance", tags=["Finance"])
 app.include_router(visitors.router, prefix="/api/visitors", tags=["Visitors"])

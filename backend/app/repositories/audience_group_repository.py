@@ -105,8 +105,6 @@ class AudienceGroupRepository(GenericRepository[AudienceGroup]):
                     User.account_status == AccountStatus.active
                 )
             )
-            if filter_rules.course_id:
-                stmt_fac = stmt_fac.where(FacultyProfile.course_id == filter_rules.course_id)
             if filter_rules.department_id:
                 stmt_fac = stmt_fac.where(FacultyProfile.department_id == filter_rules.department_id)
 
@@ -163,7 +161,6 @@ class AudienceGroupRepository(GenericRepository[AudienceGroup]):
                 selectinload(User.student_profile).selectinload(StudentProfile.course),
                 selectinload(User.student_profile).selectinload(StudentProfile.department),
                 selectinload(User.student_profile).selectinload(StudentProfile.room).selectinload(Room.building),
-                selectinload(User.faculty_profile).selectinload(FacultyProfile.course),
                 selectinload(User.faculty_profile).selectinload(FacultyProfile.department),
             )
             .where(AudienceGroupMember.group_id == group_id)
