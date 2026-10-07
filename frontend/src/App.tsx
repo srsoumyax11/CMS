@@ -56,6 +56,8 @@ const AudienceGroupManagement = React.lazy(() => import('@/pages/admin/AudienceG
 const DocumentProcessing = React.lazy(() => import('@/pages/admin/DocumentProcessing').then(module => ({ default: module.DocumentProcessing })));
 const MyDocuments = React.lazy(() => import('@/pages/documents/MyDocuments').then(module => ({ default: module.MyDocuments })));
 const GateLogsManagement = React.lazy(() => import('@/pages/admin/GateLogsManagement').then(module => ({ default: module.GateLogsManagement })));
+const RoleApplicationsManagement = React.lazy(() => import('@/pages/admin/RoleApplicationsManagement').then(module => ({ default: module.RoleApplicationsManagement })));
+const FeeManagement = React.lazy(() => import('@/pages/admin/FeeManagement').then(module => ({ default: module.FeeManagement })));
 
 const MyFees = React.lazy(() => import('@/pages/finance/MyFees').then(module => ({ default: module.MyFees })));
 
