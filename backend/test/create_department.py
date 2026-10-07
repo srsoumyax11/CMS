@@ -5,6 +5,7 @@ Provides functions to create academic and administrative departments cleanly in 
 """
 
 import logging
+import uuid
 from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,7 +53,7 @@ async def create_department(
         existing_dept.department_type = department_type
         existing_dept.is_active = is_active
         if hod_user_id is not None:
-            existing_dept.hod_user_id = hod_user_id
+            existing_dept.hod_user_id = uuid.UUID(hod_user_id)
 
         logger.info(
             f"🔄 Updated existing department: [{clean_code}] {clean_name} ({department_type})"
@@ -64,7 +65,7 @@ async def create_department(
         name=clean_name,
         department_type=department_type,
         is_active=is_active,
-        hod_user_id=hod_user_id,
+        hod_user_id=uuid.UUID(hod_user_id) if hod_user_id else None,
     )
     session.add(new_dept)
     logger.info(

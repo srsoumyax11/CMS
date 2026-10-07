@@ -27,17 +27,7 @@ def verify_ownership(resource_name: str, id_param: str = "id"):
             if not resource_id:
                 return await func(*args, **kwargs)
 
-            # Route specific logic
-            if resource_name == "outpass":
-                service = kwargs.get("service")
-                if service and hasattr(service, "get_outpass"):
-                    outpass = await service.get_outpass(resource_id)
-                    if outpass:
-                        from app.api.deps import can_view_outpass
-                        if not can_view_outpass(outpass, current_user, permissions):
-                            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this outpass")
-            
-            elif resource_name == "complaint":
+            if resource_name == "complaint":
                 service = kwargs.get("service")
                 if service and hasattr(service, "get_complaint"):
                     complaint = await service.get_complaint(resource_id)

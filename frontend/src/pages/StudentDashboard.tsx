@@ -3,7 +3,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { noticesApi } from '@/api/noticesApi';
 import { complaintsApi } from '@/api/complaintsApi';
-import { outpassesApi } from '@/api/outpassesApi';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import {
@@ -18,8 +17,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-import { QuickGatePassWidget } from '@/components/gate_pass/QuickGatePassWidget';
-import { StudentGuardianPrivacyWidget } from '@/components/StudentGuardianPrivacyWidget';
 
 export function StudentDashboard() {
 
@@ -30,11 +27,7 @@ export function StudentDashboard() {
   const quickLinks = [
     { icon: Megaphone, label: 'Notices', desc: 'Announcements', path: `${basePath}/notices` },
     { icon: ClipboardList, label: 'Complaints', desc: 'Track issues', path: `${basePath}/complaints` },
-    { icon: CheckSquare, label: 'Outpasses', desc: 'Manage leaves', path: `${basePath}/outpasses` },
-    { icon: CalendarDays, label: 'Timetable', desc: 'Class schedule', path: `${basePath}/timetable` },
-    { icon: UtensilsCrossed, label: 'Mess Menu', desc: "Today's menu", path: `${basePath}/mess` },
-    { icon: BookOpen, label: 'Attendance', desc: 'Your records', path: `${basePath}/attendance` },
-  ];
+    ];
 
   const { data: noticesResp } = useQuery({
     queryKey: ['student-notices-recent'],
@@ -48,12 +41,6 @@ export function StudentDashboard() {
     enabled: !!user && user.account_status === 'active',
   });
 
-  const { data: outpassesResp } = useQuery({
-    queryKey: ['student-outpasses-recent'],
-    queryFn: () => outpassesApi.getMine(),
-    enabled: !!user && user.account_status === 'active',
-  });
-
   if (!user) return null;
 
   const links = quickLinks.map((link) => ({
@@ -63,8 +50,6 @@ export function StudentDashboard() {
 
   const notices = (noticesResp?.data?.data?.items || []).slice(0, 3);
   const activeComplaints = (complaintsResp?.data?.data?.items || []).filter((c: any) => c.status !== 'closed' && c.status !== 'resolved').slice(0, 3);
-  const activeOutpasses = (outpassesResp?.data?.data?.items || []).filter((o: any) => o.status !== 'completed' && o.status !== 'cancelled' && o.status !== 'rejected').slice(0, 3);
-
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {user.account_status === 'pending' && (
@@ -98,18 +83,6 @@ export function StudentDashboard() {
         icon={LayoutDashboard}
       />
 
-      {/* Student Guardian Privacy & Data Consent Center */}
-      {user.account_status === 'active' && (
-        <StudentGuardianPrivacyWidget />
-      )}
-
-      {/* High Impact Hackathon Feature: Quick Gate Pass Widget */}
-      {user.account_status === 'active' && (
-        <QuickGatePassWidget />
-      )}
-
-
-
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {links.map((link) => (
           <button
@@ -134,21 +107,13 @@ export function StudentDashboard() {
               </div>
               
               <div className="space-y-3 flex-1">
-                {activeComplaints.length === 0 && activeOutpasses.length === 0 ? (
+                {activeComplaints.length === 0 ? (
                    <div className="flex h-32 flex-col items-center justify-center text-center text-muted-foreground rounded-lg border border-dashed">
                      <p className="text-sm">No active requests.</p>
                    </div>
                 ) : (
                   <>
-                    {activeOutpasses.map((outpass: any) => (
-                      <div key={outpass.id} className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 cursor-pointer" onClick={() => navigate(basePath + '/outpasses')}>
-                        <div>
-                          <p className="text-sm font-medium">Outpass Request</p>
-                          <p className="text-xs text-muted-foreground">{new Date(outpass.start_time).toLocaleDateString()}</p>
-                        </div>
-                        <StatusBadge status={outpass.status} type="outpass" />
-                      </div>
-                    ))}
+                    
                     {activeComplaints.map((complaint: any) => (
                       <div key={complaint.id} className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 cursor-pointer" onClick={() => navigate(basePath + '/complaints')}>
                         <div>

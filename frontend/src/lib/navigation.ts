@@ -1,11 +1,12 @@
 import type { LucideIcon } from 'lucide-react';
-import type { UserRole } from '@/types/api';
+import type { UserType } from '@/types/api';
 import { PAGES_CONFIG, type NavSection } from '@/config/pages';
 
 export interface NavItem {
   label: string;
   to: string;
   icon: LucideIcon;
+  requiredPermissions?: string[];
 }
 
 export interface NavGroup {
@@ -13,20 +14,22 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-export const ROLE_ROUTES: Record<UserRole, string> = {
+export const ROLE_ROUTES: Record<UserType, string> = {
   student: '/student',
   faculty: '/faculty',
   admin: '/admin',
   user: '/user',
   parent: '/parent',
+  staff: '/staff', // added staff just in case
 };
 
-export const ROLE_LABELS: Record<UserRole, string> = {
+export const ROLE_LABELS: Record<UserType, string> = {
   student: 'Student',
   faculty: 'Faculty',
   admin: 'Administrator',
   user: 'General User',
   parent: 'Parent',
+  staff: 'Staff',
 };
 
 const SECTION_ORDER: NavSection[] = [
@@ -41,9 +44,9 @@ const SECTION_ORDER: NavSection[] = [
 /**
  * Derives navigation groups dynamically from the central PAGES_CONFIG registry.
  */
-function buildNavGroupsForRole(role: UserRole): NavGroup[] {
+function buildNavGroupsForRole(role: UserType): NavGroup[] {
   const rolePages = Object.values(PAGES_CONFIG).filter(
-    (page) => page.allowedRoles.includes(role) && page.showInSidebar !== false
+    (page) => page.allowedRoles && page.allowedRoles.includes(role) && page.showInSidebar !== false
   );
 
   return SECTION_ORDER.map((section) => {
@@ -54,6 +57,7 @@ function buildNavGroupsForRole(role: UserRole): NavGroup[] {
         label: page.title,
         to: page.path,
         icon: page.icon,
+        requiredPermissions: page.requiredPermissions,
       }));
 
     return {
@@ -63,12 +67,13 @@ function buildNavGroupsForRole(role: UserRole): NavGroup[] {
   }).filter((group) => group.items.length > 0);
 }
 
-export const NAV_GROUPS: Record<UserRole, NavGroup[]> = {
+export const NAV_GROUPS: Record<UserType, NavGroup[]> = {
   student: buildNavGroupsForRole('student'),
   faculty: buildNavGroupsForRole('faculty'),
   admin: buildNavGroupsForRole('admin'),
   user: buildNavGroupsForRole('user'),
   parent: buildNavGroupsForRole('parent'),
+  staff: buildNavGroupsForRole('staff'),
 };
 
 /**

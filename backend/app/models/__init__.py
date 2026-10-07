@@ -3,21 +3,12 @@ from app.models.user import User
 from app.models.profiles import StudentProfile, FacultyProfile, StaffProfile, ParentProfile
 from app.models.complaint import Complaint, ComplaintStatusLog
 from app.models.rbac import Asset, Action, Permission, Role, RolePermission
-from app.models.academic import Course, TimetableSlot, AttendanceRecord
+from app.models.academic import Course
 from app.models.notice import Notice
-from app.models.outpass import Outpass, OutpassStatusLog
-from app.models.mess import MessMenu, MessFeedback, MessOptOut
 from app.models.settings import SystemSetting
 from app.models.notification import Notification, NotificationType
 from app.models.audit import AuditLog
-
-from app.models.document import DocumentRequest, DocumentStatusLog, DocumentType, DocumentStatus, DocumentUrgency
-from app.models.audience_group import AudienceGroup, AudienceGroupMember
 from app.models.auth import RevokedToken, PasswordResetOTP
-from app.models.finance import FeeDue, FeeStatus
-from app.models.visitor import VisitorLog, VisitorStatus
-from app.models.gate_pass import QuickGatePass, GatePassReason, GatePassStatus
-from app.models.parent_link import ParentLinkRequest, ParentLinkStatus
 
 __all__ = [
     "Base",
@@ -32,36 +23,11 @@ __all__ = [
     "Role",
     "RolePermission",
     "Course",
-    "TimetableSlot",
-    "AttendanceRecord",
     "SystemSetting",
-    "Outpass",
-    "OutpassStatusLog",
-    "MessMenu",
-    "MessFeedback",
-    "MessOptOut",
+    "Notice",
     "Notification",
     "NotificationType",
     "AuditLog",
-    "DocumentRequest",
-    "DocumentStatusLog",
-    "DocumentType",
-    "DocumentStatus",
-    "DocumentUrgency",
-    "AudienceGroup",
-    "AudienceGroupMember",
     "RevokedToken",
     "PasswordResetOTP",
-    "FeeDue",
-    "FeeStatus",
-    "VisitorLog",
-    "VisitorStatus",
-    "QuickGatePass",
-    "GatePassReason",
-    "GatePassStatus",
-    "ParentLinkRequest",
-    "ParentLinkStatus",
 ]
-
-
-

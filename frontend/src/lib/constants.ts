@@ -50,21 +50,18 @@ export const API_ROUTES = {
 
   // Outpasses (Student)
   OUTPASSES: '/api/outpasses',
-  MY_OUTPASSES: '/api/outpasses/mine',
-  OUTPASS_DETAIL: (id: string) => `/api/outpasses/${id}`,
+    OUTPASS_DETAIL: (id: string) => `/api/outpasses/${id}`,
   OUTPASS_CANCEL: (id: string) => `/api/outpasses/${id}/cancel`,
 
   // Outpasses (Admin)
-  ADMIN_OUTPASSES: '/api/outpasses',
-  ADMIN_OUTPASS_DETAIL: (id: string) => `/api/outpasses/${id}`,
+    ADMIN_OUTPASS_DETAIL: (id: string) => `/api/outpasses/${id}`,
   ADMIN_OUTPASS_APPROVE: (id: string) => `/api/outpasses/${id}/approve`,
   ADMIN_OUTPASS_REJECT: (id: string) => `/api/outpasses/${id}/reject`,
   ADMIN_OUTPASS_DEPART: (id: string) => `/api/outpasses/${id}/depart`,
   ADMIN_OUTPASS_RETURN: (id: string) => `/api/outpasses/${id}/return`,
 
   // Timetable
-  MY_TIMETABLE: '/api/timetable/mine',
-  TIMETABLE: '/api/timetable/',
+    TIMETABLE: '/api/timetable/',
   TIMETABLE_SLOT: (slotId: string) => `/api/timetable/${slotId}`,
 
   // Attendance
@@ -162,14 +159,10 @@ export const QUERY_KEYS = {
   AGEING_COMPLAINTS: 'ageing-complaints',
   NOTICES: 'notices',
   NOTICE: 'notice',
-  MY_OUTPASSES: 'my-outpasses',
-  MY_GATE_PASS: 'my-gate-pass',
+    MY_GATE_PASS: 'my-gate-pass',
   PARENT_SAFETY: 'parent-safety',
-  OUTPASS: 'outpass',
-  ADMIN_OUTPASSES: 'admin-outpasses',
-
-  MY_TIMETABLE: 'my-timetable',
-  ATTENDANCE_ROSTER: 'attendance-roster',
+    
+    ATTENDANCE_ROSTER: 'attendance-roster',
   MY_ATTENDANCE_STATS: 'my-attendance-stats',
   MESS_TODAY: 'mess-today',
   MESS_WEEKLY: 'mess-weekly',

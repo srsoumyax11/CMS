@@ -13,8 +13,6 @@ from app.core.security import decode_token
 from app.models.user import User, UserType
 from app.models.rbac import Role, Permission, Asset, Action
 from app.models.complaint import Complaint, ComplaintVisibility
-from app.models.outpass import Outpass
-from app.models.academic import TimetableSlot
 from app.core.permissions import Perms
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
@@ -170,71 +168,18 @@ def can_view_complaint_detail(complaint: Complaint, current_user: User, user_per
         
     return False
 
-def can_view_outpass(outpass: Outpass, current_user: User, user_permissions: Set[str]) -> bool:
-    """
-    Evaluates row-level ownership and visibility logic for an outpass.
-    - Owner can always view their own outpass.
-    - Admins/Faculty with collection access (outpass:list) can view any individual outpass.
-    - This must be called explicitly in the handler body of GET /{id} routes to prevent IDOR.
-    """
-    if current_user.id == outpass.student_id:
-        return True
-    
-    if Perms.OUTPASS_LIST in user_permissions:
-        return True
-        
-    return False
 
-def can_mark_attendance(slot: TimetableSlot, current_user: User, user_permissions: Set[str]) -> bool:
-    """
-    Evaluates row-level ownership logic for attendance marking.
-    - Owner (assigned faculty) can always mark attendance for their slot.
-    - SuperAdmins (with timetable:manage) can mark anything.
-    """
-    if current_user.id == slot.faculty_id:
-        return True
-    
-    if Perms.TIMETABLE_MANAGE in user_permissions:
-        return True
-        
-    return False
 
 from app.core.uow import UnitOfWork, get_uow
-from app.services.outpass_service import OutpassService
-from app.services.timetable_service import TimetableService
-from app.services.attendance_service import AttendanceService
-from app.services.mess_service import MessService
 from app.services.notification_service import NotificationService
 from app.services.metadata_service import MetadataService
 from app.services.complaint_service import ComplaintService
 from app.services.role_service import RoleService
-from app.services.gate_pass_service import GatePassService
-from app.services.parent_link_service import ParentLinkService
-
-
 
 def get_complaint_service(uow: UnitOfWork = Depends(get_uow)) -> ComplaintService:
     return ComplaintService(uow)
 
-def get_outpass_service(uow: UnitOfWork = Depends(get_uow)) -> OutpassService:
-    return OutpassService(uow)
 
-def get_gate_pass_service(uow: UnitOfWork = Depends(get_uow)) -> GatePassService:
-    return GatePassService(uow)
-
-def get_parent_link_service(uow: UnitOfWork = Depends(get_uow)) -> ParentLinkService:
-    return ParentLinkService(uow)
-
-
-
-def get_timetable_service(uow: UnitOfWork = Depends(get_uow)) -> TimetableService:
-    return TimetableService(uow)
-
-def get_attendance_service(uow: UnitOfWork = Depends(get_uow)) -> AttendanceService:
-    return AttendanceService(uow)
-
-def get_mess_service(uow: UnitOfWork = Depends(get_uow)) -> MessService:
-    return MessService(uow)
 
 def get_notification_service(uow: UnitOfWork = Depends(get_uow)) -> NotificationService:
     return NotificationService(uow)

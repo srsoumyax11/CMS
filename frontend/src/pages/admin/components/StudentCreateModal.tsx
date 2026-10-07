@@ -33,7 +33,7 @@ export function StudentCreateModal({ isOpen, onClose, onSubmit, isPending, cours
     reset,
   } = useForm<StudentCreateFormValues>({
     resolver: zodResolver(studentCreateSchema),
-    defaultValues: { name: '', email: '', password: '', course_id: '', department_id: '', year: 1, hostel: '' }
+    defaultValues: { name: '', email: '', password: '', course_id: '', department_id: '', year: 1 }
   });
 
   useEffect(() => {
@@ -144,14 +144,7 @@ export function StudentCreateModal({ isOpen, onClose, onSubmit, isPending, cours
                 />
                 {errors.year && <p className="text-xs text-red-500">{errors.year.message}</p>}
               </div>
-              <div className="space-y-2">
-                <Label>Hostel (Optional)</Label>
-                <Input
-                  {...register('hostel')}
-                  placeholder="e.g., A101"
-                />
-                {errors.hostel && <p className="text-xs text-red-500">{errors.hostel.message}</p>}
-              </div>
+              
             </div>
           </div>
           <DialogFooter>

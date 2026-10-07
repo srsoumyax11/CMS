@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { complaintsApi } from '@/api/complaintsApi';
-import { outpassesApi } from '@/api/outpassesApi';
 import { adminApi } from '@/api/adminApi';
 import { StatCard } from '@/components/shared/StatCard';
 import { PageHeader } from '@/components/shared/page-header/PageHeader';
@@ -40,7 +39,6 @@ const adminModules: {
   { icon: UserCheck, label: 'Role Requests', desc: 'Approve applications', path: '/admin/role-applications' },
   { icon: Megaphone, label: 'Notices', desc: 'Manage announcements', path: '/admin/notices' },
   { icon: ClipboardList, label: 'Complaints', desc: 'Resolve issues', path: '/admin/complaints' },
-  { icon: CheckSquare, label: 'Outpasses', desc: 'Approve requests', path: '/admin/outpasses' },
   { icon: Users, label: 'Users', desc: 'Manage students', path: '/admin/users' },
   { icon: ShieldCheck, label: 'Permissions', desc: 'Access control', path: '/admin/permissions' },
 ];
@@ -55,12 +53,6 @@ export function AdminDashboard() {
     enabled: !!user,
   });
 
-  const { data: outpassesResp } = useQuery({
-    queryKey: ['admin-outpasses-stats'],
-    queryFn: () => outpassesApi.listAll(),
-    enabled: !!user,
-  });
-
   const { data: studentsResp } = useQuery({
     queryKey: ['admin-students-stats'],
     queryFn: () => adminApi.listStudents(),
@@ -71,9 +63,6 @@ export function AdminDashboard() {
 
   const complaints = complaintsResp?.data?.data?.items || [];
   const openComplaints = complaints.filter((c: any) => c.status === 'open' || c.status === 'in_progress').length;
-  
-  const outpasses = outpassesResp?.data?.data?.items || [];
-  const activeOutpasses = outpasses.filter((o: any) => o.status === 'active' || o.status === 'approved').length;
   
   const students = studentsResp?.data?.data || [];
   const pendingStudents = students.filter((s: any) => s.account_status === 'pending').length;
@@ -113,13 +102,7 @@ export function AdminDashboard() {
           hint="Awaiting account approval"
           className="border-info/30 bg-info/10 text-info-foreground"
         />
-        <StatCard
-          icon={Activity}
-          label="Active Outpasses"
-          value={activeOutpasses}
-          hint="Students currently off-campus"
-          className="border-success/30 bg-success/10 text-success-foreground"
-        />
+        
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

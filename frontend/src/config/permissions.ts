@@ -53,19 +53,7 @@ export const PERMISSIONS = {
     ASSIGN: 'complaint:assign',
     VIEW_PRIVATE: 'complaint:view_private',
   },
-  OUTPASS: {
-    CREATE: 'outpass:create',
-    VIEW: 'outpass:view',
-    CANCEL: 'outpass:cancel',
-    LIST: 'outpass:list',
-    APPROVE: 'outpass:approve',
-    REJECT: 'outpass:reject',
-  },
-  TIMETABLE: {
-    VIEW: 'timetable:view',
-    MANAGE: 'timetable:manage',
-  },
-  ATTENDANCE: {
+      ATTENDANCE: {
     MARK: 'attendance:mark',
     VIEW: 'attendance:view',
   },
@@ -88,9 +76,7 @@ export type PermissionCode =
   | typeof PERMISSIONS.ROLE[keyof typeof PERMISSIONS.ROLE]
   | typeof PERMISSIONS.NOTICE[keyof typeof PERMISSIONS.NOTICE]
   | typeof PERMISSIONS.COMPLAINT[keyof typeof PERMISSIONS.COMPLAINT]
-  | typeof PERMISSIONS.OUTPASS[keyof typeof PERMISSIONS.OUTPASS]
-  | typeof PERMISSIONS.TIMETABLE[keyof typeof PERMISSIONS.TIMETABLE]
-  | typeof PERMISSIONS.ATTENDANCE[keyof typeof PERMISSIONS.ATTENDANCE]
+      | typeof PERMISSIONS.ATTENDANCE[keyof typeof PERMISSIONS.ATTENDANCE]
   | typeof PERMISSIONS.MESS[keyof typeof PERMISSIONS.MESS]
   | typeof PERMISSIONS.SYSTEM_SETTING[keyof typeof PERMISSIONS.SYSTEM_SETTING]
   | typeof PERMISSIONS.DEPARTMENT[keyof typeof PERMISSIONS.DEPARTMENT];

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { noticesApi } from '@/api/noticesApi';
-import { adminApi } from '@/api/adminApi';
 import { useAuth } from '@/context/AuthContext';
 import { QUERY_KEYS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
@@ -25,15 +24,9 @@ export function NoticeCreate() {
   const [file, setFile] = useState<File | null>(null);
   const [targetHostel, setTargetHostel] = useState('');
   const [targetYear, setTargetYear] = useState('');
-  const [audienceGroupId, setAudienceGroupId] = useState<string>('none');
   const { role } = useAuth();
 
-  const { data: audienceRes } = useQuery({
-    queryKey: ['audience_groups'],
-    queryFn: () => adminApi.listAudienceGroups(),
-    enabled: role === 'admin',
-  });
-  const audienceGroups = audienceRes?.data?.data || [];
+
 
   const createMutation = useMutation({
     mutationFn: (data: NoticeCreateRequest) => noticesApi.create(data),
@@ -50,9 +43,8 @@ export function NoticeCreate() {
     createMutation.mutate({
       title,
       content,
-      target_hostel: audienceGroupId !== 'none' ? null : (targetHostel || null),
-      target_year: audienceGroupId !== 'none' ? null : (targetYear ? parseInt(targetYear, 10) : null),
-      target_audience_group_id: audienceGroupId !== 'none' ? audienceGroupId : null,
+      target_hostel: targetHostel || null,
+      target_year: targetYear ? parseInt(targetYear, 10) : null,
       file: file,
     });
   };
@@ -92,29 +84,7 @@ export function NoticeCreate() {
               />
             </div>
 
-            {role === 'admin' && audienceGroups.length > 0 && (
-              <div className="space-y-2 border-t pt-4 mt-4">
-                <Label htmlFor="audienceGroup">Target Audience Group</Label>
-                <Select value={audienceGroupId} onValueChange={setAudienceGroupId}>
-                  <SelectTrigger id="audienceGroup">
-                    <SelectValue placeholder="Select an audience group..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Manual Targeting (Use fields below)</SelectItem>
-                    {audienceGroups.map((ag) => (
-                      <SelectItem key={ag.id} value={ag.id}>
-                        {ag.name} ({ag.member_count} members)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {audienceGroupId !== 'none' && (
-                  <p className="text-xs text-muted-foreground mt-1">Manual targeting filters are disabled because an Audience Group is selected.</p>
-                )}
-              </div>
-            )}
-
-            <div className={`grid grid-cols-2 gap-4 ${audienceGroupId !== 'none' ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="target_hostel">Target Hostel (optional)</Label>
                 <Input
@@ -122,7 +92,7 @@ export function NoticeCreate() {
                   value={targetHostel}
                   onChange={(e) => setTargetHostel(e.target.value)}
                   placeholder="e.g., Block A"
-                  disabled={audienceGroupId !== 'none'}
+                  
                 />
               </div>
               <div className="space-y-2">
@@ -133,7 +103,7 @@ export function NoticeCreate() {
                   value={targetYear}
                   onChange={(e) => setTargetYear(e.target.value)}
                   placeholder="e.g., 2024"
-                  disabled={audienceGroupId !== 'none'}
+                  
                 />
               </div>
             </div>

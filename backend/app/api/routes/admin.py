@@ -82,9 +82,6 @@ async def list_students(
             current_semester=profile.current_semester if profile else 1,
             section=profile.section if profile else "A",
             year=profile.year if profile else 0,
-            hostel=hostel_bldg,
-            hostel_name=hostel_bldg,
-            room_id=profile.room_id if profile else None,
             account_status=s.account_status,
             academic_status=profile.academic_status if profile else None,
             status_note=s.status_note

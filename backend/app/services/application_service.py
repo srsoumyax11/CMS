@@ -240,19 +240,7 @@ class ApplicationService:
                 )
                 self.uow.db.add(p_profile)
 
-                # Create pending ParentLinkRequest requiring student consent
-                from app.models.parent_link import ParentLinkRequest, ParentLinkStatus
-                link_req = ParentLinkRequest(
-                    parent_user_id=user.id,
-                    student_id=child_user.id,
-                    relationship_type=data.get("relationship_type", "Parent"),
-                    status=ParentLinkStatus.pending,
-                    share_gate_pass=True,
-                    share_attendance=True,
-                    share_marksheet=True,
-                    share_outpass=True
-                )
-                self.uow.db.add(link_req)
+
 
                 # Notify student of pending guardian link request
                 child_notif = Notification(

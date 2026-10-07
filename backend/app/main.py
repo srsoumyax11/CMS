@@ -29,20 +29,9 @@ from app.api.routes import (
     roles,
     notices,
     complaints,
-    outpasses,
-    timetable,
-    attendance,
-    mess,
     notifications,
     health,
-    documents,
-    audience_groups,
-    finance,
-    visitors,
-    hostel,
     applications,
-    gate_pass,
-    parent_link
 )
 
 
@@ -67,21 +56,9 @@ tags_metadata = [
         "description": "Endpoints for resolving, assigning, raising, and tracking complaints.",
     },
     {
-        "name": "Outpasses",
-        "description": "Endpoints for requesting, tracking, approving, and rejecting outpasses.",
-    },
-    {
         "name": "Notices",
         "description": "Digital notice board for targeted announcements.",
     },
-    {
-        "name": "Mess",
-        "description": "Endpoints for mess menu, feedback, opt-outs, and analytics.",
-    },
-    {
-        "name": "Documents",
-        "description": "Endpoints for requesting and issuing documents and certificates.",
-    }
 ]
 
 from app.core.cache import init_redis, close_redis
@@ -185,19 +162,7 @@ app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(roles.router, prefix="/api/roles", tags=["Roles & Permissions"])
 app.include_router(complaints.router, prefix="/api/complaints", tags=["Complaints"])
 app.include_router(notices.router, prefix="/api/notices", tags=["Notices"])
-app.include_router(outpasses.router, prefix="/api/outpasses", tags=["Outpasses"])
-app.include_router(timetable.router, prefix="/api/timetable", tags=["Timetable"])
-app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
-app.include_router(mess.router, prefix="/api/mess", tags=["Mess"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
-app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
-app.include_router(documents.admin_router, prefix="/api/admin/documents", tags=["Documents (Admin)"])
-app.include_router(audience_groups.router, prefix="/api", tags=["Audience Groups"])
-app.include_router(finance.router, prefix="/api/finance", tags=["Finance"])
-app.include_router(visitors.router, prefix="/api/visitors", tags=["Visitors"])
-app.include_router(hostel.router, prefix="/api/hostel", tags=["Hostel"])
-app.include_router(gate_pass.router, prefix="/api", tags=["Quick Gate Pass & Safety Matrix"])
-app.include_router(parent_link.router, prefix="/api", tags=["Parent Guardian Consent & Privacy Matrix"])
 
 
 

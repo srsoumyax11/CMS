@@ -141,7 +141,7 @@ export function Onboarding() {
             <CardDescription>
               {hasExistingProfile
                 ? 'Your application requires corrections. Update the fields below and resubmit.'
-                : 'We need these details to assign you to the correct batches and timetable. Your account is currently under review.'}
+                : 'We need these details to assign you to the correct batches. Your account is currently under review.'}
             </CardDescription>
           </CardHeader>
           <CardContent>

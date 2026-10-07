@@ -25,15 +25,6 @@ export const STATUS_BADGE_CONFIG = {
     resolved: { label: 'Resolved', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' },
     closed: { label: 'Closed', className: 'bg-muted text-muted-foreground border-border' },
     cancelled: { label: 'Cancelled', className: 'bg-destructive/10 text-destructive border-destructive/20' },
-  },
-  outpass: {
-    pending: { label: 'Pending', className: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20' },
-    approved: { label: 'Approved', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' },
-    active: { label: 'Active', className: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20' },
-    overdue: { label: 'Overdue', className: 'bg-destructive/10 text-destructive border-destructive/30 font-bold animate-pulse' },
-    completed: { label: 'Completed', className: 'bg-muted text-muted-foreground border-border' },
-    rejected: { label: 'Rejected', className: 'bg-destructive/10 text-destructive border-destructive/20' },
-    cancelled: { label: 'Cancelled', className: 'bg-destructive/10 text-destructive border-destructive/20' },
   }
 } as const;
 

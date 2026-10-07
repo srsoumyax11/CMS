@@ -8,11 +8,11 @@ import {
 } from 'react';
 import { authApi } from '@/api/authApi';
 import { STORAGE_KEYS, AUTH_EVENTS } from '@/lib/constants';
-import type { UserResponse, LoginRequest, UserRole } from '@/types/api';
+import type { UserResponse, LoginRequest, UserType } from '@/types/api';
 
 interface AuthContextValue {
   user: UserResponse | null;
-  role: UserRole | null;
+  role: UserType | null;
   isLoading: boolean;
   login: (credentials: LoginRequest) => Promise<any>;
   finishLogin: (access_token: string, refresh_token: string) => Promise<void>;

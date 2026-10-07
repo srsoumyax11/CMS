@@ -24,13 +24,6 @@ class Perms:
     STAFF_PROFILE_EDIT = "staff_profile:edit"
     STAFF_PROFILE_DELETE = "staff_profile:delete"
 
-    # Asset: audience_group
-    AUDIENCE_GROUP_VIEW = "audience_group:view"
-    AUDIENCE_GROUP_LIST = "audience_group:list"
-    AUDIENCE_GROUP_CREATE = "audience_group:create"
-    AUDIENCE_GROUP_EDIT = "audience_group:edit"
-    AUDIENCE_GROUP_DELETE = "audience_group:delete"
-    
 
     # Asset: role
     ROLE_VIEW = "role:view"
@@ -60,26 +53,6 @@ class Perms:
     COMPLAINT_ASSIGN = "complaint:assign"
     COMPLAINT_VIEW_PRIVATE = "complaint:view_private"
 
-    # Asset: outpass
-    OUTPASS_CREATE = "outpass:create"
-    OUTPASS_VIEW = "outpass:view"
-    OUTPASS_CANCEL = "outpass:cancel"
-    OUTPASS_LIST = "outpass:list"
-    OUTPASS_APPROVE = "outpass:approve"
-    OUTPASS_REJECT = "outpass:reject"
-
-    # Asset: timetable
-    TIMETABLE_MANAGE = "timetable:manage"
-    TIMETABLE_VIEW = "timetable:view"
-
-    # Asset: attendance
-    ATTENDANCE_MARK = "attendance:mark"
-    ATTENDANCE_VIEW = "attendance:view"
-
-    # Asset: mess
-    MESS_MANAGE = "mess:manage"
-    MESS_VIEW = "mess:view"
-    MESS_FEEDBACK = "mess:feedback"
 
     # Asset: system_setting
     SYSTEM_SETTING_MANAGE = "system_setting:manage"
@@ -87,20 +60,6 @@ class Perms:
     # Asset: department
     DEPARTMENT_MANAGE = "department:manage"
 
-    # Asset: document
-    DOCUMENT_CREATE = "document:create"
-    DOCUMENT_VIEW = "document:view"
-    DOCUMENT_LIST = "document:list"
-    DOCUMENT_APPROVE = "document:approve"
-    DOCUMENT_REJECT = "document:reject"
-    DOCUMENT_MANAGE = "document:manage"
-
-    # Asset: fee
-    FEE_MANAGE = "fee:manage"
-
-    # Asset: visitor
-    VISITOR_MANAGE = "visitor:manage"
-    VISITOR_VIEW = "visitor:view"
 
     # Asset: hostel
     HOSTEL_MANAGE = "hostel:manage"

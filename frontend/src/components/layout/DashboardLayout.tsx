@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 export function DashboardLayout() {
-  const { user, role, logout } = useAuth();
+  const { user, role, logout, hasPermission } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -30,8 +30,17 @@ export function DashboardLayout() {
 
   if (!user || !role) return null;
 
-  const navGroups = NAV_GROUPS[role];
-  const roleLabel = ROLE_LABELS[role];
+  const navGroups = (NAV_GROUPS[role] || [])
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => {
+        if (!item.requiredPermissions || item.requiredPermissions.length === 0) return true;
+        return item.requiredPermissions.every(perm => hasPermission(perm));
+      })
+    }))
+    .filter(group => group.items.length > 0);
+
+  const roleLabel = ROLE_LABELS[role] || role;
 
   const handleLogout = () => {
     logout();

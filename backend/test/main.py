@@ -42,10 +42,10 @@ async def run_course_seeder(session: AsyncSession):
     for course_item in COURSES_DATA:
         course_obj = await create_course(
             session=session,
-            code=course_item["code"],
-            name=course_item["name"],
-            duration_years=course_item["duration_years"],
-            is_active=course_item.get("is_active", True),
+            code=str(course_item["code"]),
+            name=str(course_item["name"]),
+            duration_years=int(course_item["duration_years"]),
+            is_active=bool(course_item.get("is_active", True)),
         )
         created_courses.append(course_obj)
 
@@ -63,10 +63,10 @@ async def run_department_seeder(session: AsyncSession):
     for dept in ALL_DEPARTMENTS:
         department_obj = await create_department(
             session=session,
-            code=dept["code"],
-            name=dept["name"],
-            department_type=dept["department_type"],
-            is_active=dept.get("is_active", True),
+            code=str(dept["code"]),
+            name=str(dept["name"]),
+            department_type=str(dept["department_type"]),
+            is_active=bool(dept.get("is_active", True)),
         )
         created_depts.append(department_obj)
 

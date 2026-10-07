@@ -1,8 +1,7 @@
 // ── Enums / Union Types ──────────────────────────────────────────────
 
-export type UserRole = 'student' | 'faculty' | 'admin' | 'user' | 'parent';
 export type AccountStatus = 'pending' | 'revision' | 'active' | 'suspended' | 'rejected';
-export type UserType = 'student' | 'faculty' | 'admin' | 'user' | 'parent';
+export type UserType = 'student' | 'faculty' | 'admin' | 'user' | 'parent' | 'staff';
 
 export type AcademicStatus = 'enrolled' | 'graduated' | 'dropped' | 'expelled';
 export type EmploymentStatus = 'active' | 'on_leave' | 'resigned' | 'retired' | 'terminated';
@@ -78,24 +77,11 @@ export type ComplaintStatus =
 
 export type ComplaintVisibility = 'public' | 'private';
 
-export type OutpassStatus =
-  | 'pending'
-  | 'approved'
-  | 'active'
-  | 'completed'
-  | 'rejected'
-  | 'cancelled';
 
-export type DayOfWeek =
-  | 'monday'
-  | 'tuesday'
-  | 'wednesday'
-  | 'thursday'
-  | 'friday'
-  | 'saturday'
-  | 'sunday';
 
-export type MealType = 'breakfast' | 'lunch' | 'snacks' | 'dinner';
+
+
+
 
 
 // ── Auth ─────────────────────────────────────────────────────────────
@@ -325,92 +311,15 @@ export interface NoticeUpdateRequest {
   content?: string | null;
 }
 
-// ── Outpasses ────────────────────────────────────────────────────────
 
-export interface OutpassResponse {
-  id: string;
-  student_id: string;
-  destination: string;
-  reason: string;
-  departure_time: string;
-  expected_return_time: string;
-  actual_return_time: string | null;
-  status: OutpassStatus;
-  approved_by: string | null;
-  created_at: string;
-  updated_at: string | null;
-  student_name?: string | null;
-  student_course?: string | null;
-  is_overdue: boolean;
-  overdue_hours: number;
-}
 
-export interface OutpassListResponse {
-  total: number;
-  items: OutpassResponse[];
-}
 
-export interface OutpassCreateRequest {
-  destination: string;
-  reason: string;
-  departure_time: string;
-  expected_return_time: string;
-}
 
-export interface OutpassRejectRequest {
-  note?: string | null;
-}
 
-export interface OutpassApprovalActionResponse {
-  success: boolean;
-  data: OutpassResponse | null;
-  error?: string | null;
-}
 
-// ── Timetable ────────────────────────────────────────────────────────
 
-export interface TimetableSlot {
-  id: string;
-  course_id: string;
-  department_id: string;
-  /** @deprecated use department_id */
-  branch_id?: string;
-  year: number;
-  subject_name: string;
-  faculty_id: string;
-  day_of_week: DayOfWeek;
-  start_time: string;
-  end_time: string;
-  room: string | null;
-}
 
-export interface TimetableSlotCreate {
-  course_id: string;
-  department_id: string;
-  /** @deprecated use department_id */
-  branch_id?: string;
-  year: number;
-  subject_name: string;
-  faculty_id: string;
-  day_of_week: DayOfWeek;
-  start_time: string;
-  end_time: string;
-  room?: string | null;
-}
 
-export interface TimetableSlotUpdate {
-  course_id?: string | null;
-  department_id?: string | null;
-  /** @deprecated use department_id */
-  branch_id?: string | null;
-  year?: number | null;
-  subject_name?: string | null;
-  faculty_id?: string | null;
-  day_of_week?: DayOfWeek | null;
-  start_time?: string | null;
-  end_time?: string | null;
-  room?: string | null;
-}
 
 // ── Attendance ──────────────────────────────────────────────────────
 
@@ -443,32 +352,6 @@ export interface AttendanceStat {
   total?: number;
 }
 
-
-// ── Mess ─────────────────────────────────────────────────────────────
-
-export interface MessMenu {
-  day_of_week: DayOfWeek;
-  meal_type: MealType;
-  items: string;
-}
-
-export interface MessMenuCreate {
-  day_of_week: DayOfWeek;
-  meal_type: MealType;
-  items: string;
-}
-
-export interface MessFeedbackCreate {
-  date: string;
-  meal_type: MealType;
-  rating: number;
-  comments?: string | null;
-}
-
-export interface MessOptOutCreate {
-  date: string;
-  meal_type: MealType;
-}
 
 // ── Admin: Students ──────────────────────────────────────────────────
 
@@ -625,11 +508,6 @@ export interface ComplaintListParams extends PaginationParams {
   hostel?: string | null;
 }
 
-export interface OutpassListParams extends PaginationParams {
-  status?: OutpassStatus | null;
-  is_overdue?: boolean | null;
-}
-
 export interface StudentListParams extends PaginationParams {
   status?: AccountStatus | null;
 }
@@ -647,59 +525,7 @@ export interface OnboardingStatusResponse {
   tasks: OnboardingTask[];
 }
 
-// ── Audience Groups ──────────────────────────────────────────────────
-export interface AudienceGroup {
-  id: string;
-  name: string;
-  description: string | null;
-  filters: any;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  member_count: number;
-}
-export interface AudienceGroupCreateRequest {
-  name: string;
-  description?: string | null;
-  filters: any;
-}
-export interface AudienceGroupUpdateRequest {
-  name?: string;
-  description?: string | null;
-  filters?: any;
-}
 
-// ── Documents ────────────────────────────────────────────────────────
-export type DocumentType = 'bonafide' | 'noc' | 'fee_clearance' | 'character_certificate' | 'transcript' | 'other';
-export type DocumentStatus = 'pending' | 'approved' | 'ready' | 'rejected';
-export type DocumentUrgency = 'normal' | 'urgent';
-
-export interface DocumentRequest {
-  id: string;
-  student_id: string;
-  document_type: DocumentType;
-  purpose: string;
-  urgency: DocumentUrgency;
-  status: DocumentStatus;
-  admin_note: string | null;
-  issued_file_url: string | null;
-  processed_by: string | null;
-  created_at: string;
-  updated_at: string;
-  student_name?: string;
-}
-
-export interface DocumentRequestCreate {
-  document_type: DocumentType;
-  purpose: string;
-  urgency: DocumentUrgency;
-}
-
-export interface DocumentRequestUpdate {
-  status: DocumentStatus;
-  admin_note?: string | null;
-  issued_file_url?: string | null;
-}
 
 // ── Infrastructure (Buildings & Rooms) ───────────────────────────────
 export type BuildingType = 'academic' | 'hostel' | 'administrative' | 'sports' | 'other';

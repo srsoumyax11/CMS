@@ -20,11 +20,6 @@ import type {
   Course,
   CourseCreateRequest,
   CourseUpdateRequest,
-  AudienceGroup,
-  AudienceGroupCreateRequest,
-  AudienceGroupUpdateRequest,
-  DocumentRequest,
-  DocumentRequestUpdate,
   Building,
   BuildingCreateRequest,
   Room,
@@ -112,28 +107,6 @@ export const adminApi = {
   // Onboarding
   getOnboardingStatus: () =>
     client.get<APIResponse<OnboardingStatusResponse>>(API_ROUTES.ADMIN_ONBOARDING_STATUS),
-
-  // ── Audience Groups ──
-  listAudienceGroups: () =>
-    client.get<APIResponse<AudienceGroup[]>>('/api/audience-groups'),
-  createAudienceGroup: (data: AudienceGroupCreateRequest) =>
-    client.post<APIResponse<AudienceGroup>>('/api/audience-groups', data),
-  updateAudienceGroup: (id: string, data: AudienceGroupUpdateRequest) =>
-    client.patch<APIResponse<AudienceGroup>>(`/api/audience-groups/${id}`, data),
-  deleteAudienceGroup: (id: string) =>
-    client.delete<APIResponse<{message: string}>>(`/api/audience-groups/${id}`),
-  syncAudienceGroup: (id: string) =>
-    client.post<APIResponse<AudienceGroup>>(`/api/audience-groups/${id}/sync`, {}),
-
-  // ── Document Requests (Admin) ──
-  listDocumentRequests: (params?: PaginationParams) =>
-    client.get<APIResponse<{total: number; items: DocumentRequest[]}>>('/api/admin/documents/requests', { params }),
-  approveDocumentRequest: (id: string, data: { issued_file_url?: string; admin_notes?: string }) =>
-    client.patch<APIResponse<DocumentRequest>>(`/api/admin/documents/requests/${id}/approve`, data),
-  rejectDocumentRequest: (id: string, data: { rejection_reason: string; admin_notes?: string }) =>
-    client.patch<APIResponse<DocumentRequest>>(`/api/admin/documents/requests/${id}/reject`, data),
-  markDocumentReady: (id: string, data: { issued_file_url: string; admin_notes?: string }) =>
-    client.patch<APIResponse<DocumentRequest>>(`/api/admin/documents/requests/${id}/ready`, data),
 
   // ── Infrastructure (Buildings & Rooms) ──
   listBuildings: () =>
