@@ -42,13 +42,7 @@ const RolesPermissions = React.lazy(() => import('@/pages/admin/RolesPermissions
 const DepartmentManagement = React.lazy(() => import('@/pages/admin/DepartmentManagement').then(module => ({ default: module.DepartmentManagement })));
 const CourseManagement = React.lazy(() => import('@/pages/admin/CourseManagement').then(module => ({ default: module.CourseManagement })));
 const RoleApplicationsManagement = React.lazy(() => import('@/pages/admin/RoleApplicationsManagement').then(module => ({ default: module.RoleApplicationsManagement })));
-
-
-// Gate Pass & Parent Safety Matrix
-
-
-
-import './App.css';
+const AcademicManagement = React.lazy(() => import('@/pages/admin/AcademicManagement').then(module => ({ default: module.AcademicManagement })));
 
 function RoleRedirect() {
   const { role } = useAuth();
@@ -114,8 +108,13 @@ export function AdminRoutes() {
       <Route path="users" element={<FacultyManagement />} />
       <Route path="all-users" element={<AllUsersManagement />} />
       <Route path="permissions" element={<RolesPermissions />} />
-      <Route path="departments" element={<DepartmentManagement />} />
-      <Route path="courses" element={<CourseManagement />} />
+      <Route path="academic" element={<AcademicManagement />} />
+      <Route path="departments" element={<Navigate to="/admin/academic?tab=departments" replace />} />
+      <Route path="courses" element={<Navigate to="/admin/academic?tab=courses" replace />} />
+      <Route path="terms" element={<Navigate to="/admin/academic?tab=terms" replace />} />
+      <Route path="subjects" element={<Navigate to="/admin/academic?tab=subjects" replace />} />
+      <Route path="class-groups" element={<Navigate to="/admin/academic?tab=class-groups" replace />} />
+      <Route path="holidays" element={<Navigate to="/admin/academic?tab=holidays" replace />} />
       <Route path="settings" element={<SystemSettings />} />
       <Route path="profile" element={<Profile />} />
       </Routes>

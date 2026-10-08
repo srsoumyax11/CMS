@@ -69,6 +69,7 @@ class GenericRepository(Generic[T]):
     async def create(self, obj_in: T) -> T:
         self.db.add(obj_in)
         await self.db.flush()
+        await self.db.refresh(obj_in)
         return obj_in
 
     async def update(self, db_obj: T, obj_in: Dict[str, Any]) -> T:
@@ -77,6 +78,7 @@ class GenericRepository(Generic[T]):
                 setattr(db_obj, field, value)
         self.db.add(db_obj)
         await self.db.flush()
+        await self.db.refresh(db_obj)
         return db_obj
 
     async def delete(self, id: Any) -> bool:

@@ -45,12 +45,12 @@ class AcademicService:
         async with self.uow.transaction() as u:
             return await u.departments.list(skip=skip, limit=limit)
 
-    async def get_department(self, dep_id: UUID) -> Department:
+    async def delete_department(self, dep_id: UUID) -> bool:
         async with self.uow.transaction() as u:
             dep = await u.departments.get_by_id(dep_id)
             if not dep:
                 raise ValueError("Department not found.")
-            return dep
+            return await u.departments.delete(dep_id)
 
     # --- Course Management ---
     async def create_course(self, course_in: CourseCreate) -> Course:
@@ -72,6 +72,13 @@ class AcademicService:
             if not course:
                 raise ValueError("Course not found.")
             return await u.courses.update(course, course_in.model_dump(exclude_unset=True))
+
+    async def delete_course(self, course_id: UUID) -> bool:
+        async with self.uow.transaction() as u:
+            course = await u.courses.get_by_id(course_id)
+            if not course:
+                raise ValueError("Course not found.")
+            return await u.courses.delete(course_id)
 
     async def list_courses(self, skip: int = 0, limit: int = 100) -> Tuple[List[Course], int]:
         async with self.uow.transaction() as u:
@@ -109,6 +116,13 @@ class AcademicService:
                 await u.academic_terms.unset_all_current()
 
             return await u.academic_terms.update(term, term_in.model_dump(exclude_unset=True))
+
+    async def delete_term(self, term_id: UUID) -> bool:
+        async with self.uow.transaction() as u:
+            term = await u.academic_terms.get_by_id(term_id)
+            if not term:
+                raise ValueError("Academic term not found.")
+            return await u.academic_terms.delete(term_id)
 
     async def set_current_term(self, term_id: UUID) -> AcademicTerm:
         async with self.uow.transaction() as u:
@@ -157,6 +171,13 @@ class AcademicService:
                 raise ValueError("Subject not found.")
             return await u.subjects.update(sub, sub_in.model_dump(exclude_unset=True))
 
+    async def delete_subject(self, sub_id: UUID) -> bool:
+        async with self.uow.transaction() as u:
+            sub = await u.subjects.get_by_id(sub_id)
+            if not sub:
+                raise ValueError("Subject not found.")
+            return await u.subjects.delete(sub_id)
+
     async def list_subjects(self, department_id: Optional[UUID] = None, skip: int = 0, limit: int = 100) -> Tuple[List[Subject], int]:
         async with self.uow.transaction() as u:
             if department_id:
@@ -184,6 +205,20 @@ class AcademicService:
             )
             return await u.class_groups.create(cg)
 
+    async def update_class_group(self, cg_id: UUID, cg_in: ClassGroupUpdate) -> ClassGroup:
+        async with self.uow.transaction() as u:
+            cg = await u.class_groups.get_by_id(cg_id)
+            if not cg:
+                raise ValueError("Class group not found.")
+            return await u.class_groups.update(cg, cg_in.model_dump(exclude_unset=True))
+
+    async def delete_class_group(self, cg_id: UUID) -> bool:
+        async with self.uow.transaction() as u:
+            cg = await u.class_groups.get_by_id(cg_id)
+            if not cg:
+                raise ValueError("Class group not found.")
+            return await u.class_groups.delete(cg_id)
+
     async def list_class_groups(self, skip: int = 0, limit: int = 100) -> Tuple[List[ClassGroup], int]:
         async with self.uow.transaction() as u:
             return await u.class_groups.list(skip=skip, limit=limit)
@@ -204,6 +239,23 @@ class AcademicService:
             )
             return await u.holidays.create(holiday)
 
-    async def list_holidays(self, start_date: date, end_date: date, department_id: Optional[UUID] = None) -> List[Holiday]:
+    async def update_holiday(self, holiday_id: UUID, hol_in: HolidayUpdate) -> Holiday:
         async with self.uow.transaction() as u:
-            return await u.holidays.list_holidays_in_range(start_date, end_date, department_id=department_id)
+            hol = await u.holidays.get_by_id(holiday_id)
+            if not hol:
+                raise ValueError("Holiday not found.")
+            return await u.holidays.update(hol, hol_in.model_dump(exclude_unset=True))
+
+    async def delete_holiday(self, holiday_id: UUID) -> bool:
+        async with self.uow.transaction() as u:
+            hol = await u.holidays.get_by_id(holiday_id)
+            if not hol:
+                raise ValueError("Holiday not found.")
+            return await u.holidays.delete(holiday_id)
+
+    async def list_holidays(self, start_date: Optional[date] = None, end_date: Optional[date] = None, department_id: Optional[UUID] = None) -> List[Holiday]:
+        current_year = date.today().year
+        s_date = start_date or date(current_year, 1, 1)
+        e_date = end_date or date(current_year, 12, 31)
+        async with self.uow.transaction() as u:
+            return await u.holidays.list_holidays_in_range(s_date, e_date, department_id=department_id)

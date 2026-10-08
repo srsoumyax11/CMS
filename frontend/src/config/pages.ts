@@ -96,6 +96,18 @@ export const PAGES_CONFIG: Record<string, PageMetadata> = {
     showInSidebar: true,
     order: 1,
   },
+  'admin.academic': {
+    id: 'admin.academic',
+    path: '/admin/academic',
+    title: 'Academic Infrastructure',
+    description: 'Manage departments, degree courses, academic terms, subjects, class cohorts, and holidays.',
+    section: 'Academic Management',
+    icon: Landmark,
+    allowedRoles: ['admin', 'staff'],
+    requiredPermissions: ['department:manage'],
+    showInSidebar: true,
+    order: 2,
+  },
   'admin.departments': {
     id: 'admin.departments',
     path: '/admin/departments',
@@ -105,8 +117,8 @@ export const PAGES_CONFIG: Record<string, PageMetadata> = {
     icon: Building2,
     allowedRoles: ['admin', 'staff'],
     requiredPermissions: ['department:manage'],
-    showInSidebar: true,
-    order: 2,
+    showInSidebar: false,
+    order: 3,
   },
   'admin.courses': {
     id: 'admin.courses',
@@ -117,8 +129,8 @@ export const PAGES_CONFIG: Record<string, PageMetadata> = {
     icon: BookOpen,
     allowedRoles: ['admin', 'staff'],
     requiredPermissions: ['department:manage'],
-    showInSidebar: true,
-    order: 3,
+    showInSidebar: false,
+    order: 4,
   },
   // --- Campus Operations ---
   'admin.role_applications': {

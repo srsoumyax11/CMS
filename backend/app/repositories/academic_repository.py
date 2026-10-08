@@ -92,8 +92,6 @@ class HolidayRepository(GenericRepository[Holiday]):
         )
         if department_id:
             stmt = stmt.where(or_(Holiday.applies_to.is_(None), Holiday.applies_to == department_id))
-        else:
-            stmt = stmt.where(Holiday.applies_to.is_(None))
 
         stmt = stmt.order_by(Holiday.date.asc())
         result = await self.db.execute(stmt)

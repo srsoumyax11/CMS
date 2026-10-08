@@ -75,6 +75,24 @@ async def update_department(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.delete(
+    "/departments/{dep_id}",
+    summary="Delete Department",
+    description="Deletes a department. **Requires:** `academic:manage`",
+    response_model=APIResponse[dict]
+)
+async def delete_department(
+    dep_id: UUID,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ACADEMIC_MANAGE))
+):
+    service = AcademicService(uow)
+    try:
+        await service.delete_department(dep_id)
+        return APIResponse(success=True, data={"message": "Department deleted successfully"})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 # --- Courses ---
 @router.post(
     "/courses",
@@ -111,6 +129,43 @@ async def list_courses(
     items = [CourseResponse.model_validate(item) for item in items_raw]
     return APIResponse(success=True, data=CourseListResponse(total=total, items=items))
 
+@router.put(
+    "/courses/{course_id}",
+    summary="Update Course",
+    description="Updates a degree course. **Requires:** `academic:manage`",
+    response_model=APIResponse[CourseResponse]
+)
+async def update_course(
+    course_id: UUID,
+    req: CourseUpdate,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ACADEMIC_MANAGE))
+):
+    service = AcademicService(uow)
+    try:
+        course = await service.update_course(course_id, req)
+        return APIResponse(success=True, data=CourseResponse.model_validate(course))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete(
+    "/courses/{course_id}",
+    summary="Delete Course",
+    description="Deletes a degree course. **Requires:** `academic:manage`",
+    response_model=APIResponse[dict]
+)
+async def delete_course(
+    course_id: UUID,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ACADEMIC_MANAGE))
+):
+    service = AcademicService(uow)
+    try:
+        await service.delete_course(course_id)
+        return APIResponse(success=True, data={"message": "Course deleted successfully"})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 # --- Academic Terms ---
 @router.post(
     "/terms",
@@ -146,6 +201,43 @@ async def list_terms(
     items_raw, total = await service.list_terms(skip=skip, limit=limit)
     items = [AcademicTermResponse.model_validate(item) for item in items_raw]
     return APIResponse(success=True, data=AcademicTermListResponse(total=total, items=items))
+
+@router.put(
+    "/terms/{term_id}",
+    summary="Update Academic Term",
+    description="Updates academic term details. **Requires:** `academic:manage`",
+    response_model=APIResponse[AcademicTermResponse]
+)
+async def update_term(
+    term_id: UUID,
+    req: AcademicTermUpdate,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ACADEMIC_MANAGE))
+):
+    service = AcademicService(uow)
+    try:
+        term = await service.update_term(term_id, req)
+        return APIResponse(success=True, data=AcademicTermResponse.model_validate(term))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete(
+    "/terms/{term_id}",
+    summary="Delete Academic Term",
+    description="Deletes an academic term. **Requires:** `academic:manage`",
+    response_model=APIResponse[dict]
+)
+async def delete_term(
+    term_id: UUID,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ACADEMIC_MANAGE))
+):
+    service = AcademicService(uow)
+    try:
+        await service.delete_term(term_id)
+        return APIResponse(success=True, data={"message": "Academic term deleted successfully"})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get(
     "/terms/current",
@@ -219,6 +311,43 @@ async def list_subjects(
     items = [SubjectResponse.model_validate(item) for item in items_raw]
     return APIResponse(success=True, data=SubjectListResponse(total=total, items=items))
 
+@router.put(
+    "/subjects/{sub_id}",
+    summary="Update Subject",
+    description="Updates subject details. **Requires:** `academic:manage`",
+    response_model=APIResponse[SubjectResponse]
+)
+async def update_subject(
+    sub_id: UUID,
+    req: SubjectUpdate,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ACADEMIC_MANAGE))
+):
+    service = AcademicService(uow)
+    try:
+        sub = await service.update_subject(sub_id, req)
+        return APIResponse(success=True, data=SubjectResponse.model_validate(sub))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete(
+    "/subjects/{sub_id}",
+    summary="Delete Subject",
+    description="Deletes a subject. **Requires:** `academic:manage`",
+    response_model=APIResponse[dict]
+)
+async def delete_subject(
+    sub_id: UUID,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ACADEMIC_MANAGE))
+):
+    service = AcademicService(uow)
+    try:
+        await service.delete_subject(sub_id)
+        return APIResponse(success=True, data={"message": "Subject deleted successfully"})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 # --- Class Groups ---
 @router.post(
     "/class-groups",
@@ -255,6 +384,43 @@ async def list_class_groups(
     items = [ClassGroupResponse.model_validate(item) for item in items_raw]
     return APIResponse(success=True, data=ClassGroupListResponse(total=total, items=items))
 
+@router.put(
+    "/class-groups/{cg_id}",
+    summary="Update Class Group Cohort",
+    description="Updates a student cohort class group. **Requires:** `academic:manage`",
+    response_model=APIResponse[ClassGroupResponse]
+)
+async def update_class_group(
+    cg_id: UUID,
+    req: ClassGroupUpdate,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ACADEMIC_MANAGE))
+):
+    service = AcademicService(uow)
+    try:
+        cg = await service.update_class_group(cg_id, req)
+        return APIResponse(success=True, data=ClassGroupResponse.model_validate(cg))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete(
+    "/class-groups/{cg_id}",
+    summary="Delete Class Group Cohort",
+    description="Deletes a student cohort class group. **Requires:** `academic:manage`",
+    response_model=APIResponse[dict]
+)
+async def delete_class_group(
+    cg_id: UUID,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ACADEMIC_MANAGE))
+):
+    service = AcademicService(uow)
+    try:
+        await service.delete_class_group(cg_id)
+        return APIResponse(success=True, data={"message": "Class group deleted successfully"})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 # --- Holidays ---
 @router.post(
     "/holidays",
@@ -281,8 +447,8 @@ async def create_holiday(
     response_model=APIResponse[HolidayListResponse]
 )
 async def list_holidays(
-    start_date: date = Query(...),
-    end_date: date = Query(...),
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
     department_id: Optional[UUID] = Query(None),
     uow: UnitOfWork = Depends(get_uow),
     current_user: User = Depends(get_current_user)
@@ -291,3 +457,40 @@ async def list_holidays(
     items_raw = await service.list_holidays(start_date=start_date, end_date=end_date, department_id=department_id)
     items = [HolidayResponse.model_validate(item) for item in items_raw]
     return APIResponse(success=True, data=HolidayListResponse(total=len(items), items=items))
+
+@router.put(
+    "/holidays/{holiday_id}",
+    summary="Update Holiday",
+    description="Updates holiday details. **Requires:** `academic:manage`",
+    response_model=APIResponse[HolidayResponse]
+)
+async def update_holiday(
+    holiday_id: UUID,
+    req: HolidayUpdate,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ACADEMIC_MANAGE))
+):
+    service = AcademicService(uow)
+    try:
+        hol = await service.update_holiday(holiday_id, req)
+        return APIResponse(success=True, data=HolidayResponse.model_validate(hol))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete(
+    "/holidays/{holiday_id}",
+    summary="Delete Holiday",
+    description="Deletes a holiday. **Requires:** `academic:manage`",
+    response_model=APIResponse[dict]
+)
+async def delete_holiday(
+    holiday_id: UUID,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ACADEMIC_MANAGE))
+):
+    service = AcademicService(uow)
+    try:
+        await service.delete_holiday(holiday_id)
+        return APIResponse(success=True, data={"message": "Holiday deleted successfully"})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

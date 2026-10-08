@@ -224,7 +224,7 @@ app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendanc
 app.include_router(timetable.router, prefix="/api/timetable", tags=["Timetable"])
 app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
 app.include_router(placements.router, prefix="/api/placements", tags=["Placement"])
-app.include_router(academic.router, prefix="/api/academics", tags=["Academic Management"])
+app.include_router(academic.router, prefix="/api/academic", tags=["Academic Management"])
 app.include_router(hostels.router, prefix="/api/hostels", tags=["Hostels"])
 app.include_router(sys_settings.router, prefix="/api/settings", tags=["System Settings"])
 app.include_router(silent.router, prefix="/api/silent", tags=["Silent Mode & Calendar Sync"])

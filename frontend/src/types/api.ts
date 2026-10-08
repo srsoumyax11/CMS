@@ -641,3 +641,102 @@ export interface UserManagementItemResponse {
   status_note: string | null;
   phone: string | null;
 }
+
+// ── Academic Infrastructure Additions ──────────────────────────────────
+export interface AcademicTerm {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_current: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AcademicTermCreateRequest {
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_current?: boolean;
+}
+
+export interface AcademicTermUpdateRequest {
+  name?: string;
+  start_date?: string;
+  end_date?: string;
+  is_current?: boolean;
+}
+
+export interface Subject {
+  id: string;
+  code: string;
+  name: string;
+  department_id: string;
+  credits: number;
+  status: boolean;
+  department_name?: string;
+}
+
+export interface SubjectCreateRequest {
+  code: string;
+  name: string;
+  department_id: string;
+  credits?: number;
+  status?: boolean;
+}
+
+export interface SubjectUpdateRequest {
+  code?: string;
+  name?: string;
+  department_id?: string;
+  credits?: number;
+  status?: boolean;
+}
+
+export interface ClassGroup {
+  id: string;
+  course_id: string;
+  department_id: string;
+  year: number;
+  section: string;
+  status: boolean;
+  course_name?: string;
+  department_name?: string;
+}
+
+export interface ClassGroupCreateRequest {
+  course_id: string;
+  department_id: string;
+  year: number;
+  section: string;
+  status?: boolean;
+}
+
+export interface ClassGroupUpdateRequest {
+  course_id?: string;
+  department_id?: string;
+  year?: number;
+  section?: string;
+  status?: boolean;
+}
+
+export interface Holiday {
+  id: string;
+  date: string;
+  name: string;
+  applies_to?: string | null;
+  department_name?: string | null;
+}
+
+export interface HolidayCreateRequest {
+  date: string;
+  name: string;
+  applies_to?: string | null;
+}
+
+export interface HolidayUpdateRequest {
+  date?: string;
+  name?: string;
+  applies_to?: string | null;
+}
+

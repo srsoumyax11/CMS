@@ -66,12 +66,10 @@ class ApplicationService:
 
     async def get_my_status(self, user: User) -> Optional[RoleApplicationResponse]:
         async with self.uow.transaction() as u:
-            apps = await u.role_applications.list(filters={"user_id": user.id})
+            apps, total = await u.role_applications.list(filters={"user_id": user.id})
             if not apps:
                 return None
             
-            # Assuming apps are ordered by created_at DESC from the repository
-            # otherwise sort here
             app = sorted(apps, key=lambda x: x.created_at, reverse=True)[0]
             role = await u.roles.get_by_id(app.role_id)
             target_role = role.code if role else "UNKNOWN"
