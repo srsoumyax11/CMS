@@ -47,7 +47,7 @@ export function RoleApplicationsManagement() {
     queryFn: () => applicationsApi.listApplications(),
   });
 
-  const applications = response?.data || [];
+  const applications = Array.isArray(response?.data) ? response.data : [];
 
   // 2. Fetch Metadata for Department & Course Name Resolution
   const { data: deptRes } = useQuery({
@@ -62,15 +62,27 @@ export function RoleApplicationsManagement() {
 
   const departmentMap = useMemo(() => {
     const map = new Map<string, string>();
-    (deptRes?.data?.data || []).forEach((d: any) => map.set(d.id, d.name));
+    const depts = Array.isArray(deptRes?.data?.data)
+      ? deptRes.data.data
+      : Array.isArray(deptRes?.data)
+      ? (deptRes.data as any)
+      : [];
+    depts.forEach((d: any) => {
+      if (d?.id && d?.name) map.set(d.id, d.name);
+    });
     return map;
   }, [deptRes]);
 
   const courseMap = useMemo(() => {
     const map = new Map<string, string>();
-    (courseRes?.data?.data || []).forEach((c: any) =>
-      map.set(c.id, c.code ? `${c.code} - ${c.name}` : c.name)
-    );
+    const courses = Array.isArray(courseRes?.data?.data)
+      ? courseRes.data.data
+      : Array.isArray(courseRes?.data)
+      ? (courseRes.data as any)
+      : [];
+    courses.forEach((c: any) => {
+      if (c?.id) map.set(c.id, c.code ? `${c.code} - ${c.name}` : c.name);
+    });
     return map;
   }, [courseRes]);
 
@@ -125,6 +137,7 @@ export function RoleApplicationsManagement() {
 
   const formatValue = (key: string, val: any) => {
     if (val === null || val === undefined) return 'N/A';
+    if (typeof val === 'object') return JSON.stringify(val);
     const strVal = String(val);
     if (key.includes('department_id') && departmentMap.has(strVal)) {
       return departmentMap.get(strVal);
@@ -136,7 +149,7 @@ export function RoleApplicationsManagement() {
   };
 
   // 4. ProTable Filters Definition
-  const tableFilters: TableFilterDef[] = [
+  const tableFilters: TableFilterDef<RoleApplicationData>[] = [
     {
       id: 'status',
       label: 'Status',
