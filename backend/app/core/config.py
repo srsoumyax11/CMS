@@ -8,7 +8,12 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    BACKEND_CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ]
     SUPABASE_URL: str = ""
     SUPABASE_KEY: str = ""
     SUPERADMIN_EMAIL: str = ""

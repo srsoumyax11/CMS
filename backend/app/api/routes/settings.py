@@ -24,9 +24,14 @@ async def get_public_settings(uow: UnitOfWork = Depends(get_uow)):
     return APIResponse(success=True, data=SystemSettingListResponse(total=len(items), items=items))
 
 @router.get(
-    "/",
+    "",
     summary="List System Settings",
     description="Lists all system settings. **Requires:** `system_setting:view`",
+    response_model=APIResponse[SystemSettingListResponse]
+)
+@router.get(
+    "/",
+    include_in_schema=False,
     response_model=APIResponse[SystemSettingListResponse]
 )
 async def list_settings(
@@ -40,9 +45,14 @@ async def list_settings(
     return APIResponse(success=True, data=SystemSettingListResponse(total=len(items), items=items))
 
 @router.post(
-    "/",
+    "",
     summary="Update or Create System Setting",
     description="Sets a system setting value. **Requires:** `system_setting:manage`",
+    response_model=APIResponse[SystemSettingResponse]
+)
+@router.post(
+    "/",
+    include_in_schema=False,
     response_model=APIResponse[SystemSettingResponse]
 )
 async def set_setting(

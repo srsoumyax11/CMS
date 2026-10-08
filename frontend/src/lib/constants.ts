@@ -26,7 +26,8 @@ export const API_ROUTES = {
   METADATA_DEPARTMENTS: '/api/metadata/departments',
   METADATA_ROLES: '/api/metadata/roles',
   PUBLIC_SETTINGS: '/api/settings/public',
-  SYSTEM_SETTINGS: '/api/settings/system',
+  PUBLIC_SYSTEM_SETTINGS: '/api/settings/public',
+  SYSTEM_SETTINGS: '/api/settings/',
 
   // Complaints
   COMPLAINTS: '/api/complaints',

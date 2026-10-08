@@ -154,6 +154,15 @@ export function Login() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </div>
 
               <Button

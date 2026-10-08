@@ -123,6 +123,8 @@ export function AdminRoutes() {
   );
 }
 
+import { ForgotPassword } from '@/pages/ForgotPassword';
+
 function AppRoutes() {
   const { isLoading } = useAuth();
 
@@ -133,6 +135,7 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
 

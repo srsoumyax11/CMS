@@ -1,4 +1,5 @@
 import { client } from './client';
+import { systemSettingsApi } from './systemSettingsApi';
 import { API_ROUTES } from '@/lib/constants';
 import type {
   APIResponse,
@@ -11,7 +12,6 @@ import type {
   AdminItemResponse,
   StudentListParams,
   PaginationParams,
-  SystemSetting,
   SystemSettingUpdate,
   Department,
   DepartmentCreateRequest,
@@ -71,12 +71,11 @@ export const adminApi = {
   listAdmins: (params?: StudentListParams) =>
     client.get<APIResponse<AdminItemResponse[]>>(API_ROUTES.ADMIN_ADMINS, { params }),
 
-  // Settings
-  getSystemSettings: () =>
-    client.get<APIResponse<SystemSetting[]>>(API_ROUTES.ADMIN_SETTINGS),
+  // System Settings Delegation
+  getSystemSettings: () => systemSettingsApi.listSystemSettings(),
 
   updateSystemSetting: (key: string, data: SystemSettingUpdate) =>
-    client.patch<APIResponse<SystemSetting>>(`${API_ROUTES.ADMIN_SETTINGS}/${key}`, data),
+    systemSettingsApi.setSystemSetting({ key, value: data.value }),
 
   // Courses
   listCourses: () =>
@@ -157,4 +156,3 @@ export const adminApi = {
   updateUser: (id: string, data: any) =>
     client.patch<APIResponse<any>>(`/api/admin/users/${id}`, data),
 };
-

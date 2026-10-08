@@ -8,13 +8,10 @@ import type {
   RefreshTokenRequest,
   RefreshTokenResponse,
   RegisterRequest,
-  RegisterResponseData,
   NameUpdateRequest,
   PasswordChangeRequest,
   StudentProfileCreateRequest,
   UserPreferencesUpdateRequest,
-  EmailUpdateRequest,
-  EmailVerifyRequest,
   LoginResponseData
 } from '@/types/api';
 
@@ -33,6 +30,21 @@ export const authApi = {
   register: (data: RegisterRequest) =>
     client.post<APIResponse<TokenResponse>>(API_ROUTES.REGISTER, data),
 
+  openSignup: (data: { email: string; password: string; name: string }) =>
+    client.post<APIResponse<{ session_token: string; email: string; message: string }>>('/api/auth/open-signup', data),
+
+  verifySignupOtp: (data: { email: string; otp: string; session_token: string; name: string; password: string }) =>
+    client.post<APIResponse<TokenResponse>>('/api/auth/verify-signup-otp', data),
+
+  verify2FA: (data: { session_token: string; otp: string }) =>
+    client.post<APIResponse<TokenResponse>>('/api/auth/login/verify-2fa', data),
+
+  forgotPassword: (data: { email: string }) =>
+    client.post<APIResponse<{ message: string }>>('/api/auth/forgot-password', data),
+
+  resetPassword: (data: { email: string; otp: string; new_password: string }) =>
+    client.post<APIResponse<{ message: string }>>('/api/auth/reset-password', data),
+
   createStudentProfile: (data: StudentProfileCreateRequest) =>
     client.post<APIResponse<{ message: string }>>(API_ROUTES.CREATE_STUDENT_PROFILE, data),
 
@@ -42,7 +54,7 @@ export const authApi = {
   getStudentProfile: () =>
     client.get<APIResponse<{
       department_id: string; course_id: string; branch_id: string; year: number; hostel: string | null 
-} | null>>(API_ROUTES.CREATE_STUDENT_PROFILE),
+    } | null>>(API_ROUTES.CREATE_STUDENT_PROFILE),
 
   uploadPhoto: (file: File) => {
     const formData = new FormData();
@@ -60,9 +72,6 @@ export const authApi = {
   changePassword: (data: PasswordChangeRequest) =>
     client.post<APIResponse<{ message: string }>>(API_ROUTES.CHANGE_PASSWORD, data),
 
-  checkUsername: (userId: string) =>
-    client.get<APIResponse<boolean>>(`${API_ROUTES.CHECK_USERNAME}?user_id=${encodeURIComponent(userId)}`),
-
   updatePreferences: (data: UserPreferencesUpdateRequest) =>
     client.patch<APIResponse<{ email_notifications: boolean; in_app_alerts: boolean }>>(API_ROUTES.UPDATE_PREFERENCES, data),
 
@@ -72,10 +81,6 @@ export const authApi = {
   verifyEmailUpdate: (data: { otp: string, session_token: string }) =>
     client.post<APIResponse<{ message: string }>>(API_ROUTES.VERIFY_EMAIL_UPDATE, data),
 
-  // 2FA Endpoints
-  verify2FA: (data: { session_token: string; otp: string }) =>
-    client.post<APIResponse<TokenResponse>>('/api/auth/login/verify-2fa', data),
-
   enable2FARequest: () =>
     client.post<APIResponse<{ message: string, session_token: string }>>('/api/users/me/2fa/enable-request', {}),
 
@@ -84,11 +89,4 @@ export const authApi = {
 
   disable2FA: () =>
     client.post<APIResponse<{ message: string }>>('/api/users/me/2fa/disable', {}),
-
-  openSignup: (data: { email: string; password: string; name: string }) =>
-    client.post<APIResponse<{ session_token: string; email: string; message: string }>>('/api/auth/open-signup', data),
-
-  verifySignupOtp: (data: { email: string; otp: string; session_token: string; name: string; password: string }) =>
-    client.post<APIResponse<TokenResponse>>('/api/auth/verify-signup-otp', data),
 };
-

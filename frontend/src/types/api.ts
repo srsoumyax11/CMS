@@ -77,13 +77,6 @@ export type ComplaintStatus =
 
 export type ComplaintVisibility = 'public' | 'private';
 
-
-
-
-
-
-
-
 // ── Auth ─────────────────────────────────────────────────────────────
 
 export interface LoginRequest {
@@ -312,16 +305,6 @@ export interface NoticeUpdateRequest {
   content?: string | null;
 }
 
-
-
-
-
-
-
-
-
-
-
 // ── Attendance ──────────────────────────────────────────────────────
 
 export interface RosterStudent {
@@ -352,7 +335,6 @@ export interface AttendanceStat {
   excused?: number;
   total?: number;
 }
-
 
 // ── Admin: Students ──────────────────────────────────────────────────
 
@@ -499,6 +481,20 @@ export interface SystemSetting {
   description: string | null;
 }
 
+export interface SystemSettingCreateUpdate {
+  key: string;
+  value?: string | null;
+  category?: string;
+  data_type?: string;
+  description?: string | null;
+  is_public?: boolean;
+}
+
+export interface SystemSettingListResponse {
+  total: number;
+  items: SystemSetting[];
+}
+
 export interface SystemSettingUpdate {
   value: string;
 }
@@ -525,8 +521,6 @@ export interface OnboardingStatusResponse {
   completion_percentage: number;
   tasks: OnboardingTask[];
 }
-
-
 
 // ── Infrastructure (Buildings & Rooms) ───────────────────────────────
 export type BuildingType = 'academic' | 'hostel' | 'administrative' | 'sports' | 'other';
@@ -631,11 +625,11 @@ export interface HostelAllocation {
   occupied_count?: number;
 }
 
-
 export interface HostelAllocationCreate {
   student_id: string;
   room_id: string;
 }
+
 export interface UserManagementItemResponse {
   id: string;
   name: string;
@@ -647,4 +641,3 @@ export interface UserManagementItemResponse {
   status_note: string | null;
   phone: string | null;
 }
-
