@@ -11,7 +11,7 @@ from app.schemas.roles import (
 from app.services.role_service import RoleService
 from pydantic import BaseModel
 
-router = APIRouter(tags=["Roles"])
+router = APIRouter()
 
 @router.get(
     "", 

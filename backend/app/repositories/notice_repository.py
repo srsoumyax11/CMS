@@ -14,23 +14,13 @@ class NoticeRepository(GenericRepository[Notice]):
         super().__init__(db, Notice)
 
     async def get_feed_for_user(self, user_id: UUID, user_type: UserType, profile: Optional[StudentProfile] = None, skip: int = 0, limit: int = 50) -> Tuple[List[Tuple[Notice, bool]], int]:
-        from app.models.audience_group import AudienceGroupMember
         read_exists = select(NoticeRead.id).where(
             and_(NoticeRead.notice_id == Notice.id, NoticeRead.user_id == user_id)
         ).exists()
         
         stmt = select(Notice, read_exists.label("is_read"))
-
-        in_group = select(AudienceGroupMember.id).where(
-            and_(
-                AudienceGroupMember.group_id == Notice.target_audience_group_id,
-                AudienceGroupMember.user_id == user_id
-            )
-        ).exists()
         
         if user_type == UserType.student and profile:
-            student_hostel = profile.room.building.name if (profile and getattr(profile, 'room', None) and getattr(profile.room, 'building', None)) else None
-            hostel_cond = or_(Notice.target_hostel == student_hostel, Notice.target_hostel.is_(None)) if student_hostel else Notice.target_hostel.is_(None)
             traditional_criteria = and_(
                 or_(
                     Notice.target_user_types.contains(UserType.student.value),
@@ -47,26 +37,15 @@ class NoticeRepository(GenericRepository[Notice]):
                 or_(
                     Notice.target_year == profile.year,
                     Notice.target_year.is_(None)
-                ),
-                hostel_cond
-            )
-            stmt = stmt.where(
-                or_(
-                    and_(Notice.target_audience_group_id.is_not(None), in_group),
-                    and_(Notice.target_audience_group_id.is_(None), traditional_criteria)
                 )
             )
+            stmt = stmt.where(traditional_criteria)
         elif user_type == UserType.faculty:
             traditional_faculty = or_(
                 Notice.target_user_types.contains(UserType.faculty.value),
                 Notice.target_user_types.is_(None)
             )
-            stmt = stmt.where(
-                or_(
-                    and_(Notice.target_audience_group_id.is_not(None), in_group),
-                    and_(Notice.target_audience_group_id.is_(None), traditional_faculty)
-                )
-            )
+            stmt = stmt.where(traditional_faculty)
             
         stmt = stmt.order_by(Notice.created_at.desc())
 

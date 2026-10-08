@@ -89,10 +89,7 @@ async def list_notices(
     
     profile = None
     if current_user.user_type == UserType.student:
-        from app.models.infrastructure import Room
-        profile_stmt = select(StudentProfile).options(
-            selectinload(StudentProfile.room).selectinload(Room.building)
-        ).where(StudentProfile.user_id == current_user.id)
+        profile_stmt = select(StudentProfile).where(StudentProfile.user_id == current_user.id)
         profile_result = await uow.db.execute(profile_stmt)
         profile = profile_result.scalar_one_or_none()
         if not profile:
@@ -130,10 +127,7 @@ async def get_notice(
     
     profile = None
     if current_user.user_type == UserType.student:
-        from app.models.infrastructure import Room
-        profile_stmt = select(StudentProfile).options(
-            selectinload(StudentProfile.room).selectinload(Room.building)
-        ).where(StudentProfile.user_id == current_user.id)
+        profile_stmt = select(StudentProfile).where(StudentProfile.user_id == current_user.id)
         profile_result = await uow.db.execute(profile_stmt)
         profile = profile_result.scalar_one_or_none()
 

@@ -133,6 +133,10 @@ def require_permission(permission_code: str) -> Callable:
         current_user: User = Depends(get_current_user),
         user_permissions: Set[str] = Depends(get_user_permissions)
     ) -> User:
+        # Superadmin override
+        if current_user.user_type == UserType.admin:
+            return current_user
+            
         # TODO: Add scope_id enforcement logic here in a later phase
         if permission_code not in user_permissions:
             raise HTTPException(

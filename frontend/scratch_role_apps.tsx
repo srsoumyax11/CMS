@@ -172,4 +172,3 @@ export function RoleApplicationsManagement() {
 
 export default RoleApplicationsManagement;
 
-

@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.academic import Course, Department
-    from app.models.infrastructure import Room
 
 class AcademicStatus(str, enum.Enum):
     enrolled = "enrolled"

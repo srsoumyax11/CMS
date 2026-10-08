@@ -22,7 +22,7 @@ class ComplaintRepository(GenericRepository[Complaint]):
         
         count = await self.db.scalar(count_stmt)
         result = await self.db.execute(stmt.offset(skip).limit(limit))
-        return result.scalars().all(), count or 0
+        return list(result.scalars().all()), count or 0
 
     async def add_status_log(self, log: ComplaintStatusLog) -> ComplaintStatusLog:
         self.db.add(log)
@@ -39,7 +39,6 @@ class ComplaintRepository(GenericRepository[Complaint]):
     ) -> Tuple[List[Complaint], int]:
         from app.models.user import User
         from app.models.profiles import StudentProfile, FacultyProfile, StaffProfile
-        from app.models.infrastructure import Room
         from sqlalchemy import or_
 
         stmt = select(Complaint)
@@ -49,8 +48,7 @@ class ComplaintRepository(GenericRepository[Complaint]):
             dept_cond = or_(
                 StudentProfile.department_id == department_id,
                 FacultyProfile.department_id == department_id,
-                StaffProfile.department_id == department_id,
-                Room.department_id == department_id
+                StaffProfile.department_id == department_id
             )
             stmt = (
                 stmt
@@ -58,7 +56,6 @@ class ComplaintRepository(GenericRepository[Complaint]):
                 .outerjoin(StudentProfile, User.id == StudentProfile.user_id)
                 .outerjoin(FacultyProfile, User.id == FacultyProfile.user_id)
                 .outerjoin(StaffProfile, User.id == StaffProfile.user_id)
-                .outerjoin(Room, Complaint.room_id == Room.id)
                 .where(dept_cond)
             )
             count_stmt = (
@@ -68,7 +65,6 @@ class ComplaintRepository(GenericRepository[Complaint]):
                 .outerjoin(StudentProfile, User.id == StudentProfile.user_id)
                 .outerjoin(FacultyProfile, User.id == FacultyProfile.user_id)
                 .outerjoin(StaffProfile, User.id == StaffProfile.user_id)
-                .outerjoin(Room, Complaint.room_id == Room.id)
                 .where(dept_cond)
             )
 
@@ -85,6 +81,6 @@ class ComplaintRepository(GenericRepository[Complaint]):
         total = await self.db.scalar(count_stmt)
         stmt = stmt.order_by(Complaint.created_at.desc()).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
-        items = result.scalars().all()
+        items = list(result.scalars().all())
         return items, total or 0
 

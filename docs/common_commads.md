@@ -7,6 +7,7 @@ supabase start
 .\venv\Scripts\activate
 alembic upgrade head
 python -m scripts.pre_start
+uvicorn app.main:app --reload --port 8000
 
 ```
 

@@ -40,20 +40,6 @@ class NoticeService:
             return None
             
         notice, is_read = row
-
-        if notice.target_audience_group_id:
-            from app.models.audience_group import AudienceGroupMember
-            from sqlalchemy import select, and_
-            stmt = select(AudienceGroupMember.id).where(
-                and_(
-                    AudienceGroupMember.group_id == notice.target_audience_group_id,
-                    AudienceGroupMember.user_id == user_id
-                )
-            )
-            is_member = (await self.uow.db.scalar(stmt)) is not None
-            if not is_member:
-                raise ValueError("You do not have access to this notice")
-            return notice, is_read
         
         # Apply viewing logic
         if user_type == UserType.student:
