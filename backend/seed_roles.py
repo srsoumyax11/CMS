@@ -3,6 +3,8 @@ import uuid
 from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
 from app.models.rbac import Role
+from app.core.config import settings
+from seed_settings import seed_settings
 
 async def seed_roles():
     async with AsyncSessionLocal() as db:
@@ -25,12 +27,14 @@ async def seed_roles():
         
         await db.flush()
         
-        # Seed first admin user
-
+        # Seed first admin user using env settings
         from app.core.security import hash_password
         from app.models.user import User, AccountStatus, UserType
+
+        admin_email = settings.SUPERADMIN_EMAIL or "admin@cms.com"
+        admin_password = settings.SUPERADMIN_PASSWORD or "SuperAdmin@123"
         
-        stmt = select(User).where(User.email == "admin@college.edu")
+        stmt = select(User).where(User.email == admin_email)
         result = await db.execute(stmt)
         admin_user = result.scalar_one_or_none()
         
@@ -39,8 +43,8 @@ async def seed_roles():
             admin_role = (await db.execute(admin_role_stmt)).scalar_one()
             
             new_admin = User(
-                email="admin@college.edu",
-                hashed_password=hash_password("Admin@123"),
+                email=admin_email,
+                hashed_password=hash_password(admin_password),
                 account_status=AccountStatus.active,
                 user_type=UserType.admin,
                 name="System Administrator",
@@ -49,7 +53,10 @@ async def seed_roles():
             db.add(new_admin)
             
         await db.commit()
-        print("Roles and Admin user seeded successfully.")
+        print(f"✅ Roles and Admin user ('{admin_email}') seeded successfully.")
+
+    # Also run system settings seeding
+    await seed_settings()
 
 if __name__ == "__main__":
     asyncio.run(seed_roles())
