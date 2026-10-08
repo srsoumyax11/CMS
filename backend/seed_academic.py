@@ -136,16 +136,20 @@ async def seed_academic():
 
         subject_added = 0
         for sub in subjects_data:
-            dept_id = dept_map.get(sub["dept_code"])
+            dept_code = str(sub["dept_code"])
+            dept_id = dept_map.get(dept_code)
             if dept_id:
-                stmt = select(Subject).where(Subject.code == sub["code"])
+                sub_code = str(sub["code"])
+                sub_name = str(sub["name"])
+                sub_credits = int(sub["credits"])
+                stmt = select(Subject).where(Subject.code == sub_code)
                 res = await db.execute(stmt)
                 if not res.scalar_one_or_none():
                     db.add(Subject(
-                        code=sub["code"],
-                        name=sub["name"],
+                        code=sub_code,
+                        name=sub_name,
                         department_id=dept_id,
-                        credits=sub["credits"],
+                        credits=sub_credits,
                         status=True
                     ))
                     subject_added += 1
@@ -166,22 +170,26 @@ async def seed_academic():
 
         cg_added = 0
         for cg in cohorts_data:
-            c_id = course_map.get(cg["course_code"])
-            d_id = dept_map.get(cg["dept_code"])
+            c_code = str(cg["course_code"])
+            d_code = str(cg["dept_code"])
+            c_id = course_map.get(c_code)
+            d_id = dept_map.get(d_code)
             if c_id and d_id:
+                cg_year = int(cg["year"])
+                cg_section = str(cg["section"])
                 stmt = select(ClassGroup).where(
                     ClassGroup.course_id == c_id,
                     ClassGroup.department_id == d_id,
-                    ClassGroup.year == cg["year"],
-                    ClassGroup.section == cg["section"]
+                    ClassGroup.year == cg_year,
+                    ClassGroup.section == cg_section
                 )
                 res = await db.execute(stmt)
                 if not res.scalar_one_or_none():
                     db.add(ClassGroup(
                         course_id=c_id,
                         department_id=d_id,
-                        year=cg["year"],
-                        section=cg["section"],
+                        year=cg_year,
+                        section=cg_section,
                         status=True
                     ))
                     cg_added += 1

@@ -13,7 +13,10 @@ export function useAdminList<T, F = string>(
     queryFn: () => fetchFn(filter),
   });
 
-  const items = data?.data?.data ?? [];
+  const rawData = data?.data?.data;
+  const items: T[] = Array.isArray(rawData)
+    ? rawData
+    : (rawData as any)?.items ?? [];
 
   return {
     items,

@@ -49,8 +49,15 @@ export function StudentManagement() {
     queryFn: () => metadataApi.getDepartments(),
   });
 
-  const courses: Course[] = coursesResponse?.data?.data ?? [];
-  const departments: Department[] = deptsResponse?.data?.data ?? [];
+  const rawCourses = coursesResponse?.data?.data;
+  const courses: Course[] = Array.isArray(rawCourses)
+    ? rawCourses
+    : (rawCourses as any)?.items ?? [];
+
+  const rawDepts = deptsResponse?.data?.data;
+  const departments: Department[] = Array.isArray(rawDepts)
+    ? rawDepts
+    : (rawDepts as any)?.items ?? [];
 
   const { createMutation, updateStatusMutation, editMutation } = useStudentMutations();
 
