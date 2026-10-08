@@ -14,6 +14,18 @@ from app.repositories.timetable_repository import TimetableSlotRepository, Timet
 from app.repositories.attendance_repository import AttendanceSessionRepository, AttendanceRecordRepository
 from app.repositories.document_repository import DocumentTypeRepository, DocumentRequestRepository, DocumentApprovalRepository
 from app.repositories.placement_repository import PlacementNoticeRepository, PlacementApplicationRepository
+from app.repositories.academic_repository import (
+    DepartmentRepository,
+    CourseRepository,
+    AcademicTermRepository,
+    SubjectRepository,
+    ClassGroupRepository,
+    HolidayRepository
+)
+from app.repositories.hostel_repository import HostelRepository, HostelRoomRepository
+from app.repositories.settings_repository import SystemSettingRepository, UserSilentSettingRepository
+from app.repositories.map_repository import MapLocationRepository, MapPathRepository
+from app.repositories.ai_repository import AIConversationRepository, AIMessageRepository
 
 class UnitOfWork:
     def __init__(self, db: AsyncSession):
@@ -35,6 +47,23 @@ class UnitOfWork:
         self.document_approvals = DocumentApprovalRepository(self.db)
         self.placement_notices = PlacementNoticeRepository(self.db)
         self.placement_applications = PlacementApplicationRepository(self.db)
+        self.departments = DepartmentRepository(self.db)
+        self.courses = CourseRepository(self.db)
+        self.academic_terms = AcademicTermRepository(self.db)
+        self.subjects = SubjectRepository(self.db)
+        self.class_groups = ClassGroupRepository(self.db)
+        self.holidays = HolidayRepository(self.db)
+        self.hostels = HostelRepository(self.db)
+        self.hostel_rooms = HostelRoomRepository(self.db)
+        self.system_settings = SystemSettingRepository(self.db)
+        self.user_silent_settings = UserSilentSettingRepository(self.db)
+        self.map_locations = MapLocationRepository(self.db)
+        self.map_paths = MapPathRepository(self.db)
+        self.ai_conversations = AIConversationRepository(self.db)
+        self.ai_messages = AIMessageRepository(self.db)
+
+
+
 
 
     @asynccontextmanager

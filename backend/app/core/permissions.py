@@ -95,4 +95,25 @@ class Perms:
     PLACEMENT_MANAGE = "placement:manage"
     PLACEMENT_VIEW_APPLICANTS = "placement:view_applicants"
 
+    # Asset: academic
+    ACADEMIC_MANAGE = "academic:manage"
+    ACADEMIC_VIEW = "academic:view"
+
+    # Asset: hostel
+    HOSTEL_MANAGE = "hostel:manage"
+    HOSTEL_VIEW = "hostel:view"
+    HOSTEL_ALLOCATE = "hostel:allocate"
+
+    # Asset: system_setting
+    SYSTEM_SETTING_VIEW = "system_setting:view"
+    SYSTEM_SETTING_MANAGE = "system_setting:manage"
+
+    # Asset: map
+    MAP_VIEW = "map:view"
+    MAP_EDIT = "map:edit"
+    MAP_MANAGE = "map:manage"
+
+
+
+
 

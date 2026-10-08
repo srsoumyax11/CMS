@@ -1,5 +1,6 @@
 import uuid
 from typing import Optional
+from datetime import date
 from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Enum, Time, Date, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
@@ -34,9 +35,10 @@ class AcademicTerm(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "academic_terms"
 
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    start_date: Mapped[Date] = mapped_column(Date, nullable=False)
-    end_date: Mapped[Date] = mapped_column(Date, nullable=False)
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
     is_current: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
 
 
 class Subject(Base, UUIDMixin, TimestampMixin):
@@ -67,9 +69,10 @@ class ClassGroup(Base, UUIDMixin, TimestampMixin):
 class Holiday(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "holidays"
 
-    date: Mapped[Date] = mapped_column(Date, nullable=False, unique=True)
+    date: Mapped[date] = mapped_column(Date, nullable=False, unique=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     applies_to: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="CASCADE"), nullable=True) # Null means ALL
+
 
     department = relationship("Department")
 

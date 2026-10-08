@@ -5,7 +5,7 @@ from app.models.complaint import Complaint, ComplaintStatusLog
 from app.models.rbac import Asset, Action, Permission, Role, RolePermission
 from app.models.academic import Course
 from app.models.notice import Notice
-from app.models.settings import SystemSetting
+from app.models.settings import SystemSetting, UserSilentSetting
 from app.models.notification import Notification, NotificationType
 from app.models.audit import AuditLog
 from app.models.auth import RevokedToken, PasswordResetOTP
@@ -62,7 +62,7 @@ from app.models.gate_pass import GatePass
 from app.models.documents import DocumentType, DocumentRequest, DocumentApproval
 from app.models.placement import PlacementNotice, PlacementApplication
 from app.models.map import MapLocation, MapPath
-from app.models.ai import UserSilentSetting, AIConversation, AIMessage
+from app.models.ai import AIConversation, AIMessage
 
 from app.models.application import RoleApplication, ApplicationStatus
 from app.models.academic import Department, AcademicTerm, Subject, ClassGroup, Holiday

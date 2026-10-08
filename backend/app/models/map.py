@@ -17,6 +17,8 @@ class LocationType(str, enum.Enum):
     office = "OFFICE"
     ground = "GROUND"
     parking = "PARKING"
+    stairs = "STAIRS"
+    elevator = "ELEVATOR"
     other = "OTHER"
 
 class MapLocation(Base, UUIDMixin, TimestampMixin):

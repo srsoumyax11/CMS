@@ -37,7 +37,15 @@ from app.api.routes import (
     timetable,
     documents,
     placements,
+    academic,
+    hostels,
+    settings as sys_settings,
+    silent,
+    map as campus_map,
+    ai,
 )
+
+
 
 
 
@@ -86,11 +94,23 @@ tags_metadata = [
         "name": "Placement",
         "description": "Placement drives, eligibility validation, student applications, and applicant shortlisting.",
     },
+    {
+        "name": "Academic Management",
+        "description": "Academic infrastructure management (departments, courses, terms, subjects, class group cohorts, and holiday calendars).",
+    },
+    {
+        "name": "Hostels",
+        "description": "Hostel buildings, room capacity, and student room allocations.",
+    },
 ]
 
 
 
+
+
+import asyncio
 from app.core.cache import init_redis, close_redis
+from app.core.scheduler import start_background_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -110,11 +130,18 @@ async def lifespan(app: FastAPI):
         logger.info("Redis connection established!")
     except Exception as e:
         logger.warning(f"Redis connection failed (rate limiting will fail open): {e}")
+
+    # Launch background scheduler task
+    scheduler_task = asyncio.create_task(start_background_scheduler())
         
     yield
+
+    logger.info("Cancelling background scheduler...")
+    scheduler_task.cancel()
     
     logger.info("Shutting down backend...")
     await close_redis()
+
 
 app = FastAPI(
     title="BPUT Campus Management System API",
@@ -197,6 +224,14 @@ app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendanc
 app.include_router(timetable.router, prefix="/api/timetable", tags=["Timetable"])
 app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
 app.include_router(placements.router, prefix="/api/placements", tags=["Placement"])
+app.include_router(academic.router, prefix="/api/academics", tags=["Academic Management"])
+app.include_router(hostels.router, prefix="/api/hostels", tags=["Hostels"])
+app.include_router(sys_settings.router, prefix="/api/settings", tags=["System Settings"])
+app.include_router(silent.router, prefix="/api/silent", tags=["Silent Mode & Calendar Sync"])
+app.include_router(campus_map.router, prefix="/api/map", tags=["Campus Map & Navigation"])
+app.include_router(ai.router, prefix="/api/ai", tags=["AI Assistant"])
+
+
 
 
 

@@ -14,3 +14,14 @@ class Hostel(Base, UUIDMixin, TimestampMixin):
     status: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     warden = relationship("User", foreign_keys=[warden_user_id])
+
+class HostelRoom(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "hostel_rooms"
+
+    hostel_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("hostels.id", ondelete="CASCADE"), nullable=False)
+    room_number: Mapped[str] = mapped_column(String(50), nullable=False)
+    capacity: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
+    current_occupancy: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    status: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    hostel = relationship("Hostel")
