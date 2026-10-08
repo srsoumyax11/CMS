@@ -65,6 +65,11 @@ export function AcademicManagement() {
     departments.forEach((d) => map.set(d.id, `${d.name} (${d.code})`));
     return map;
   }, [departments]);
+  const deptCodeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    departments.forEach((d) => map.set(d.id, d.code));
+    return map;
+  }, [departments]);
 
   const { data: courseRes } = useQuery({
     queryKey: ['academic_courses'],
@@ -76,6 +81,18 @@ export function AcademicManagement() {
     courses.forEach((c) => map.set(c.id, `${c.name} (${c.code})`));
     return map;
   }, [courses]);
+  const courseCodeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    courses.forEach((c) => map.set(c.id, c.code));
+    return map;
+  }, [courses]);
+
+  const formatOrdinalYear = (yr: number) => {
+    if (yr === 1) return '1st Year';
+    if (yr === 2) return '2nd Year';
+    if (yr === 3) return '3rd Year';
+    return `${yr}th Year`;
+  };
 
   const { data: facultyRes } = useQuery({
     queryKey: ['admin_faculty'],
@@ -590,39 +607,59 @@ export function AcademicManagement() {
     {
       id: 'cohort',
       header: 'Cohort Identity',
-      accessorFn: (row) => `${courseMap.get(row.course_id)} - Year ${row.year} Sec ${row.section}`,
-      cell: (val, row) => (
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Users className="h-4 w-4" />
+      accessorFn: (row) => {
+        const cCode = courseCodeMap.get(row.course_id) || 'Course';
+        const dCode = deptCodeMap.get(row.department_id) || '';
+        const yr = formatOrdinalYear(row.year);
+        return `${cCode} ${dCode} ${yr} Section ${row.section}`;
+      },
+      cell: (val, row) => {
+        const cCode = courseCodeMap.get(row.course_id) || '';
+        const dCode = deptCodeMap.get(row.department_id) || '';
+        const cName = courseMap.get(row.course_id) || 'Course';
+        const dName = deptMap.get(row.department_id) || 'Department';
+        const yr = formatOrdinalYear(row.year);
+        const headline = `${cCode} ${dCode} ${yr} Section ${row.section}`.trim();
+
+        return (
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Users className="h-4 w-4" />
+            </div>
+            <div>
+              <span className="font-bold text-sm text-foreground tracking-tight">
+                {headline}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                {cName} • {dName}
+              </p>
+            </div>
           </div>
-          <div>
-            <span className="font-semibold text-foreground">
-              {courseMap.get(row.course_id) || 'Course'}
-            </span>
-            <p className="text-xs text-muted-foreground">
-              {deptMap.get(row.department_id) || 'Department'}
-            </p>
-          </div>
-        </div>
-      ),
+        );
+      },
       sortable: true,
     },
     {
       id: 'year',
       header: 'Year',
       accessorKey: 'year',
-      cell: (val) => <Badge variant="outline" className="text-xs font-semibold">Year {val}</Badge>,
+      cell: (val) => <Badge variant="outline" className="text-xs font-semibold">{formatOrdinalYear(val)}</Badge>,
       sortable: true,
       align: 'center',
+      width: '120px',
     },
     {
       id: 'section',
       header: 'Section',
       accessorKey: 'section',
-      cell: (val) => <span className="font-mono text-xs font-bold uppercase bg-muted px-2 py-0.5 rounded border border-border">Section {val}</span>,
+      cell: (val) => (
+        <span className="font-mono text-xs font-bold uppercase bg-muted px-2.5 py-1 rounded border border-border">
+          Sec {val}
+        </span>
+      ),
       sortable: true,
       align: 'center',
+      width: '110px',
     },
     {
       id: 'status',
@@ -635,6 +672,7 @@ export function AcademicManagement() {
       ),
       sortable: true,
       align: 'center',
+      width: '110px',
     },
   ];
 
