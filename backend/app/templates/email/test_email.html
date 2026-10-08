@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTP Test Email</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 40px 20px;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 520px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .header {
+            background-color: #1e40af;
+            color: #ffffff;
+            padding: 24px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+        .badge {
+            display: inline-block;
+            background-color: #dbeafe;
+            color: #1e40af;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .content {
+            padding: 32px 24px;
+        }
+        h2 {
+            margin-top: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+        }
+        p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #4b5563;
+            margin-bottom: 20px;
+        }
+        .config-box {
+            background-color: #f8fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #e2e8f0;
+        }
+        .config-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
+        }
+        .config-row:last-child {
+            border-bottom: none;
+        }
+        .config-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+        .config-val {
+            color: #0f172a;
+            font-weight: 600;
+            font-family: monospace;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 16px;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="logo">BPUT CMS</h1>
+            <span class="badge">SMTP Email Verification</span>
+        </div>
+        <div class="content">
+            <h2>Test Email Successful! 🎉</h2>
+            <p>Hello {{ name }},</p>
+            <p>This is a test email sent from the <strong>BPUT Campus Management System</strong> to verify your SMTP notification delivery setup.</p>
+
+            <div class="config-box">
+                <div class="config-row">
+                    <span class="config-label">Recipient Email:</span>
+                    <span class="config-val">{{ recipient_email }}</span>
+                </div>
+                <div class="config-row">
+                    <span class="config-label">Sender Email:</span>
+                    <span class="config-val">{{ sender_email }}</span>
+                </div>
+                <div class="config-row">
+                    <span class="config-label">SMTP Host:</span>
+                    <span class="config-val">{{ smtp_host }}</span>
+                </div>
+                <div class="config-row">
+                    <span class="config-label">SMTP Port:</span>
+                    <span class="config-val">{{ smtp_port }}</span>
+                </div>
+                <div class="config-row">
+                    <span class="config-label">Sent At:</span>
+                    <span class="config-val">{{ timestamp }}</span>
+                </div>
+            </div>
+
+            <p>Your outgoing email server is correctly configured and ready to handle system notices, OTP verification, and account alerts.</p>
+        </div>
+        <div class="footer">
+            &copy; 2026 Biju Patnaik University of Technology (BPUT). All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

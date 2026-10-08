@@ -9,6 +9,7 @@ import {
   Lock,
   Globe,
   RefreshCw,
+  Mail,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,12 +45,13 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function SystemSettings() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { can } = useAuth();
+  const { user, can } = useAuth();
 
   const [systemSettings, setSystemSettings] = useState<SystemSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
 
   // Local values for input fields before saving
   const [localValues, setLocalValues] = useState<Record<string, string>>({});
@@ -170,6 +172,20 @@ export default function SystemSettings() {
 
   const handleLocalChange = (key: string, value: string) => {
     setLocalValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSendTestEmail = async () => {
+    try {
+      setSendingTestEmail(true);
+      const res = await systemSettingsApi.sendTestEmail();
+      if (res.data.success) {
+        toast.success(res.data.message || `Test email sent to ${user?.email || 'your email'} successfully!`);
+      }
+    } catch (error: any) {
+      toast.error(getErrorMessage(error, 'Failed to send test email'));
+    } finally {
+      setSendingTestEmail(false);
+    }
   };
 
   const formatKeyLabel = (key: string) =>
@@ -429,13 +445,31 @@ export default function SystemSettings() {
           {categories.map((cat) => (
             <TabsContent key={cat} value={cat} className="space-y-4">
               <Card>
-                <CardHeader>
-                  <CardTitle className="capitalize text-lg flex items-center gap-2">
-                    {cat} Settings
-                  </CardTitle>
-                  <CardDescription>
-                    Manage system configurations related to {cat.toLowerCase()}.
-                  </CardDescription>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="capitalize text-lg flex items-center gap-2">
+                      {cat} Settings
+                    </CardTitle>
+                    <CardDescription>
+                      Manage system configurations related to {cat.toLowerCase()}.
+                    </CardDescription>
+                  </div>
+                  {cat.toLowerCase() === 'smtp' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-2 text-xs font-medium border-primary/40 hover:border-primary text-primary hover:bg-primary/10 shrink-0"
+                      disabled={sendingTestEmail}
+                      onClick={handleSendTestEmail}
+                    >
+                      {sendingTestEmail ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4" />
+                      )}
+                      {sendingTestEmail ? 'Sending...' : 'Send Test Email'}
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {groupedSystemSettings[cat]?.map((setting) => {

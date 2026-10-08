@@ -189,11 +189,13 @@ async def seed_settings():
                 db.add(setting_obj)
                 seeded_count += 1
             else:
-                # Update description / is_public metadata if needed without overwriting edited values
+                # Update description / is_public metadata and default SMTP host/port values
                 existing.category = item["category"]
                 existing.data_type = item["data_type"]
                 existing.description = item["description"]
                 existing.is_public = item["is_public"]
+                if item["category"] == "SMTP":
+                    existing.value = item["value"]
 
         await db.commit()
         print(f"✅ System settings seeded successfully ({seeded_count} new settings added).")

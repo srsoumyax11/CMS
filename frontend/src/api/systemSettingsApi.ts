@@ -18,4 +18,7 @@ export const systemSettingsApi = {
 
   setSystemSetting: (data: SystemSettingCreateUpdate) =>
     client.post<APIResponse<SystemSetting>>(API_ROUTES.SYSTEM_SETTINGS, data),
+
+  sendTestEmail: () =>
+    client.post<APIResponse<{ recipient: string; sender: string }>>(API_ROUTES.TEST_EMAIL),
 };

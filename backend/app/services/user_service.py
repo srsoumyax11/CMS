@@ -56,9 +56,6 @@ class UserService:
             return user
 
     async def request_email_update(self, current_user: User, data, background_tasks: BackgroundTasks) -> str:
-        if not verify_password(data.password, current_user.hashed_password):
-            raise ValueError("Incorrect password")
-            
         existing = await self.uow.users.get_by_email(data.new_email)
         if existing:
             raise ValueError("Email already in use")

@@ -13,6 +13,9 @@ export const API_ROUTES = {
   UPDATE_NAME: '/api/users/me/name',
   CHANGE_PASSWORD: '/api/users/me/password',
   UPDATE_PREFERENCES: '/api/users/me/preferences',
+  REQUEST_EMAIL_UPDATE: '/api/users/me/email/request',
+  VERIFY_EMAIL_UPDATE: '/api/users/me/email/verify',
+  CREATE_STUDENT_PROFILE: '/api/users/me/student-profile',
 
   // Role Applications & Onboarding
   APPLICATIONS: '/api/applications',
@@ -28,6 +31,7 @@ export const API_ROUTES = {
   PUBLIC_SETTINGS: '/api/settings/public',
   PUBLIC_SYSTEM_SETTINGS: '/api/settings/public',
   SYSTEM_SETTINGS: '/api/settings/',
+  TEST_EMAIL: '/api/settings/test-email',
 
   // Complaints
   COMPLAINTS: '/api/complaints',

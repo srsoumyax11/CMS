@@ -19,9 +19,12 @@ class Settings(BaseSettings):
     SUPERADMIN_EMAIL: str = "admin@cms.com"
     SUPERADMIN_PASSWORD: str = "SuperAdmin@123"
 
-    # SMTP / Email Service Secrets
-    SMTP_HOST: str = "smtp.gmail.com"
-    SMTP_PORT: int = 587
+
+    # SMTP_HOST: str = "smtp.gmail.com"
+    # SMTP_PORT: int = 587
+    # SMTP / Email Service Secrets (Default: Local Supabase Mailpit on 54325)
+    SMTP_HOST: str = "127.0.0.1"
+    SMTP_PORT: int = 54325
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_SENDER_EMAIL: str = "noreply@cms.com"

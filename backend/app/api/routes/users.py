@@ -28,8 +28,8 @@ async def upload_profile_photo(
 ):
     service = UserService(uow)
     try:
-        photo_url = await service.upload_avatar(current_user, photo)
-        return APIResponse(success=True, data={"photo_url": photo_url}, error=None)
+        user = await service.upload_avatar(current_user, photo)
+        return APIResponse(success=True, data={"photo_url": user.photo_url}, error=None)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
