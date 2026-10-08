@@ -60,9 +60,6 @@ export const API_ROUTES = {
   ADMIN_OUTPASS_DEPART: (id: string) => `/api/outpasses/${id}/depart`,
   ADMIN_OUTPASS_RETURN: (id: string) => `/api/outpasses/${id}/return`,
 
-  // Timetable
-    TIMETABLE: '/api/timetable/',
-  TIMETABLE_SLOT: (slotId: string) => `/api/timetable/${slotId}`,
 
   // Attendance
   ATTENDANCE_ROSTER: (slotId: string) => `/api/attendance/roster/${slotId}`,

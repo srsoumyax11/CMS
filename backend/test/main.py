@@ -15,13 +15,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal
 from app.models.academic import Course, Department
 from app.models.user import User, UserType
-from app.models.profiles import FacultyProfile
+from app.models.profiles import FacultyProfile, StaffProfile
 from test.create_course import create_course
 from test.create_department import create_department
 from test.create_faculty import create_faculty
+from test.create_staff import create_staff
+from test.create_pending_users import create_pending_users
 from test.course_data import COURSES_DATA
 from test.department_data import ALL_DEPARTMENTS
 from test.faculty_data import FACULTY_DATA
+from test.staff_data import STAFF_DATA
 
 # Configure logging
 logging.basicConfig(
@@ -96,6 +99,28 @@ async def run_faculty_seeder(session: AsyncSession):
     logger.info(f"✅ Successfully processed {len(created_faculty)} faculty members.\n")
 
 
+async def run_staff_seeder(session: AsyncSession):
+    """
+    Executes staff seeding by calling create_staff for each staff definition.
+    """
+    logger.info("--- Starting Staff Creation Routine ---")
+    created_staff = []
+
+    for staff in STAFF_DATA:
+        staff_user = await create_staff(
+            session=session,
+            name=staff["name"],
+            email=staff["email"],
+            password=staff["password"],
+            department_code=staff["department_code"],
+            designation=staff["designation"],
+        )
+        created_staff.append(staff_user)
+
+    await session.commit()
+    logger.info(f"✅ Successfully processed {len(created_staff)} staff members.\n")
+
+
 async def print_seeding_report(session: AsyncSession):
     """
     Queries and prints a formatted summary report of all courses, departments, and faculty in the DB.
@@ -121,6 +146,23 @@ async def print_seeding_report(session: AsyncSession):
     )
     res_fac = await session.execute(stmt_fac)
     faculties = res_fac.scalars().all()
+
+    # Query Staff Users with Profile & Department
+    stmt_staff = (
+        select(User)
+        .where(User.user_type == UserType.staff)
+        .options(
+            selectinload(User.staff_profile).selectinload(StaffProfile.department)
+        )
+        .order_by(User.name)
+    )
+    res_staff = await session.execute(stmt_staff)
+    staff_members = res_staff.scalars().all()
+
+    # Query Pending Users
+    stmt_pending = select(User).where(User.account_status == "pending")
+    res_pending = await session.execute(stmt_pending)
+    pending_users = res_pending.scalars().all()
 
     academic_depts = [d for d in departments if d.department_type == "academic"]
     admin_depts = [d for d in departments if d.department_type == "administrative"]
@@ -163,8 +205,18 @@ async def print_seeding_report(session: AsyncSession):
         desig = f.faculty_profile.designation if f.faculty_profile else "N/A"
         print(f"{f.name:<28} | {f.email:<28} | {dept_code:<8} | {desig:<25}")
 
+    print(f"\n👨‍💼 ADMINISTRATIVE STAFF ({len(staff_members)} Total):")
+    print("-" * 80)
+    print(f"{'NAME':<28} | {'EMAIL':<28} | {'DEPT':<8} | {'DESIGNATION':<25}")
+    print("-" * 80)
+    for s in staff_members:
+        dept_code = s.staff_profile.department.code if (s.staff_profile and s.staff_profile.department) else "N/A"
+        desig = s.staff_profile.designation if s.staff_profile else "N/A"
+        print(f"{s.name:<28} | {s.email:<28} | {dept_code:<8} | {desig:<25}")
+
     print("\n" + "=" * 80)
-    print(f" TOTAL COURSES: {len(courses)}  |  DEPARTMENTS: {len(departments)}  |  FACULTY: {len(faculties)}")
+    print(f" TOTAL COURSES: {len(courses)}  |  DEPARTMENTS: {len(departments)}")
+    print(f" FACULTY: {len(faculties)}  |  STAFF: {len(staff_members)}  |  PENDING USERS: {len(pending_users)}")
     print("=" * 80 + "\n")
 
 
@@ -175,6 +227,8 @@ async def main():
         await run_course_seeder(session)
         await run_department_seeder(session)
         await run_faculty_seeder(session)
+        await run_staff_seeder(session)
+        await create_pending_users(session)
         await print_seeding_report(session)
 
 

@@ -1,17 +1,16 @@
 """
-Faculty Creation Handler Module.
+Staff Creation Handler Module.
 
-Provides functions to create faculty user accounts and faculty profiles idempotently in the database.
+Provides functions to create staff user accounts and staff profiles idempotently in the database.
 """
 
 import random
 import logging
-from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User, UserType, AccountStatus
-from app.models.profiles import FacultyProfile, EmploymentStatus
+from app.models.profiles import StaffProfile, EmploymentStatus
 from app.models.academic import Department
 from app.models.rbac import Role
 from app.core.security import hash_password
@@ -19,7 +18,7 @@ from app.core.security import hash_password
 logger = logging.getLogger(__name__)
 
 
-async def create_faculty(
+async def create_staff(
     session: AsyncSession,
     name: str,
     email: str,
@@ -29,19 +28,19 @@ async def create_faculty(
     is_active: bool = True,
 ) -> User:
     """
-    Creates or updates a faculty member user account and profile idempotently.
+    Creates or updates a staff member user account and profile idempotently.
 
     Args:
         session (AsyncSession): SQLAlchemy async database session.
-        name (str): Full name of the faculty member.
+        name (str): Full name of the staff member.
         email (str): Official email address.
         password (str): Account password.
-        department_code (str): Code of the department (e.g., 'CSE', 'ECE').
-        designation (str): Academic post/designation.
+        department_code (str): Code of the department (e.g., 'SEC', 'ACC').
+        designation (str): Administrative post/designation.
         is_active (bool): Active status.
 
     Returns:
-        User: The created or updated Faculty User instance.
+        User: The created or updated Staff User instance.
     """
     clean_email = email.strip().lower()
     clean_name = name.strip()
@@ -55,11 +54,11 @@ async def create_faculty(
     if not dept:
         raise ValueError(f"Department with code '{clean_dept_code}' not found")
 
-    # Resolve default Faculty role
-    stmt_role = select(Role).where(Role.name == "faculty")
+    # Resolve default Staff role
+    stmt_role = select(Role).where(Role.name == "staff")
     result_role = await session.execute(stmt_role)
-    faculty_role = result_role.scalar_one_or_none()
-    role_id = faculty_role.id if faculty_role else None
+    staff_role = result_role.scalar_one_or_none()
+    role_id = staff_role.id if staff_role else None
 
     # Check if User exists by email
     stmt_user = select(User).where(User.email == clean_email)
@@ -73,7 +72,7 @@ async def create_faculty(
             existing_user.role_id = role_id
 
         # Update profile
-        stmt_prof = select(FacultyProfile).where(FacultyProfile.user_id == existing_user.id)
+        stmt_prof = select(StaffProfile).where(StaffProfile.user_id == existing_user.id)
         result_prof = await session.execute(stmt_prof)
         profile = result_prof.scalar_one_or_none()
 
@@ -82,7 +81,7 @@ async def create_faculty(
             profile.designation = designation
             profile.employment_status = EmploymentStatus.active
         else:
-            new_profile = FacultyProfile(
+            new_profile = StaffProfile(
                 user_id=existing_user.id,
                 department_id=dept.id,
                 designation=designation,
@@ -91,25 +90,25 @@ async def create_faculty(
             session.add(new_profile)
 
         logger.info(
-            f"🔄 Updated existing faculty: {clean_name} ({clean_email}) -> Dept: [{clean_dept_code}]"
+            f"🔄 Updated existing staff: {clean_name} ({clean_email}) -> Dept: [{clean_dept_code}]"
         )
         return existing_user
 
     # Create new user
-    user_id_str = f"FAC{random.randint(10000, 99999)}"
+    user_id_str = f"STF{random.randint(10000, 99999)}"
     new_user = User(
         email=clean_email,
         name=clean_name,
         hashed_password=hash_password(password),
-        user_type=UserType.faculty,
+        user_type=UserType.staff,
         account_status=AccountStatus.active if is_active else AccountStatus.suspended,
         role_id=role_id,
     )
     session.add(new_user)
     await session.flush()
 
-    # Create linked faculty profile
-    new_profile = FacultyProfile(
+    # Create linked staff profile
+    new_profile = StaffProfile(
         user_id=new_user.id,
         department_id=dept.id,
         designation=designation,
@@ -118,6 +117,6 @@ async def create_faculty(
     session.add(new_profile)
 
     logger.info(
-        f"✨ Created new faculty: {clean_name} ({clean_email}) -> Dept: [{clean_dept_code}]"
+        f"✨ Created new staff: {clean_name} ({clean_email}) -> Dept: [{clean_dept_code}]"
     )
     return new_user
