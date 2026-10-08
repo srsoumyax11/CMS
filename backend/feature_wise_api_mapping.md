@@ -8,8 +8,8 @@ Version 1.0 | October 2026 | Status: Complete API Architecture Specification
 
 ## Table of Feature Modules
 
-1. [Feature 1: User Authentication, 2FA & Security](#feature-1-user-authentication-2fa--security)
-2. [Feature 2: Account Onboarding & Role Application Wizard](#feature-2-account-onboarding--role-application-wizard)
+1. [Feature 1: User Authentication, 2FA & Security](#feature-1-user-authentication-2fa--security) ✅ 
+2. [Feature 2: Account Onboarding & Role Application Wizard]     (#feature-2-account-onboarding--role-application-wizard) 
 3. [Feature 3: Dynamic User Profile & Personal Preferences](#feature-3-dynamic-user-profile--personal-preferences)
 4. [Feature 4: Academic Infrastructure & Department Setup](#feature-4-academic-infrastructure--department-setup)
 5. [Feature 5: Weekly Timetable Scheduling & Clash Detection](#feature-5-weekly-timetable-scheduling--clash-detection)

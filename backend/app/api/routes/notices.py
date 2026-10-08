@@ -106,7 +106,7 @@ async def list_notices(
         success=True,
         data=NoticeListResponse(
             items=items,
-            total=len(items) # Simplified pagination total
+            total=total
         )
     )
 
