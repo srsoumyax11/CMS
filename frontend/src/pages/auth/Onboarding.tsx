@@ -158,7 +158,7 @@ export function Onboarding() {
                   <SelectContent>
                     {courses.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.name}
+                        {c.code} - {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

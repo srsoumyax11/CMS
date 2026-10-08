@@ -149,7 +149,7 @@ export function ProTable<T>({
 
   // ── 8. Search & Filter Processing ─────────────────────────────────────
   const filteredData = useMemo(() => {
-    let result = [...data];
+    let result = [...(data || [])];
 
     // Apply Filter definitions
     if (filters && filters.length > 0) {

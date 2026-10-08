@@ -53,7 +53,12 @@ export const PERMISSIONS = {
     ASSIGN: 'complaint:assign',
     VIEW_PRIVATE: 'complaint:view_private',
   },
-      ATTENDANCE: {
+  USER: {
+    VIEW: 'user:view',
+    LIST: 'user:list',
+    EDIT: 'user:edit',
+  },
+  ATTENDANCE: {
     MARK: 'attendance:mark',
     VIEW: 'attendance:view',
   },

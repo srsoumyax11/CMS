@@ -35,6 +35,7 @@ const ComplaintDetail = React.lazy(() => import('@/pages/complaints/ComplaintDet
 
 // Admin
 const StudentManagement = React.lazy(() => import('@/pages/admin/StudentManagement').then(module => ({ default: module.StudentManagement })));
+const AllUsersManagement = React.lazy(() => import('@/pages/admin/AllUsersManagement').then(module => ({ default: module.AllUsersManagement })));
 const FacultyManagement = React.lazy(() => import('@/pages/admin/FacultyManagement').then(module => ({ default: module.FacultyManagement })));
 const ComplaintManagement = React.lazy(() => import('@/pages/admin/ComplaintManagement').then(module => ({ default: module.ComplaintManagement })));
 const RolesPermissions = React.lazy(() => import('@/pages/admin/RolesPermissions').then(module => ({ default: module.RolesPermissions })));
@@ -111,6 +112,7 @@ export function AdminRoutes() {
       <Route path="complaints/:id" element={<ComplaintDetail />} />
       <Route path="students" element={<StudentManagement />} />
       <Route path="users" element={<FacultyManagement />} />
+      <Route path="all-users" element={<AllUsersManagement />} />
       <Route path="permissions" element={<RolesPermissions />} />
       <Route path="departments" element={<DepartmentManagement />} />
       <Route path="courses" element={<CourseManagement />} />
@@ -178,3 +180,5 @@ function App() {
 }
 
 export default App;
+
+

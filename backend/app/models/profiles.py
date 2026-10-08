@@ -30,7 +30,6 @@ class StudentProfile(Base, UUIDMixin, TimestampMixin):
     course_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False)
     department_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="RESTRICT"), nullable=False)
     registration_no: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
-    roll_no: Mapped[Optional[str]] = mapped_column(String(30), unique=True, index=True, nullable=True)
     admission_year: Mapped[int] = mapped_column(nullable=False, default=2024)
     current_semester: Mapped[int] = mapped_column(nullable=False, default=1)
     section: Mapped[Optional[str]] = mapped_column(String(10), default="A", nullable=True)
@@ -47,6 +46,8 @@ class FacultyProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "faculty_profiles"
 
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    faculty_id: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    join_year: Mapped[Optional[int]] = mapped_column(nullable=True)
     department_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="RESTRICT"), nullable=False)
     designation: Mapped[str] = mapped_column(String(255), nullable=False)
 
@@ -60,6 +61,8 @@ class StaffProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "staff_profiles"
 
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    staff_id: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    join_year: Mapped[Optional[int]] = mapped_column(nullable=True)
     department_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="SET NULL"), nullable=True)
     designation: Mapped[str] = mapped_column(String(255), nullable=False)
 
@@ -75,8 +78,11 @@ class ParentProfile(Base, UUIDMixin, TimestampMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     student_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     relationship_type: Mapped[str] = mapped_column(String(50), default="Parent", nullable=False)
-    emergency_contact: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    emergency_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    emergency_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     user: Mapped["User"] = relationship("User", foreign_keys=[user_id], back_populates="parent_profile")
     student: Mapped["User"] = relationship("User", foreign_keys=[student_id])
+
+
 

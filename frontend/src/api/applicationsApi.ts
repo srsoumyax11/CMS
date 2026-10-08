@@ -44,4 +44,11 @@ export const applicationsApi = {
     const res = await client.post<APIResponse<RoleApplicationData>>(`/api/applications/${id}/reject`, { admin_notes });
     return res.data;
   },
+
+  checkIdentifier: async (role: string, value: string) => {
+    const res = await client.get<APIResponse<{ available: boolean }>>(`/api/applications/check-identifier`, {
+      params: { role, value }
+    });
+    return res.data;
+  },
 };

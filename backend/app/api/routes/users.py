@@ -53,7 +53,7 @@ async def get_my_student_profile(
             "course_id": str(profile.course_id),
             "department_id": str(profile.department_id),
             "year": profile.year,
-            "hostel": profile.room.building.name if (profile.room and profile.room.building) else None,
+            "hostel": getattr(profile, "room").building.name if getattr(profile, "room", None) and getattr(profile, "room").building else None,
             "academic_status": profile.academic_status.value if profile.academic_status else None,
         }, error=None)
     except ValueError as e:

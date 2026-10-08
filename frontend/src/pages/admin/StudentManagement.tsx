@@ -110,11 +110,15 @@ export function StudentManagement() {
       id: 'academic_program',
       header: 'Course & Dept',
       accessorFn: (row) => `${row.course_name} ${row.department_name}`,
-      cell: (val, row) => (
-        <span className="text-xs text-foreground">
-          {row.course_name} · {row.department_name} ({row.year} Year)
-        </span>
-      ),
+      cell: (val, row) => {
+        const course = courses.find(c => c.id === row.course_id);
+        const displayCourse = course?.code ? `${course.code} - ${course.name}` : row.course_name;
+        return (
+          <span className="text-xs text-foreground">
+            {displayCourse} · {row.department_name} ({row.year} Year)
+          </span>
+        );
+      },
     },
     {
       id: 'account_status',
@@ -301,7 +305,7 @@ export function StudentManagement() {
       label: 'Course',
       type: 'select',
       required: true,
-      options: courses.map((c) => ({ label: `${c.name} (${c.code || 'N/A'})`, value: c.id })),
+      options: courses.map((c) => ({ label: `${c.code || 'N/A'} - ${c.name}`, value: c.id })),
       renderView: (_, item) => (
         <span className="text-sm font-medium">{item.course_name}</span>
       ),

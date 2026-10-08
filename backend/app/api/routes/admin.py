@@ -27,7 +27,8 @@ from app.schemas.admin import (
     DepartmentResponse, DepartmentCreateRequest, DepartmentUpdateRequest,
     OnboardingStatusResponse, OnboardingTask,
     CourseCreateRequest, CourseUpdateRequest, CourseItemResponse,
-    SystemSettingResponse, SystemSettingUpdateRequest
+    SystemSettingResponse, SystemSettingUpdateRequest,
+    UserManagementItemResponse, UserManagementUpdateRequest
 )
 from app.schemas.staff import (
     StaffCreateRequest,
@@ -65,7 +66,7 @@ async def list_students(
         profile = s.student_profile
         course = profile.course if profile else None
         dept = profile.department if profile else None
-        hostel_bldg = profile.room.building.name if (profile and profile.room and profile.room.building) else None
+        hostel_bldg = getattr(profile, "room").building.name if profile and getattr(profile, "room", None) and getattr(profile, "room").building else None
         
         items.append(StudentItemResponse(
             id=s.id,
@@ -131,7 +132,7 @@ async def get_student(
     
     return APIResponse(success=True, data=StudentItemResponse(
         id=s.id, user_id=str(s.id), registration_no=profile.registration_no if profile else "",
-        roll_no=profile.roll_no if profile else None, name=s.name or s.email.split('@')[0], email=s.email,
+name=s.name or s.email.split('@')[0], email=s.email,
         course_id=course.id if course else None, course_name=str(course.name) if course else "Unknown",
         department_id=dept.id if dept else None, department_name=str(dept.name) if dept else "Unknown",
         admission_year=profile.admission_year if profile else 2024, current_semester=profile.current_semester if profile else 1,
@@ -471,3 +472,48 @@ async def get_onboarding_status(db: AsyncSession = Depends(get_db)):
     percentage = int((completed / len(tasks)) * 100)
     
     return APIResponse(success=True, data=OnboardingStatusResponse(completion_percentage=percentage, tasks=tasks))
+
+@router.get(
+    "/users",
+    response_model=APIResponse[List[UserManagementItemResponse]],
+    summary="List all users"
+)
+async def list_users(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    service: AdminService = Depends(get_admin_service),
+    _ = Depends(require_permission(Perms.USER_LIST))
+):
+    users, total = await service.list_users(skip=skip, limit=limit)
+    # Using UserManagementItemResponse will filter out sensitive fields
+    return APIResponse(
+        success=True,
+        data=[UserManagementItemResponse.model_validate(user) for user in users],
+        error=None,
+        meta={"total": total, "skip": skip, "limit": limit}
+    )
+
+@router.patch(
+    "/users/{id}",
+    response_model=APIResponse[UserManagementItemResponse],
+    summary="Update a user"
+)
+async def update_user(
+    id: UUID,
+    data: UserManagementUpdateRequest,
+    current_user: User = Depends(require_permission(Perms.USER_EDIT)),
+    service: AdminService = Depends(get_admin_service)
+):
+    try:
+        user = await service.update_user(id, data, current_user)
+        return APIResponse(
+            success=True,
+            data=UserManagementItemResponse.model_validate(user),
+            error=None
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+
+

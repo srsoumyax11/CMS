@@ -146,6 +146,18 @@ export const PAGES_CONFIG: Record<string, PageMetadata> = {
   },
   // --- Campus Facilities ---
   // --- Administration & System ---
+  'admin.all_users': {
+    id: 'admin.all_users',
+    path: '/admin/all-users',
+    title: 'All Users',
+    description: 'Manage all platform users, view details, and edit status.',
+    section: 'Administration & System',
+    icon: Users,
+    allowedRoles: ['admin'],
+    requiredPermissions: ['user:list'],
+    showInSidebar: true,
+    order: 0,
+  },
   'admin.users': {
     id: 'admin.users',
     path: '/admin/users',

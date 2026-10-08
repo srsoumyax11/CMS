@@ -108,10 +108,7 @@ async def main():
     ensure_redis_container()
     logger.info("✅ All pre-flight checks passed!")
 
-    logger.info("Starting test data seeding...")
-    from test.main import main as seed_test_data
-    await seed_test_data()
-    logger.info("✅ Test data seeding completed!")
+    logger.info("✅ Pre-start checks and seeding completed!")
 
 if __name__ == "__main__":
     asyncio.run(main())

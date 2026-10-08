@@ -144,3 +144,22 @@ async def delete_role(
         if "not found" in str(e).lower():
             raise HTTPException(status_code=404, detail=str(e))
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get(
+    "/{id}/assignments/count", 
+    summary="Get Role Assignment Count", 
+    description="Returns the number of users assigned to a specific role. **Requires:** `role:view`",
+    response_model=APIResponse[int]
+)
+async def get_role_assignment_count(
+    id: UUID,
+    service: RoleService = Depends(get_role_service),
+    _ = Depends(require_permission(Perms.ROLE_VIEW))
+):
+    try:
+        count = await service.get_assignment_count(id)
+        return APIResponse(success=True, data=count, error=None)
+    except ValueError as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))

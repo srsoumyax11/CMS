@@ -200,6 +200,7 @@ export interface PasswordChangeRequest {
 // ── Generic API Response ─────────────────────────────────────────────
 
 export interface APIResponse<T> {
+  message: string;
   success: boolean;
   data: T | null;
   error?: string | null;
@@ -635,3 +636,15 @@ export interface HostelAllocationCreate {
   student_id: string;
   room_id: string;
 }
+export interface UserManagementItemResponse {
+  id: string;
+  name: string;
+  email: string;
+  user_type: UserType;
+  account_status: AccountStatus;
+  role_id: string | null;
+  created_at: string;
+  status_note: string | null;
+  phone: string | null;
+}
+

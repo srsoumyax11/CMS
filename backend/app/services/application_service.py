@@ -34,6 +34,28 @@ class ApplicationService:
     def __init__(self, uow: UnitOfWork):
         self.uow = uow
 
+    async def check_identifier(self, role: str, value: str) -> bool:
+        if not value:
+            return False
+        
+        value = value.strip()
+        role = role.lower()
+
+        if role == "student":
+            stmt = select(StudentProfile).where((StudentProfile.registration_no == value) | (StudentProfile.roll_no == value))
+            res = await self.uow.db.execute(stmt)
+            return res.scalars().first() is None
+        elif role == "faculty":
+            stmt = select(FacultyProfile).where(FacultyProfile.employee_id == value)
+            res = await self.uow.db.execute(stmt)
+            return res.scalars().first() is None
+        elif role == "staff":
+            stmt = select(StaffProfile).where(StaffProfile.employee_id == value)
+            res = await self.uow.db.execute(stmt)
+            return res.scalars().first() is None
+        
+        return True
+
     async def submit_application(self, user: User, req: RoleApplicationCreateRequest) -> RoleApplicationResponse:
         # Security Guard 1: Admins cannot submit role applications
         if user.user_type == UserType.admin:
@@ -203,7 +225,21 @@ class ApplicationService:
                 if not course_id or not department_id:
                     raise ValueError("Application data is missing valid course_id or department_id.")
 
-                reg_no = str(data.get("registration_no") or data.get("user_id_str") or f"230123{str(uuid.uuid4().int)[:4]}").strip()
+                reg_no = str(data.get("registration_no") or data.get("user_id_str") or "").strip()
+                if not reg_no:
+                    raise ValueError("Registration number is required for a Student profile.")
+
+                # Check if registration_no or roll_no already exists
+                stmt_check_reg = select(StudentProfile).where(StudentProfile.registration_no == reg_no)
+                if (await self.uow.db.execute(stmt_check_reg)).scalars().first():
+                    raise ValueError(f"Registration number '{reg_no}' is already assigned to another account.")
+
+                roll_no = data.get("roll_no")
+                if roll_no:
+                    stmt_check_roll = select(StudentProfile).where(StudentProfile.roll_no == roll_no)
+                    if (await self.uow.db.execute(stmt_check_roll)).scalars().first():
+                        raise ValueError(f"Roll number '{roll_no}' is already assigned to another account.")
+
                 profile = StudentProfile(
                     user_id=user.id,
                     registration_no=reg_no,
@@ -260,8 +296,17 @@ class ApplicationService:
                 if not course_id or not department_id:
                     raise ValueError("Application data is missing valid course_id or department_id.")
 
+                emp_id = str(data.get("employee_id") or data.get("user_id_str") or "").strip()
+                if not emp_id:
+                    raise ValueError("Employee ID is required for a Faculty profile.")
+
+                stmt_check_f = select(FacultyProfile).where(FacultyProfile.employee_id == emp_id)
+                if (await self.uow.db.execute(stmt_check_f)).scalars().first():
+                    raise ValueError(f"Employee ID '{emp_id}' is already assigned to another account.")
+
                 f_profile = FacultyProfile(
                     user_id=user.id,
+                    faculty_id=emp_id,
                     course_id=course_id,
                     department_id=department_id,
                     designation=data.get("designation", "Faculty"),
@@ -272,8 +317,18 @@ class ApplicationService:
             elif target == "staff":
                 user.user_type = UserType.staff
                 dept_id = _parse_uuid(data.get("department_id"))
+
+                emp_id = str(data.get("employee_id") or data.get("user_id_str") or "").strip()
+                if not emp_id:
+                    raise ValueError("Employee ID is required for a Staff profile.")
+
+                stmt_check_s = select(StaffProfile).where(StaffProfile.employee_id == emp_id)
+                if (await self.uow.db.execute(stmt_check_s)).scalars().first():
+                    raise ValueError(f"Employee ID '{emp_id}' is already assigned to another account.")
+
                 s_profile = StaffProfile(
                     user_id=user.id,
+                    employee_id=emp_id,
                     department_id=dept_id,
                     designation=data.get("designation", "Staff"),
                     employment_status=EmploymentStatus.active

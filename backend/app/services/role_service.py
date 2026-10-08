@@ -161,3 +161,9 @@ class RoleService:
             raise ValueError("Cannot delete role that is currently assigned to users")
             
         await self.repository.delete_role(role)
+
+    async def get_assignment_count(self, role_id: UUID) -> int:
+        role = await self.repository.get_role_by_id(role_id)
+        if not role:
+            raise ValueError("Role not found")
+        return await self.repository.get_assignment_count(role_id)

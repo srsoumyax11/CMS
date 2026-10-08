@@ -27,6 +27,7 @@ async def get_courses(service: MetadataService = Depends(get_metadata_service)):
         {
             "id": str(course.id), 
             "name": course.name,
+            "code": course.code,
             "is_active": course.is_active,
             "duration_years": course.duration_years
         } 

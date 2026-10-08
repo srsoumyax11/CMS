@@ -44,6 +44,28 @@ export const RoleElevationWidget: React.FC = () => {
   const [employeeId, setEmployeeId] = useState('');
   const [designation, setDesignation] = useState('');
 
+  const [idChecking, setIdChecking] = useState(false);
+  const [idAvailable, setIdAvailable] = useState<boolean | null>(null);
+  const [idCheckMessage, setIdCheckMessage] = useState('');
+
+  const handleIdentifierCheck = async (role: string, value: string) => {
+    if (!value || value.length < 3) {
+      setIdAvailable(null);
+      setIdCheckMessage('');
+      return;
+    }
+    setIdChecking(true);
+    try {
+      const res = await applicationsApi.checkIdentifier(role, value);
+      setIdAvailable(res.data?.available ?? true);
+      setIdCheckMessage((res as any).message || '');
+    } catch {
+      setIdAvailable(null);
+    } finally {
+      setIdChecking(false);
+    }
+  };
+
   const fetchStatus = async () => {
     setLoading(true);
     try {
@@ -76,6 +98,11 @@ export const RoleElevationWidget: React.FC = () => {
 
     let payload: Record<string, any> = {};
     if (selectedRole === 'student') {
+      if (idAvailable === false) {
+        setError('This Registration / Roll Number is already registered.');
+        setSubmitting(false);
+        return;
+      }
       if (!rollNumber || !courseId || !departmentId) {
         setError('Please fill out all required fields: Registration / Roll Number, Course, and Department.');
         setSubmitting(false);
@@ -107,6 +134,11 @@ export const RoleElevationWidget: React.FC = () => {
         emergency_contact: emergencyContact || null,
       };
     } else if (selectedRole === 'faculty') {
+      if (idAvailable === false) {
+        setError('This Employee ID is already registered.');
+        setSubmitting(false);
+        return;
+      }
       if (!employeeId || !courseId || !departmentId || !designation) {
         setError('Please fill out Employee ID, Course, Department, and Designation.');
         setSubmitting(false);
@@ -119,6 +151,11 @@ export const RoleElevationWidget: React.FC = () => {
         designation,
       };
     } else if (selectedRole === 'staff') {
+      if (idAvailable === false) {
+        setError('This Employee ID is already registered.');
+        setSubmitting(false);
+        return;
+      }
       if (!employeeId || !designation) {
         setError('Please fill out Employee ID and Designation.');
         setSubmitting(false);
@@ -355,7 +392,17 @@ export const RoleElevationWidget: React.FC = () => {
               <>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-muted-foreground">BPUT Registration No. / Roll Number *</Label>
-                  <Input placeholder="e.g. 2101102034 or 23/CSE/042" value={rollNumber} onChange={(e) => setRollNumber(e.target.value)} required className="h-9" />
+                  <Input 
+                    placeholder="e.g. 2101102034 or 23/CSE/042" 
+                    value={rollNumber} 
+                    onChange={(e) => setRollNumber(e.target.value)} 
+                    onBlur={() => handleIdentifierCheck('student', rollNumber)}
+                    required 
+                    className="h-9" 
+                  />
+                  {idChecking && <p className="text-xs text-muted-foreground">Checking availability...</p>}
+                  {idAvailable === false && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="w-3 h-3"/> {idCheckMessage || 'This Registration Number is already registered.'}</p>}
+                  {idAvailable === true && <p className="text-xs text-green-500 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Available</p>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -431,7 +478,17 @@ export const RoleElevationWidget: React.FC = () => {
               <>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-muted-foreground">Employee ID *</Label>
-                  <Input placeholder="e.g. EMP-1092" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} required className="h-9" />
+                  <Input 
+                    placeholder="e.g. EMP-1092" 
+                    value={employeeId} 
+                    onChange={(e) => setEmployeeId(e.target.value)} 
+                    onBlur={() => handleIdentifierCheck(selectedRole, employeeId)}
+                    required 
+                    className="h-9" 
+                  />
+                  {idChecking && <p className="text-xs text-muted-foreground">Checking availability...</p>}
+                  {idAvailable === false && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="w-3 h-3"/> {idCheckMessage || 'This Employee ID is already registered.'}</p>}
+                  {idAvailable === true && <p className="text-xs text-green-500 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Available</p>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -454,7 +511,7 @@ export const RoleElevationWidget: React.FC = () => {
                         <SelectTrigger className="h-9"><SelectValue placeholder="Select Course" /></SelectTrigger>
                         <SelectContent>
                           {courses.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                            <SelectItem key={c.id} value={c.id}>{(c as any).code ? `${(c as any).code} - ${c.name}` : c.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

@@ -65,6 +65,23 @@ async def list_applications(
     apps = await service.list_applications(status=status_filter, skip=skip, limit=limit)
     return APIResponse(success=True, data=apps)
 
+@router.get(
+    "/check-identifier",
+    summary="Check Identifier Uniqueness",
+    description="Check if a given registration number or employee ID is already assigned to a profile.",
+    response_model=APIResponse[dict]
+)
+async def check_identifier(
+    role: str,
+    value: str,
+    service: ApplicationService = Depends(get_application_service)
+):
+    available = await service.check_identifier(role, value)
+    if available:
+        return APIResponse(success=True, data={"available": True}, message="Identifier is available.")
+    else:
+        return APIResponse(success=True, data={"available": False}, message="This identifier is already in use.")
+
 @router.post(
     "/{id}/approve",
     summary="Approve Role Application (Admin)",

@@ -4,6 +4,7 @@
 cd backend
 supabase stop --no-backup
 supabase start
+# OR supabase db reset
 .\venv\Scripts\activate
 alembic upgrade head
 python -m scripts.pre_start
@@ -22,7 +23,7 @@ uvicorn app.main:app --reload --port 8000
 cd backend
 supabase stop --no-backup
 supabase start
-docker start cms-redis 2>$null || docker run -d --name cms-redis -p 6379:6379 redis:alpine
+supabase db reset
 .\venv\Scripts\activate
 alembic upgrade head
 python -m scripts.pre_start

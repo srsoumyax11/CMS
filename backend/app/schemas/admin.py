@@ -1,4 +1,7 @@
+from datetime import datetime
+from app.models.user import UserType
 from pydantic import BaseModel, ConfigDict, UUID4, EmailStr, Field
+from uuid import UUID
 from typing import Optional, List, Literal
 from app.models.user import AccountStatus
 from app.models.profiles import AcademicStatus, EmploymentStatus
@@ -17,7 +20,7 @@ class CourseUpdateRequest(BaseModel):
     duration_years: Optional[int] = Field(None, ge=1, le=7)
 
 class CourseItemResponse(BaseModel):
-    id: UUID4
+    id: UUID
     name: str
     code: str
     is_active: bool
@@ -32,8 +35,8 @@ class StudentCreateRequest(BaseModel):
     password: str = Field(..., min_length=8)
     registration_no: str = Field(..., pattern=r"^\d{10}$", description="10-digit BPUT Registration Number")
     roll_no: Optional[str] = Field(None, description="Class Roll Number e.g. 23/CSE/042")
-    course_id: UUID4
-    department_id: UUID4
+    course_id: UUID
+    department_id: UUID
     admission_year: int = Field(default=2024, ge=2000, le=2100)
     current_semester: int = Field(default=1, ge=1, le=10)
     section: Optional[str] = Field(default="A")
@@ -46,7 +49,7 @@ class StudentStatusUpdateRequest(BaseModel):
     status_note: Optional[str] = None
 
 class StudentItemResponse(BaseModel):
-    id: UUID4
+    id: UUID
     user_id: Optional[str] = ""
     registration_no: Optional[str] = ""
     roll_no: Optional[str] = None
@@ -81,21 +84,21 @@ class FacultyCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     password: str = Field(..., min_length=8)
-    department_id: UUID4
+    department_id: UUID
     designation: str = Field(..., min_length=2, max_length=255)
 
 class FacultyItemResponse(BaseModel):
-    id: UUID4
+    id: UUID
     user_id: Optional[str] = ""
     name: str
     email: str
     photo_url: Optional[str] = None
-    department_id: UUID4
+    department_id: UUID
     department_name: str
     designation: str
     is_hod: bool
     account_status: AccountStatus
-    employment_status: EmploymentStatus
+    employment_status: Optional[EmploymentStatus] = None
     status_note: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -116,7 +119,7 @@ class FacultyStatusUpdateRequest(BaseModel):
 
 
 class DepartmentResponse(BaseModel):
-    id: UUID4
+    id: UUID
     name: str
     code: str
     department_type: Literal["academic", "administrative"]
@@ -158,7 +161,7 @@ class SystemSettingUpdateRequest(BaseModel):
     value: Optional[str] = None
 
 class AdminItemResponse(BaseModel):
-    id: UUID4
+    id: UUID
     user_id: Optional[str] = ""
     name: str
     email: str
@@ -179,3 +182,39 @@ class OnboardingStatusResponse(BaseModel):
     tasks: List[OnboardingTask]
 
     model_config = ConfigDict(from_attributes=True)
+
+class UserManagementItemResponse(BaseModel):
+    id: UUID
+    email_notifications: bool
+    in_app_alerts: bool
+    is_2fa_enabled: bool
+    target_role: Optional[str] = None
+    name: str
+    email: str
+    user_type: UserType
+    account_status: AccountStatus
+    role_id: Optional[UUID] = None
+    created_at: datetime
+    status_note: Optional[str] = None
+    phone: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+class UserManagementUpdateRequest(BaseModel):
+    user_type: Optional[UserType] = None
+    email_notifications: Optional[bool] = None
+    in_app_alerts: Optional[bool] = None
+    is_2fa_enabled: Optional[bool] = None
+    target_role: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=2, max_length=255)
+    account_status: Optional[AccountStatus] = None
+    role_id: Optional[UUID] = None
+    status_note: Optional[str] = Field(None, max_length=1000)
+    phone: Optional[str] = Field(None, max_length=20)
+
+
+
+
+
+
+

@@ -30,7 +30,7 @@ def upgrade() -> None:
     )
 
     import datetime
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
     # Pre-defined system roles
     roles = [
@@ -192,6 +192,63 @@ def upgrade() -> None:
             
     op.bulk_insert(role_permissions_table, role_perms_insert)
 
+    # --- Seed Courses ---
+    courses_table = sa.table('courses',
+        sa.column('id', sa.UUID),
+        sa.column('code', sa.String),
+        sa.column('name', sa.String),
+        sa.column('duration_years', sa.Integer),
+        sa.column('is_active', sa.Boolean),
+        sa.column('created_at', sa.DateTime),
+        sa.column('updated_at', sa.DateTime)
+    )
+    courses_data = [
+        {'id': str(uuid.uuid4()), 'code': 'BTECH', 'name': 'Bachelor of Technology', 'duration_years': 4, 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'MTECH', 'name': 'Master of Technology', 'duration_years': 2, 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'BARCH', 'name': 'Bachelor of Architecture', 'duration_years': 5, 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'MARCH', 'name': 'Master of Architecture', 'duration_years': 2, 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'BPHARM', 'name': 'Bachelor of Pharmacy', 'duration_years': 4, 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'MPHARM', 'name': 'Master of Pharmacy', 'duration_years': 2, 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'MBA', 'name': 'Master of Business Administration', 'duration_years': 2, 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'MCA', 'name': 'Master of Computer Applications', 'duration_years': 2, 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'BSC', 'name': 'Bachelor of Science', 'duration_years': 3, 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'MSC', 'name': 'Master of Science', 'duration_years': 2, 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'PHD', 'name': 'Doctor of Philosophy', 'duration_years': 3, 'is_active': True, 'created_at': now, 'updated_at': now},
+    ]
+    op.bulk_insert(courses_table, courses_data)
+
+    # --- Seed Departments ---
+    departments_table = sa.table('departments',
+        sa.column('id', sa.UUID),
+        sa.column('code', sa.String),
+        sa.column('name', sa.String),
+        sa.column('department_type', sa.String), # Using string instead of enum to bypass postgres enum casting issues in alembic
+        sa.column('is_active', sa.Boolean),
+        sa.column('created_at', sa.DateTime),
+        sa.column('updated_at', sa.DateTime)
+    )
+    departments_data = [
+        {'id': str(uuid.uuid4()), 'code': 'CSE', 'name': 'Computer Science & Engineering', 'department_type': 'academic', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'ECE', 'name': 'Electronics & Communication Engineering', 'department_type': 'academic', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'EE', 'name': 'Electrical Engineering', 'department_type': 'academic', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'ME', 'name': 'Mechanical Engineering', 'department_type': 'academic', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'CE', 'name': 'Civil Engineering', 'department_type': 'academic', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'CHE', 'name': 'Chemical Engineering', 'department_type': 'academic', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'IT', 'name': 'Information Technology', 'department_type': 'academic', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'BSH', 'name': 'Basic Sciences & Humanities', 'department_type': 'academic', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'SEC', 'name': 'Campus Security & Vigilance', 'department_type': 'administrative', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'ACC', 'name': 'Accounts & Finance Division', 'department_type': 'administrative', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'MGT', 'name': 'Executive Management & Governance', 'department_type': 'administrative', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'ADM', 'name': 'General Administration & HR', 'department_type': 'administrative', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'EXM', 'name': 'Examination & Evaluation Cell', 'department_type': 'administrative', 'is_active': True, 'created_at': now, 'updated_at': now},
+        {'id': str(uuid.uuid4()), 'code': 'LIB', 'name': 'Central Library Services', 'department_type': 'administrative', 'is_active': True, 'created_at': now, 'updated_at': now},
+    ]
+    # Use direct SQL for enum columns to avoid casting issues in Alembic
+    for dept in departments_data:
+        op.execute(
+            f"INSERT INTO departments (id, code, name, department_type, is_active, created_at, updated_at) "
+            f"VALUES ('{dept['id']}', '{dept['code']}', '{dept['name']}', '{dept['department_type']}'::departmenttype, {str(dept['is_active']).lower()}, NOW(), NOW());"
+        )
 
 
 def downgrade() -> None:

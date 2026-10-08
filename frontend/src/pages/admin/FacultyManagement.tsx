@@ -33,14 +33,14 @@ export function FacultyManagement() {
 
   // Categorize faculty members by department type
   const academicFaculty = useMemo(() => {
-    return facultyList.items.filter((f) => {
+    return (facultyList.items || []).filter((f) => {
       const dept = deptMap.get(f.department_id);
       return !dept || dept.department_type === 'academic';
     });
   }, [facultyList.items, deptMap]);
 
   const administrativeFaculty = useMemo(() => {
-    return facultyList.items.filter((f) => {
+    return (facultyList.items || []).filter((f) => {
       const dept = deptMap.get(f.department_id);
       return dept?.department_type === 'administrative';
     });

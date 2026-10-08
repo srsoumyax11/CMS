@@ -282,7 +282,7 @@ export function RolesPermissions() {
       <div className="mb-4 shrink-0">
         <PageHeader
           actions={
-            <Button onClick={() => setShowCreate(true)}>
+            <Button disabled onClick={() => setShowCreate(true)}>
               <Plus className="mr-2 h-4 w-4" />
               New Role
             </Button>
@@ -339,6 +339,7 @@ export function RolesPermissions() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40">
                               <DropdownMenuItem
+                                disabled
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setEditRole({ name: role.name, description: role.description || '' });

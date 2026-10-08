@@ -46,7 +46,7 @@ export const adminApi = {
     client.patch<APIResponse<StudentItemResponse>>(API_ROUTES.ADMIN_STUDENT_STATUS(id), data),
 
   updateStudentDetails: (id: string, data: any) =>
-    client.put<APIResponse<StudentItemResponse>>(API_ROUTES.ADMIN_STUDENT_DETAIL(id), data),
+    client.patch<APIResponse<StudentItemResponse>>(API_ROUTES.ADMIN_STUDENT_DETAIL(id), data),
 
   // Faculty
   listFaculty: (params?: StudentListParams) =>
@@ -150,4 +150,11 @@ export const adminApi = {
     client.post<APIResponse<HostelAllocation>>('/api/hostel/allocations', data),
   vacateHostelRoom: (id: string) =>
     client.patch<APIResponse<HostelAllocation>>(`/api/hostel/allocations/${id}/vacate`, {}),
+
+  // Users
+  listUsers: (params?: { skip?: number; limit?: number }) =>
+    client.get<APIResponse<any>>('/api/admin/users', { params }),
+  updateUser: (id: string, data: any) =>
+    client.patch<APIResponse<any>>(`/api/admin/users/${id}`, data),
 };
+

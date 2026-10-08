@@ -63,3 +63,8 @@ class Perms:
 
     # Asset: hostel
     HOSTEL_MANAGE = "hostel:manage"
+
+    # Asset: user
+    USER_VIEW = "user:view"
+    USER_LIST = "user:list"
+    USER_EDIT = "user:edit"

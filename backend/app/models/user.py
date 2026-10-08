@@ -20,11 +20,11 @@ class UserType(str, enum.Enum):
     admin = "admin"
 
 class AccountStatus(str, enum.Enum):
+    base = "base"
     pending = "pending"
     revision = "revision"
     active = "active"
     suspended = "suspended"
-    rejected = "rejected"
 
 class User(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "users"
@@ -44,8 +44,6 @@ class User(Base, UUIDMixin, TimestampMixin):
     is_2fa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Onboarding Application Data
-    target_role: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    application_data: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
 
     student_profile: Mapped[Optional["StudentProfile"]] = relationship("StudentProfile", back_populates="user", cascade="all, delete-orphan", uselist=False)
     faculty_profile: Mapped[Optional["FacultyProfile"]] = relationship("FacultyProfile", back_populates="user", cascade="all, delete-orphan", uselist=False)
@@ -54,3 +52,4 @@ class User(Base, UUIDMixin, TimestampMixin):
     role_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
     role: Mapped[Optional["Role"]] = relationship("Role")
     notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+

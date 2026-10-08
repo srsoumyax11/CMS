@@ -224,6 +224,7 @@ def upgrade() -> None:
     )
     op.create_table('faculty_profiles',
     sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.Column('employee_id', sa.String(length=50), nullable=False),
     sa.Column('department_id', sa.UUID(), nullable=False),
     sa.Column('designation', sa.String(length=255), nullable=False),
     sa.Column('employment_status', sa.Enum('active', 'on_leave', 'resigned', 'retired', 'terminated', name='employment_status_enum'), nullable=False),
@@ -235,6 +236,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id')
     )
+    op.create_index(op.f('ix_faculty_profiles_employee_id'), 'faculty_profiles', ['employee_id'], unique=True)
     op.create_table('notices',
     sa.Column('title', sa.String(), nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
@@ -255,6 +257,7 @@ def upgrade() -> None:
     )
     op.create_table('staff_profiles',
     sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.Column('employee_id', sa.String(length=50), nullable=False),
     sa.Column('department_id', sa.UUID(), nullable=True),
     sa.Column('designation', sa.String(length=255), nullable=False),
     sa.Column('employment_status', sa.Enum('active', 'on_leave', 'resigned', 'retired', 'terminated', name='employment_status_enum'), nullable=False),
@@ -266,6 +269,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id')
     )
+    op.create_index(op.f('ix_staff_profiles_employee_id'), 'staff_profiles', ['employee_id'], unique=True)
     op.create_table('student_profiles',
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('course_id', sa.UUID(), nullable=False),
@@ -309,8 +313,10 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_student_profiles_roll_no'), table_name='student_profiles')
     op.drop_index(op.f('ix_student_profiles_registration_no'), table_name='student_profiles')
     op.drop_table('student_profiles')
+    op.drop_index(op.f('ix_staff_profiles_employee_id'), table_name='staff_profiles')
     op.drop_table('staff_profiles')
     op.drop_table('notices')
+    op.drop_index(op.f('ix_faculty_profiles_employee_id'), table_name='faculty_profiles')
     op.drop_table('faculty_profiles')
     op.drop_table('complaint_status_logs')
     op.drop_table('role_permissions')
