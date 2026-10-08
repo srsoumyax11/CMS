@@ -16,7 +16,8 @@ from app.schemas.timetable import (
     TimetableSlotListResponse,
     TimetableExceptionCreate,
     TimetableExceptionResponse,
-    TimetableExceptionListResponse
+    TimetableExceptionListResponse,
+    MyScheduleResponse
 )
 from app.services.timetable_service import TimetableService
 
@@ -186,3 +187,17 @@ async def delete_exception(
         return APIResponse(success=True, data={"message": "Timetable exception deleted successfully."})
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+@router.get(
+    "/mine",
+    summary="Get My Timetable Schedule",
+    description="Fetches personalized weekly slot schedule for the logged-in student or faculty member.",
+    response_model=APIResponse[MyScheduleResponse]
+)
+async def get_my_schedule(
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.TIMETABLE_LIST))
+):
+    service = TimetableService(uow)
+    schedule = await service.get_my_schedule(current_user)
+    return APIResponse(success=True, data=schedule)

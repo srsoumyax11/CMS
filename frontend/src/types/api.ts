@@ -740,3 +740,78 @@ export interface HolidayUpdateRequest {
   applies_to?: string | null;
 }
 
+// ── Timetable Types ─────────────────────────────────────────────────────────
+
+export type DayOfWeek = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type ExceptionType = 'CANCELLED' | 'SUBSTITUTE' | 'EXTRA';
+
+export interface TimetableSlot {
+  id: string;
+  term_id: string;
+  class_group_id: string;
+  subject_id: string;
+  faculty_user_id: string;
+  room_location_id?: string | null;
+  day_of_week: DayOfWeek;
+  start_time: string;
+  end_time: string;
+  status: boolean;
+  created_at: string;
+  updated_at: string;
+
+  // Enriched optional fields
+  subject_code?: string | null;
+  subject_name?: string | null;
+  faculty_name?: string | null;
+  room_name?: string | null;
+  class_group_name?: string | null;
+}
+
+export interface TimetableSlotCreatePayload {
+  term_id: string;
+  class_group_id: string;
+  subject_id: string;
+  faculty_user_id: string;
+  room_location_id?: string | null;
+  day_of_week: DayOfWeek;
+  start_time: string;
+  end_time: string;
+  status?: boolean;
+}
+
+export interface TimetableSlotUpdatePayload {
+  term_id?: string;
+  class_group_id?: string;
+  subject_id?: string;
+  faculty_user_id?: string;
+  room_location_id?: string | null;
+  day_of_week?: DayOfWeek;
+  start_time?: string;
+  end_time?: string;
+  status?: boolean;
+}
+
+export interface TimetableException {
+  id: string;
+  slot_id: string;
+  date: string;
+  type: ExceptionType;
+  substitute_faculty_id?: string | null;
+  note?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TimetableExceptionCreatePayload {
+  slot_id: string;
+  date: string;
+  type: ExceptionType;
+  substitute_faculty_id?: string | null;
+  note?: string | null;
+}
+
+export interface MyScheduleResponseData {
+  slots: TimetableSlot[];
+  exceptions: TimetableException[];
+}
+

@@ -68,3 +68,14 @@ class TimetableExceptionResponse(BaseModel):
 class TimetableExceptionListResponse(BaseModel):
     total: int
     items: List[TimetableExceptionResponse]
+
+class EnrichedTimetableSlotResponse(TimetableSlotResponse):
+    subject_code: Optional[str] = None
+    subject_name: Optional[str] = None
+    faculty_name: Optional[str] = None
+    room_name: Optional[str] = None
+    class_group_name: Optional[str] = None
+
+class MyScheduleResponse(BaseModel):
+    slots: List[EnrichedTimetableSlotResponse]
+    exceptions: List[TimetableExceptionResponse]

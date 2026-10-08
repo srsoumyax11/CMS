@@ -183,3 +183,99 @@ class TimetableService:
             if not exc:
                 raise ValueError("Timetable exception not found.")
             return await u.timetable_exceptions.delete(exception_id)
+
+    async def get_my_schedule(self, user: Any) -> Any:
+        from sqlalchemy import select
+        from app.models.user import UserType, User as UserModel
+        from app.models.profiles import StudentProfile
+        from app.models.academic import Subject, ClassGroup
+        from app.models.map import MapLocation
+        from app.schemas.timetable import MyScheduleResponse, EnrichedTimetableSlotResponse, TimetableExceptionResponse
+
+        async with self.uow.transaction() as u:
+            slots: List[TimetableSlot] = []
+            
+            if user.user_type == UserType.student:
+                prof_stmt = select(StudentProfile).where(StudentProfile.user_id == user.id)
+                prof_res = await u.db.execute(prof_stmt)
+                student_prof = prof_res.scalar_one_or_none()
+                
+                if student_prof:
+                    cg_stmt = select(ClassGroup).where(
+                        ClassGroup.course_id == student_prof.course_id,
+                        ClassGroup.department_id == student_prof.department_id,
+                        ClassGroup.year == student_prof.year,
+                        ClassGroup.section == (student_prof.section or "A")
+                    )
+                    cg_res = await u.db.execute(cg_stmt)
+                    cg = cg_res.scalar_one_or_none()
+                    if cg:
+                        slots_stmt = select(TimetableSlot).where(
+                            TimetableSlot.class_group_id == cg.id,
+                            TimetableSlot.status.is_(True)
+                        )
+                        slots = list((await u.db.execute(slots_stmt)).scalars().all())
+            elif user.user_type in [UserType.faculty, UserType.admin]:
+                slots_stmt = select(TimetableSlot).where(
+                    TimetableSlot.faculty_user_id == user.id,
+                    TimetableSlot.status.is_(True)
+                )
+                slots = list((await u.db.execute(slots_stmt)).scalars().all())
+
+            enriched_slots: List[EnrichedTimetableSlotResponse] = []
+            slot_ids = [s.id for s in slots]
+            
+            subj_ids = {s.subject_id for s in slots if s.subject_id}
+            cg_ids = {s.class_group_id for s in slots if s.class_group_id}
+            faculty_ids = {s.faculty_user_id for s in slots if s.faculty_user_id}
+            room_ids = {s.room_location_id for s in slots if s.room_location_id}
+
+            subjects_map: Dict[UUID, Subject] = {}
+            if subj_ids:
+                s_stmt = select(Subject).where(Subject.id.in_(subj_ids))
+                subjects_map = {s.id: s for s in (await u.db.execute(s_stmt)).scalars().all()}
+
+            cgroups_map: Dict[UUID, ClassGroup] = {}
+            if cg_ids:
+                cg_stmt = select(ClassGroup).where(ClassGroup.id.in_(cg_ids))
+                cgroups_map = {cg.id: cg for cg in (await u.db.execute(cg_stmt)).scalars().all()}
+
+            faculty_map: Dict[UUID, UserModel] = {}
+            if faculty_ids:
+                f_stmt = select(UserModel).where(UserModel.id.in_(faculty_ids))
+                faculty_map = {f.id: f for f in (await u.db.execute(f_stmt)).scalars().all()}
+
+            room_map: Dict[UUID, MapLocation] = {}
+            if room_ids:
+                r_stmt = select(MapLocation).where(MapLocation.id.in_(room_ids))
+                room_map = {r.id: r for r in (await u.db.execute(r_stmt)).scalars().all()}
+
+            for s in slots:
+                res_obj = EnrichedTimetableSlotResponse.model_validate(s)
+                subj = subjects_map.get(s.subject_id)
+                if subj:
+                    res_obj.subject_code = subj.code
+                    res_obj.subject_name = subj.name
+                
+                fac = faculty_map.get(s.faculty_user_id)
+                if fac:
+                    res_obj.faculty_name = fac.full_name
+                    
+                rm = room_map.get(s.room_location_id) if s.room_location_id else None
+                if rm:
+                    res_obj.room_name = rm.name
+
+                cg = cgroups_map.get(s.class_group_id)
+                if cg:
+                    res_obj.class_group_name = f"Year {cg.year} Sec {cg.section}"
+                
+                enriched_slots.append(res_obj)
+
+            exceptions: List[TimetableException] = []
+            if slot_ids:
+                exc_stmt = select(TimetableException).where(TimetableException.slot_id.in_(slot_ids))
+                exceptions = list((await u.db.execute(exc_stmt)).scalars().all())
+
+            exc_responses = [TimetableExceptionResponse.model_validate(e) for e in exceptions]
+
+            return MyScheduleResponse(slots=enriched_slots, exceptions=exc_responses)

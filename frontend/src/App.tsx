@@ -44,6 +44,10 @@ const CourseManagement = React.lazy(() => import('@/pages/admin/CourseManagement
 const RoleApplicationsManagement = React.lazy(() => import('@/pages/admin/RoleApplicationsManagement').then(module => ({ default: module.RoleApplicationsManagement })));
 const AcademicManagement = React.lazy(() => import('@/pages/admin/AcademicManagement').then(module => ({ default: module.AcademicManagement })));
 
+// Timetable
+const PersonalTimetable = React.lazy(() => import('@/pages/timetable/PersonalTimetable').then(module => ({ default: module.PersonalTimetable })));
+const TimetableManagement = React.lazy(() => import('@/pages/admin/TimetableManagement').then(module => ({ default: module.TimetableManagement })));
+
 function RoleRedirect() {
   const { role } = useAuth();
   const target = role && ROLE_ROUTES[role] ? ROLE_ROUTES[role] : '/login';
@@ -68,6 +72,7 @@ export function StudentRoutes() {
       <Route index element={<StudentDashboard />} />
       <Route path="notices" element={<NoticeList />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
+      <Route path="timetable" element={<PersonalTimetable />} />
       <Route path="complaints" element={<MyComplaints />} />
       <Route path="complaints/new" element={<ComplaintCreate />} />
       <Route path="complaints/:id" element={<ComplaintDetail />} />
@@ -85,6 +90,7 @@ export function FacultyRoutes() {
       <Route path="notices" element={<NoticeList />} />
       <Route path="notices/new" element={<NoticeCreate />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
+      <Route path="timetable" element={<PersonalTimetable />} />
       <Route path="complaints" element={<MyComplaints />} />
       <Route path="complaints/:id" element={<ComplaintDetail />} />
       <Route path="profile" element={<Profile />} />
@@ -109,6 +115,7 @@ export function AdminRoutes() {
       <Route path="all-users" element={<AllUsersManagement />} />
       <Route path="permissions" element={<RolesPermissions />} />
       <Route path="academic" element={<AcademicManagement />} />
+      <Route path="timetable" element={<TimetableManagement />} />
       <Route path="departments" element={<Navigate to="/admin/academic?tab=departments" replace />} />
       <Route path="courses" element={<Navigate to="/admin/academic?tab=courses" replace />} />
       <Route path="terms" element={<Navigate to="/admin/academic?tab=terms" replace />} />
