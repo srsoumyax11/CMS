@@ -8,11 +8,12 @@ import {
 } from 'react';
 import { authApi } from '@/api/authApi';
 import { STORAGE_KEYS, AUTH_EVENTS } from '@/lib/constants';
-import type { UserResponse, LoginRequest, UserType } from '@/types/api';
+import type { UserResponse, LoginRequest, UserType, AccountStatus } from '@/types/api';
 
 interface AuthContextValue {
   user: UserResponse | null;
   role: UserType | null;
+  accountStatus: AccountStatus | null;
   isLoading: boolean;
   login: (credentials: LoginRequest) => Promise<any>;
   finishLogin: (access_token: string, refresh_token: string) => Promise<void>;
@@ -20,6 +21,7 @@ interface AuthContextValue {
   refreshUser: () => Promise<void>;
   rbacRoles: string[];
   hasPermission: (permission: string) => boolean;
+  can: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -99,14 +101,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasPermission = useCallback(
     (permission: string) => {
+      // SuperAdmin or user with explicit permission string (e.g. "complaint:view")
+      if (user?.user_type === 'admin') return true;
       return permissions.includes(permission);
     },
-    [permissions]
+    [permissions, user?.user_type]
   );
 
   const value: AuthContextValue = {
     user,
     role: user?.user_type ?? null,
+    accountStatus: user?.account_status ?? null,
     isLoading,
     login,
     finishLogin,
@@ -114,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser: fetchUser,
     rbacRoles,
     hasPermission,
+    can: hasPermission,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

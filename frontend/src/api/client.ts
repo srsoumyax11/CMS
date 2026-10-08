@@ -6,11 +6,8 @@ import axios, {
 import { API_BASE_URL, API_ROUTES, STORAGE_KEYS, AUTH_EVENTS } from '@/lib/constants';
 import type {
   APIResponse,
-  LoginRequest,
-  TokenResponse,
   RefreshTokenRequest,
   RefreshTokenResponse,
-  UserResponse,
 } from '@/types/api';
 
 const client: AxiosInstance = axios.create({
@@ -49,7 +46,6 @@ const processQueue = (error: unknown, token: string | null) => {
 
 client.interceptors.response.use(
   (response) => {
-    // If the backend returns HTTP 200 OK but success === false, throw it as a real error!
     if (response.data && response.data.success === false) {
       const serverError = response.data.error || response.data.detail || 'An error occurred';
       const err = new Error(serverError) as Error & { response?: any };
@@ -62,6 +58,12 @@ client.interceptors.response.use(
     const originalRequest = error.config as AxiosRequestConfig & {
       _retry?: boolean;
     };
+
+    // Check Maintenance Mode 503
+    if (error.response?.status === 503) {
+      const message = error.response.data?.detail || 'System is currently undergoing scheduled maintenance.';
+      window.dispatchEvent(new CustomEvent(AUTH_EVENTS.MAINTENANCE, { detail: { message } }));
+    }
 
     if (
       error.response?.status !== 401 ||
@@ -85,12 +87,12 @@ client.interceptors.response.use(
       return new Promise((resolve, reject) => {
         failedQueue.push({
           resolve: (token: string) => {
-          originalRequest.headers = {
-            ...originalRequest.headers,
-            Authorization: `Bearer ${token}`,
-          };
-          originalRequest._retry = true;
-          resolve(client(originalRequest));
+            originalRequest.headers = {
+              ...originalRequest.headers,
+              Authorization: `Bearer ${token}`,
+            };
+            originalRequest._retry = true;
+            resolve(client(originalRequest));
           },
           reject,
         });

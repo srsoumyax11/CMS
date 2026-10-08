@@ -166,12 +166,15 @@ function AppRoutes() {
   );
 }
 
+import { MaintenanceOverlay } from '@/components/shared/MaintenanceOverlay';
+
 function App() {
   return (
     <QueryProvider>
       <AuthProvider>
         <BrowserRouter>
           <AppRoutes />
+          <MaintenanceOverlay />
         </BrowserRouter>
       </AuthProvider>
       <Toaster position="top-right" richColors closeButton />
