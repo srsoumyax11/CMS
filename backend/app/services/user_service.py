@@ -163,7 +163,7 @@ class UserService:
             background_tasks=background_tasks,
             to_email=user.email,
             subject="CMS Portal - Enable 2FA",
-            template_name="login_otp.html",
+            template_name="2fa_enable_otp.html",
             context={"name": user.name or "User", "otp_code": otp_code}
         )
         return session_token

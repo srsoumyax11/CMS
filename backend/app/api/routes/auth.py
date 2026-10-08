@@ -219,7 +219,7 @@ async def verify_2fa_login(
         
     # We can just fetch user with profiles using repo inside service
     from uuid import UUID
-    user = await service.repo.get_by_id_with_profiles(UUID(user_id))
+    user = await service.get_user_with_profiles(UUID(user_id))
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
         

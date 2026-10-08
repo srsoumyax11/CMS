@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, Loader2, AlertCircle, Eye, EyeOff, Key } from 'lucide-react';
+import { GraduationCap, Loader2, AlertCircle, Eye, EyeOff, Key, CheckCircle2 } from 'lucide-react';
 import { authApi } from '@/api/authApi';
 import type { LoginRequest } from '@/types/api';
 
 interface RegistrationState {
   registeredEmail?: string;
   status?: string;
+  message?: string;
 }
 
 export function Login() {
@@ -108,6 +109,13 @@ export function Login() {
         </CardHeader>
 
         <CardContent className="pt-6">
+          {regState.message && !error && (
+            <div className="mb-4 p-3.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs rounded-xl flex items-center gap-2 font-medium shadow-sm">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-500" />
+              <span>{regState.message}</span>
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 p-3.5 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />

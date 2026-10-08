@@ -154,7 +154,7 @@ class AuthService:
             background_tasks=background_tasks,
             to_email=user.email,
             subject="CMS Portal - 2FA Login Verification",
-            template_name="login_otp.html",
+            template_name="2fa_login_otp.html",
             context={"name": user.name or "User", "otp_code": otp_code}
         )
         return session_token

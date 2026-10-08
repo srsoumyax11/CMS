@@ -77,6 +77,16 @@ export function Register() {
     setOtp('');
   };
 
+  const isEmailExistsError = (msg: string) => {
+    const lower = msg.toLowerCase();
+    return (
+      lower.includes('already') ||
+      lower.includes('exist') ||
+      lower.includes('registered') ||
+      lower.includes('duplicate')
+    );
+  };
+
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -93,13 +103,35 @@ export function Register() {
     try {
       const res = await authApi.openSignup({ email, password, name });
       if (!res.data.success || !res.data.data?.session_token) {
-        setError(res.data.error || 'Registration failed. Email may already be registered.');
+        const errMessage = res.data.error || 'Registration failed.';
+        if (isEmailExistsError(errMessage)) {
+          toast.info('Account already registered. Redirecting to login...');
+          navigate('/login', {
+            state: {
+              registeredEmail: email,
+              message: 'An account with this email already exists! Please log in to continue.',
+            },
+          });
+          return;
+        }
+        setError(errMessage);
         return;
       }
       setSessionToken(res.data.data.session_token);
       setStep(2);
     } catch (err: any) {
-      setError(getErrorMessage(err, 'Registration failed. Email may already be registered.'));
+      const errMessage = getErrorMessage(err, 'Registration failed.');
+      if (isEmailExistsError(errMessage)) {
+        toast.info('Account already registered. Redirecting to login...');
+        navigate('/login', {
+          state: {
+            registeredEmail: email,
+            message: 'An account with this email already exists! Please log in to continue.',
+          },
+        });
+        return;
+      }
+      setError(errMessage);
     } finally {
       setLoading(false);
     }
