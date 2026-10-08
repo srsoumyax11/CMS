@@ -15,6 +15,7 @@ import { FileUpload } from '@/components/shared/FileUpload';
 import { ArrowLeft, Loader2, Megaphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/error-utils';
+import { extractItems } from '@/lib/utils';
 import type { NoticeCreateRequest } from '@/types/api';
 
 export function NoticeCreate() {
@@ -35,13 +36,13 @@ export function NoticeCreate() {
     queryKey: ['metadata', 'departments'],
     queryFn: () => metadataApi.getDepartments(),
   });
-  const departments = deptRes?.data?.data || [];
+  const departments = extractItems(deptRes);
 
   const { data: courseRes } = useQuery({
     queryKey: ['metadata', 'courses'],
     queryFn: () => metadataApi.getCourses(),
   });
-  const courses = courseRes?.data?.data || [];
+  const courses = extractItems(courseRes);
 
   const createMutation = useMutation({
     mutationFn: (data: NoticeCreateRequest) => noticesApi.create(data),

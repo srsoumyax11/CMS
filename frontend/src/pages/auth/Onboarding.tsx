@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { GraduationCap, Loader2, AlertCircle } from 'lucide-react';
+import { extractItems } from '@/lib/utils';
 import type { Course, Department } from '@/types/api';
 
 export function Onboarding() {
@@ -50,8 +51,8 @@ export function Onboarding() {
     queryFn: () => metadataApi.getDepartments(),
   });
 
-  const courses: Course[] = coursesQuery.data?.data?.data ?? [];
-  const departments: Department[] = (departmentsQuery.data?.data?.data ?? []).filter(d => d.is_active);
+  const courses: Course[] = extractItems(coursesQuery.data);
+  const departments: Department[] = extractItems<Department>(departmentsQuery.data).filter(d => d.is_active);
 
   // Pre-fill form when existing profile data is loaded
   useEffect(() => {

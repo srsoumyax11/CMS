@@ -1,0 +1,63 @@
+frontend/scratch_role_apps.tsx:  const applications = response?.data || [];
+frontend/src/api/client.ts:      const serverError = error.response?.data?.error || error.response?.data?.detail || error.message || 'An error occurred';
+frontend/src/components/RoleElevationWidget.tsx:        const payload = r?.data?.data;
+frontend/src/components/RoleElevationWidget.tsx:        if (Array.isArray(r?.data)) return r.data;
+frontend/src/components/RoleElevationWidget.tsx:      const serverMsg = err.response?.data?.error || err.response?.data?.detail || err.response?.data?.message;
+frontend/src/components/StudentHostelCard.tsx:  const alloc = data?.data?.data;
+frontend/src/components/shared/pro-table/ProTable.tsx:        ? data.filter((row) => selectedKeys.has(rowKey(row)))
+frontend/src/hooks/useAdminList.ts:  const rawData = data?.data?.data;
+frontend/src/lib/error-utils.ts:    const responseData = axiosError.response?.data;
+frontend/src/pages/AdminDashboard.tsx:  const complaints = complaintsResp?.data?.data?.items || [];
+frontend/src/pages/AdminDashboard.tsx:  const students = studentsResp?.data?.data || [];
+frontend/src/pages/Profile.tsx:      const errorMsg = err.response?.data?.error || 'Failed to change password. Check your current password.';
+frontend/src/pages/StudentDashboard.tsx:  const notices = (noticesResp?.data?.data?.items || []).slice(0, 3);
+frontend/src/pages/StudentDashboard.tsx:  const activeComplaints = (complaintsResp?.data?.data?.items || []).filter((c: any) => c.status !== 'closed' && c.status !== 'resolved').slice(0, 3);
+frontend/src/pages/VerifyEmail.tsx:        setMessage(err.response?.data?.error?.message || 'Verification failed. The link may have expired.');
+frontend/src/pages/admin/AcademicManagement.tsx:  const departments = deptRes?.data?.data?.items || [];
+frontend/src/pages/admin/AcademicManagement.tsx:  const courses = courseRes?.data?.data?.items || [];
+frontend/src/pages/admin/AcademicManagement.tsx:  const facultyList = facultyRes?.data?.data || [];
+frontend/src/pages/admin/AcademicManagement.tsx:  const terms = termsRes?.data?.data?.items || [];
+frontend/src/pages/admin/AcademicManagement.tsx:  const subjects = subRes?.data?.data?.items || [];
+frontend/src/pages/admin/AcademicManagement.tsx:  const classGroups = cgRes?.data?.data?.items || [];
+frontend/src/pages/admin/AcademicManagement.tsx:  const holidays = holRes?.data?.data?.items || [];
+frontend/src/pages/admin/AllUsersManagement.tsx:        data={(usersList.data?.data?.data as unknown as UserManagementItemResponse[]) || []}
+frontend/src/pages/admin/BuildingManagement.tsx:  const buildings = response?.data?.data || [];
+frontend/src/pages/admin/ComplaintManagement.tsx:  const complaints = queries.listQuery.data?.data?.data?.items ?? [];
+frontend/src/pages/admin/ComplaintManagement.tsx:  const faculty = queries.facultyQuery.data?.data?.data ?? [];
+frontend/src/pages/admin/ComplaintManagement.tsx:  const recurring = queries.recurringQuery.data?.data?.data ?? [];
+frontend/src/pages/admin/ComplaintManagement.tsx:  const ageing = queries.ageingQuery.data?.data?.data ?? [];
+frontend/src/pages/admin/CourseManagement.tsx:  const courses = response?.data?.data || [];
+frontend/src/pages/admin/DepartmentManagement.tsx:  const departments = response?.data?.data || [];
+frontend/src/pages/admin/DepartmentManagement.tsx:  const facultyList = facultyRes?.data?.data || [];
+frontend/src/pages/admin/HostelAllocation.tsx:  const allocations = response?.data?.data || [];
+frontend/src/pages/admin/HostelAllocation.tsx:  const students = studentsRes?.data?.data || [];
+frontend/src/pages/admin/HostelAllocation.tsx:  const buildings = buildingsRes?.data?.data || [];
+frontend/src/pages/admin/HostelAllocation.tsx:  const rooms = roomsRes?.data?.data || [];
+frontend/src/pages/admin/RoleApplicationsManagement.tsx:  const applications = Array.isArray(response?.data) ? response.data : [];
+frontend/src/pages/admin/RoleApplicationsManagement.tsx:    const depts = Array.isArray(deptRes?.data?.data)
+frontend/src/pages/admin/RoleApplicationsManagement.tsx:      : Array.isArray(deptRes?.data)
+frontend/src/pages/admin/RoleApplicationsManagement.tsx:    const courses = Array.isArray(courseRes?.data?.data)
+frontend/src/pages/admin/RoleApplicationsManagement.tsx:      : Array.isArray(courseRes?.data)
+frontend/src/pages/admin/RolesPermissions.tsx:    const raw = rolesQuery.data?.data?.data ?? [];
+frontend/src/pages/admin/RolesPermissions.tsx:  }, [rolesQuery.data?.data?.data]);
+frontend/src/pages/admin/RolesPermissions.tsx:  const matrix: PermissionMatrixResponse | null = matrixQuery.data?.data?.data ?? null;
+frontend/src/pages/admin/RoomManagement.tsx:  const buildings = buildingsRes?.data?.data || [];
+frontend/src/pages/admin/RoomManagement.tsx:  const rooms = response?.data?.data || [];
+frontend/src/pages/admin/StudentManagement.tsx:  const rawCourses = coursesResponse?.data?.data;
+frontend/src/pages/admin/StudentManagement.tsx:  const rawDepts = deptsResponse?.data?.data;
+frontend/src/pages/auth/Onboarding.tsx:  const courses: Course[] = coursesQuery.data?.data?.data ?? [];
+frontend/src/pages/auth/Onboarding.tsx:  const departments: Department[] = (departmentsQuery.data?.data?.data ?? []).filter(d => d.is_active);
+frontend/src/pages/auth/Onboarding.tsx:    const profile = existingProfileQuery.data?.data?.data;
+frontend/src/pages/complaints/ComplaintCreate.tsx:      const msg = err.response?.data?.error || 'Failed to file complaint';
+frontend/src/pages/complaints/ComplaintDetail.tsx:  const complaint = data?.data?.data;
+frontend/src/pages/complaints/MyComplaints.tsx:  const complaints = activeQuery.data?.data?.data?.items ?? [];
+frontend/src/pages/notices/NoticeCreate.tsx:  const departments = deptRes?.data?.data || [];
+frontend/src/pages/notices/NoticeCreate.tsx:  const courses = courseRes?.data?.data || [];
+frontend/src/pages/notices/NoticeDetail.tsx:          if (!oldData?.data?.data?.items) return oldData;
+frontend/src/pages/notices/NoticeDetail.tsx:  const notice = data?.data?.data;
+frontend/src/pages/notices/NoticeList.tsx:  const notices = data?.data?.data?.items ?? [];
+frontend_audit.md:  const students = data?.data?.data ?? [];
+frontend_audit.md:onError: (error: any) => toast.error(error.response?.data?.detail || 'Failed to create student'),
+frontend_audit.md:  const message = error.response?.data?.error || error.message || 'An unexpected error occurred';
+frontend_audit.md:const message = error.response?.data?.error || error.response?.data?.detail || 'An error occurred';
+frontend_audit.md:  return error.response?.data?.error || error.response?.data?.detail || error.message || 'An error occurred';
