@@ -34,7 +34,12 @@ from app.api.routes import (
     applications,
     gate_passes,
     attendance,
+    timetable,
+    documents,
+    placements,
 )
+
+
 
 
 
@@ -69,7 +74,21 @@ tags_metadata = [
         "name": "Attendance",
         "description": "Class attendance marking and tracking.",
     },
+    {
+        "name": "Timetable",
+        "description": "Weekly timetable slot scheduling, clash detection (faculty, room, class group), and timetable exceptions.",
+    },
+    {
+        "name": "Documents",
+        "description": "Document requests, template workflows, multi-step approvals, and verification codes.",
+    },
+    {
+        "name": "Placement",
+        "description": "Placement drives, eligibility validation, student applications, and applicant shortlisting.",
+    },
 ]
+
+
 
 from app.core.cache import init_redis, close_redis
 
@@ -175,6 +194,11 @@ app.include_router(notices.router, prefix="/api/notices", tags=["Notices"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(gate_passes.router, prefix="/api/gate-passes", tags=["Gate Passes"])
 app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
+app.include_router(timetable.router, prefix="/api/timetable", tags=["Timetable"])
+app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
+app.include_router(placements.router, prefix="/api/placements", tags=["Placement"])
+
+
 
 from fastapi.staticfiles import StaticFiles
 

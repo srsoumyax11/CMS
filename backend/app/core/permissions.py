@@ -76,3 +76,23 @@ class Perms:
 
     # Asset: attendance
     ATTENDANCE_MARK = "attendance:mark"
+
+    # Asset: timetable
+    TIMETABLE_LIST = "timetable:list"
+    TIMETABLE_CREATE = "timetable:create"
+    TIMETABLE_EDIT = "timetable:edit"
+    TIMETABLE_DELETE = "timetable:delete"
+
+    # Asset: document
+    DOCUMENT_APPLY = "document:apply"
+    DOCUMENT_VIEW = "document:view"
+    DOCUMENT_APPROVE = "document:approve"
+    DOCUMENT_MANAGE = "document:manage"
+
+    # Asset: placement
+    PLACEMENT_VIEW = "placement:view"
+    PLACEMENT_APPLY = "placement:apply"
+    PLACEMENT_MANAGE = "placement:manage"
+    PLACEMENT_VIEW_APPLICANTS = "placement:view_applicants"
+
+

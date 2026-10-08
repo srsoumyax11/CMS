@@ -12,6 +12,8 @@ from app.repositories.complaint_repository import ComplaintRepository
 from app.repositories.gate_pass_repository import GatePassRepository
 from app.repositories.timetable_repository import TimetableSlotRepository, TimetableExceptionRepository
 from app.repositories.attendance_repository import AttendanceSessionRepository, AttendanceRecordRepository
+from app.repositories.document_repository import DocumentTypeRepository, DocumentRequestRepository, DocumentApprovalRepository
+from app.repositories.placement_repository import PlacementNoticeRepository, PlacementApplicationRepository
 
 class UnitOfWork:
     def __init__(self, db: AsyncSession):
@@ -28,6 +30,12 @@ class UnitOfWork:
         self.timetable_exceptions = TimetableExceptionRepository(self.db)
         self.attendance_sessions = AttendanceSessionRepository(self.db)
         self.attendance_records = AttendanceRecordRepository(self.db)
+        self.document_types = DocumentTypeRepository(self.db)
+        self.document_requests = DocumentRequestRepository(self.db)
+        self.document_approvals = DocumentApprovalRepository(self.db)
+        self.placement_notices = PlacementNoticeRepository(self.db)
+        self.placement_applications = PlacementApplicationRepository(self.db)
+
 
     @asynccontextmanager
     async def transaction(self) -> AsyncGenerator["UnitOfWork", None]:

@@ -23,7 +23,10 @@ async def seed_roles():
                 new_role = Role(**role_data)
                 db.add(new_role)
         
+        await db.flush()
+        
         # Seed first admin user
+
         from app.core.security import hash_password
         from app.models.user import User, AccountStatus, UserType
         

@@ -1,5 +1,6 @@
 import uuid
 from typing import Optional
+from datetime import time, date
 from sqlalchemy import String, Integer, Enum, Boolean, ForeignKey, Time, Date, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -25,8 +26,8 @@ class TimetableSlot(Base, UUIDMixin, TimestampMixin):
     room_location_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True) # Will link to map_locations later
     
     day_of_week: Mapped[DayOfWeek] = mapped_column(Enum(DayOfWeek, name="day_of_week_enum"), nullable=False)
-    start_time: Mapped[Time] = mapped_column(Time, nullable=False)
-    end_time: Mapped[Time] = mapped_column(Time, nullable=False)
+    start_time: Mapped[time] = mapped_column(Time, nullable=False)
+    end_time: Mapped[time] = mapped_column(Time, nullable=False)
     status: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 class ExceptionType(str, enum.Enum):
@@ -38,7 +39,7 @@ class TimetableException(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "timetable_exceptions"
 
     slot_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("timetable_slots.id", ondelete="CASCADE"), nullable=False)
-    date: Mapped[Date] = mapped_column(Date, nullable=False)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
     type: Mapped[ExceptionType] = mapped_column(Enum(ExceptionType, name="exception_type_enum"), nullable=False)
     substitute_faculty_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     note: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
@@ -53,9 +54,10 @@ class AttendanceSession(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "attendance_sessions"
 
     slot_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("timetable_slots.id", ondelete="CASCADE"), nullable=False)
-    date: Mapped[Date] = mapped_column(Date, nullable=False)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
     taken_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     status: Mapped[str] = mapped_column(String, default="OPEN", nullable=False) # OPEN or LOCKED
+
 
 class AttendanceRecord(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "attendance_records"

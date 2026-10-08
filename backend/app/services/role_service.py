@@ -22,7 +22,7 @@ class RoleService:
             id=r.id,
             name=r.name,
             description=r.description,
-            is_system_role=r.is_system_role,
+            is_system_role=r.is_system,
             assignment_count=count
         ) for r, count in roles_with_counts]
 
@@ -63,7 +63,7 @@ class RoleService:
         new_role = Role(
             name=req.name,
             description=req.description,
-            is_system_role=False
+            is_system=False
         )
         await self.repository.create_role(new_role)
         
@@ -81,7 +81,7 @@ class RoleService:
             id=new_role.id,
             name=new_role.name,
             description=new_role.description,
-            is_system_role=new_role.is_system_role
+            is_system_role=new_role.is_system
         )
 
     async def update_role(self, role_id: UUID, req: RoleUpdateRequest) -> RoleResponse:
@@ -104,7 +104,7 @@ class RoleService:
             id=role.id,
             name=role.name,
             description=role.description,
-            is_system_role=role.is_system_role,
+            is_system_role=role.is_system,
             assignment_count=assignment_count
         )
 
@@ -153,8 +153,9 @@ class RoleService:
         if not role:
             raise ValueError("Role not found")
             
-        if role.is_system_role:
+        if role.is_system:
             raise ValueError("System roles cannot be deleted")
+
             
         assignment_count = await self.repository.get_assignment_count(role_id)
         if assignment_count > 0:

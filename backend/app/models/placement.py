@@ -1,5 +1,6 @@
 import uuid
 from typing import Optional, Any
+from datetime import date
 from sqlalchemy import String, Enum, ForeignKey, Float, Integer, Date, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -31,8 +32,9 @@ class PlacementNotice(Base, UUIDMixin, TimestampMixin):
     min_cgpa: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     passout_year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     
-    last_date: Mapped[Optional[Date]] = mapped_column(Date, nullable=True)
-    drive_date: Mapped[Optional[Date]] = mapped_column(Date, nullable=True)
+    last_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    drive_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
     
     status: Mapped[PlacementStatus] = mapped_column(Enum(PlacementStatus, name="placement_notice_status_enum"), default=PlacementStatus.draft, nullable=False)
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
