@@ -1,5 +1,6 @@
 import uuid
 import enum
+from typing import Optional
 from sqlalchemy import Column, String, ForeignKey, Text, Enum, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
@@ -31,8 +32,8 @@ class Complaint(Base, UUIDMixin, TimestampMixin):
     raised_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
     category: Mapped[ComplaintCategory] = mapped_column(Enum(ComplaintCategory, name="complaint_category_enum", create_type=True), nullable=False, index=True)
-    location_hostel = Column(String, nullable=False, index=True)
-    location_room = Column(String, nullable=True, index=True)
+    hostel_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("hostels.id", ondelete="SET NULL"), nullable=True, index=True)
+    room_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)
     description = Column(Text, nullable=False)
     photo_url = Column(String, nullable=True)
     

@@ -1,6 +1,7 @@
 import enum
 import uuid
-from sqlalchemy import String, Boolean, Enum, ForeignKey, JSON
+from datetime import datetime
+from sqlalchemy import String, Boolean, Enum, ForeignKey, JSON, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, Any, TYPE_CHECKING
@@ -10,6 +11,7 @@ if TYPE_CHECKING:
     from app.models.profiles import StudentProfile, FacultyProfile, StaffProfile, ParentProfile
     from app.models.rbac import Role
     from app.models.notification import Notification
+    from app.models.application import RoleApplication
 
 class UserType(str, enum.Enum):
     user = "user"
@@ -52,4 +54,8 @@ class User(Base, UUIDMixin, TimestampMixin):
     role_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
     role: Mapped[Optional["Role"]] = relationship("Role")
     notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
-
+    
+    role_applications: Mapped[list["RoleApplication"]] = relationship("RoleApplication", foreign_keys="RoleApplication.user_id", back_populates="user", cascade="all, delete-orphan")
+    
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

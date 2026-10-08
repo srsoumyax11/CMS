@@ -35,6 +35,9 @@ class StudentProfile(Base, UUIDMixin, TimestampMixin):
     section: Mapped[Optional[str]] = mapped_column(String(10), default="A", nullable=True)
     year: Mapped[int] = mapped_column(nullable=False, default=1)
 
+    hostel_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("hostels.id", ondelete="SET NULL"), nullable=True)
+    room_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
     academic_status: Mapped[AcademicStatus] = mapped_column(Enum(AcademicStatus, name="academic_status_enum"), default=AcademicStatus.enrolled, nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="student_profile")
@@ -46,7 +49,7 @@ class FacultyProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "faculty_profiles"
 
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    faculty_id: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    employee_id: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
     join_year: Mapped[Optional[int]] = mapped_column(nullable=True)
     department_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="RESTRICT"), nullable=False)
     designation: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -61,7 +64,7 @@ class StaffProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "staff_profiles"
 
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    staff_id: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    employee_id: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
     join_year: Mapped[Optional[int]] = mapped_column(nullable=True)
     department_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="SET NULL"), nullable=True)
     designation: Mapped[str] = mapped_column(String(255), nullable=False)

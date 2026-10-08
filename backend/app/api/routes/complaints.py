@@ -31,8 +31,8 @@ router = APIRouter()
 )
 async def create_complaint(
     category: ComplaintCategory = Form(...),
-    location_hostel: str = Form(...),
-    location_room: Optional[str] = Form(None),
+    hostel_id: Optional[UUID] = Form(None),
+    room_number: Optional[str] = Form(None),
     description: str = Form(...),
     visibility: ComplaintVisibility = Form(ComplaintVisibility.public),
     photo: Optional[UploadFile] = File(None),
@@ -64,13 +64,11 @@ async def create_complaint(
             logging.getLogger(__name__).error(f"Complaint photo upload error: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail="Failed to upload complaint evidence")
 
-    location_hostel = location_hostel.strip().lower()
-    
     complaint = Complaint(
         raised_by=current_user.id,
         category=category,
-        location_hostel=location_hostel,
-        location_room=location_room,
+        hostel_id=hostel_id,
+        room_number=room_number,
         description=description,
         visibility=visibility,
         photo_url=photo_path,
@@ -146,7 +144,7 @@ async def get_public_complaints(
 async def list_all_complaints(
     status_filter: Optional[ComplaintStatus] = Query(None, alias="status"),
     category: Optional[ComplaintCategory] = None,
-    hostel: Optional[str] = None,
+    hostel_id: Optional[UUID] = None,
     department_id: Optional[UUID] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -160,7 +158,7 @@ async def list_all_complaints(
     complaints, total = await service.get_all_complaints(
         status=status_filter,
         category=category,
-        hostel=hostel,
+        hostel_id=hostel_id,
         department_id=effective_dept_id,
         skip=skip,
         limit=limit
@@ -179,8 +177,8 @@ async def list_all_complaints(
                 id=c.id,
                 raised_by=c.raised_by, # Typically redacted, but schema requires it. Let's just pass for now as we don't have roles lacking view_private.
                 category=c.category,
-                location_hostel=c.location_hostel,
-                location_room=c.location_room,
+                hostel_id=c.hostel_id,
+                room_number=c.room_number,
                 description="[REDACTED]",
                 photo_url=None,
                 visibility=c.visibility,

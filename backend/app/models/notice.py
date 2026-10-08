@@ -22,12 +22,13 @@ class Notice(Base, UUIDMixin, TimestampMixin):
     target_course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=True)
     target_department_id = Column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="CASCADE"), nullable=True)
     target_year = Column(Integer, nullable=True)
-    target_hostel = Column(String(255), nullable=True)
+    target_hostel_id = Column(UUID(as_uuid=True), ForeignKey("hostels.id", ondelete="CASCADE"), nullable=True)
     target_user_types = Column(String(255), nullable=True)
 
     # Relationships
     author = relationship("User", foreign_keys=[author_id])
     target_course = relationship("Course", foreign_keys=[target_course_id])
     target_department = relationship("Department", foreign_keys=[target_department_id])
+    target_hostel = relationship("Hostel", foreign_keys=[target_hostel_id])
     reads = relationship("NoticeRead", cascade="all, delete-orphan")
 

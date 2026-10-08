@@ -12,7 +12,7 @@ class NoticeResponse(BaseModel):
     target_course_id: Optional[UUID] = None
     target_department_id: Optional[UUID] = None
     target_year: Optional[int] = None
-    target_hostel: Optional[str] = None
+    target_hostel_id: Optional[UUID] = None
     target_user_types: Optional[str] = None
     target_audience_group_id: Optional[UUID] = None
     is_read: bool = False

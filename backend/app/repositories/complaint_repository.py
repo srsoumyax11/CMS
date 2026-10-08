@@ -32,7 +32,7 @@ class ComplaintRepository(GenericRepository[Complaint]):
         self,
         status: Optional[ComplaintStatus] = None,
         category: Optional[ComplaintCategory] = None,
-        hostel: Optional[str] = None,
+        hostel_id: Optional[UUID] = None,
         department_id: Optional[UUID] = None,
         skip: int = 0,
         limit: int = 100
@@ -74,9 +74,9 @@ class ComplaintRepository(GenericRepository[Complaint]):
         if category:
             stmt = stmt.where(Complaint.category == category)
             count_stmt = count_stmt.where(Complaint.category == category)
-        if hostel:
-            stmt = stmt.where(Complaint.location_hostel == hostel)
-            count_stmt = count_stmt.where(Complaint.location_hostel == hostel)
+        if hostel_id:
+            stmt = stmt.where(Complaint.hostel_id == hostel_id)
+            count_stmt = count_stmt.where(Complaint.hostel_id == hostel_id)
 
         total = await self.db.scalar(count_stmt)
         stmt = stmt.order_by(Complaint.created_at.desc()).offset(skip).limit(limit)

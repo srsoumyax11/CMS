@@ -30,3 +30,47 @@ class Course(Base, UUIDMixin, TimestampMixin):
     duration_years: Mapped[int] = mapped_column(Integer, default=4, nullable=False)
 
 
+class AcademicTerm(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "academic_terms"
+
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    start_date: Mapped[Date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[Date] = mapped_column(Date, nullable=False)
+    is_current: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class Subject(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "subjects"
+
+    code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    department_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="RESTRICT"), nullable=False)
+    credits: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    status: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    department = relationship("Department")
+
+
+class ClassGroup(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "class_groups"
+
+    course_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False)
+    department_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="RESTRICT"), nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    section: Mapped[str] = mapped_column(String(10), nullable=False)
+    status: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    course = relationship("Course")
+    department = relationship("Department")
+
+
+class Holiday(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "holidays"
+
+    date: Mapped[Date] = mapped_column(Date, nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    applies_to: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id", ondelete="CASCADE"), nullable=True) # Null means ALL
+
+    department = relationship("Department")
+
+

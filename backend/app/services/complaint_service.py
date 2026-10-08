@@ -39,7 +39,7 @@ class ComplaintService:
         self, 
         status: Optional[ComplaintStatus] = None, 
         category: Optional[ComplaintCategory] = None, 
-        hostel: Optional[str] = None, 
+        hostel_id: Optional[UUID] = None, 
         department_id: Optional[UUID] = None,
         skip: int = 0, 
         limit: int = 100
@@ -47,7 +47,7 @@ class ComplaintService:
         return await self.repo.list_all(
             status=status,
             category=category,
-            hostel=hostel,
+            hostel_id=hostel_id,
             department_id=department_id,
             skip=skip,
             limit=limit
@@ -113,9 +113,9 @@ class ComplaintService:
         
         from sqlalchemy import select
         stmt = (
-            select(Complaint.category, Complaint.location_hostel, func.count(Complaint.id).label("count"))
+            select(Complaint.category, Complaint.hostel_id, func.count(Complaint.id).label("count"))
             .where(Complaint.created_at >= window_start)
-            .group_by(Complaint.category, Complaint.location_hostel)
+            .group_by(Complaint.category, Complaint.hostel_id)
             .order_by(func.count(Complaint.id).desc())
         )
         # using the internal DB since repo doesn't map arbitrary groupings
@@ -123,7 +123,7 @@ class ComplaintService:
         return [
             {
                 "category": row.category,
-                "location_hostel": row.location_hostel,
+                "hostel_id": row.hostel_id,
                 "count": row.count,
                 "window_days": days
             }

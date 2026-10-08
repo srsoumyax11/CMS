@@ -28,9 +28,12 @@ class Permission(Base, UUIDMixin, TimestampMixin):
 
 class Role(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "roles"
-    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    is_system_role: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_assignable: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="ACTIVE", nullable=False)
 
     permissions: Mapped[List["Permission"]] = relationship("Permission", secondary="role_permissions")
 

@@ -30,4 +30,41 @@ __all__ = [
     "AuditLog",
     "RevokedToken",
     "PasswordResetOTP",
+    "RoleApplication",
+    "ApplicationStatus",
+    "Department",
+    "AcademicTerm",
+    "Subject",
+    "ClassGroup",
+    "Holiday",
+    "TimetableSlot",
+    "TimetableException",
+    "AttendanceSession",
+    "AttendanceRecord",
+    "GatePass",
+    "DocumentType",
+    "DocumentRequest",
+    "DocumentApproval",
+    "PlacementNotice",
+    "PlacementApplication",
+    "MapLocation",
+    "MapPath",
+    "UserSilentSetting",
+    "AIConversation",
+    "AIMessage",
+    "Hostel",
 ]
+
+from app.models.hostel import Hostel
+
+from app.models.timetable import TimetableSlot, TimetableException, AttendanceSession, AttendanceRecord
+from app.models.gate_pass import GatePass
+from app.models.documents import DocumentType, DocumentRequest, DocumentApproval
+from app.models.placement import PlacementNotice, PlacementApplication
+from app.models.map import MapLocation, MapPath
+from app.models.ai import UserSilentSetting, AIConversation, AIMessage
+
+from app.models.application import RoleApplication, ApplicationStatus
+from app.models.academic import Department, AcademicTerm, Subject, ClassGroup, Holiday
+
+

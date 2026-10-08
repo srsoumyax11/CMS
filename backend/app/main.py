@@ -32,6 +32,8 @@ from app.api.routes import (
     notifications,
     health,
     applications,
+    gate_passes,
+    attendance,
 )
 
 
@@ -58,6 +60,14 @@ tags_metadata = [
     {
         "name": "Notices",
         "description": "Digital notice board for targeted announcements.",
+    },
+    {
+        "name": "Gate Passes",
+        "description": "Student gate pass requests and security approvals.",
+    },
+    {
+        "name": "Attendance",
+        "description": "Class attendance marking and tracking.",
     },
 ]
 
@@ -163,9 +173,8 @@ app.include_router(roles.router, prefix="/api/roles", tags=["Roles & Permissions
 app.include_router(complaints.router, prefix="/api/complaints", tags=["Complaints"])
 app.include_router(notices.router, prefix="/api/notices", tags=["Notices"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
-
-
-
+app.include_router(gate_passes.router, prefix="/api/gate-passes", tags=["Gate Passes"])
+app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
 
 from fastapi.staticfiles import StaticFiles
 

@@ -68,3 +68,11 @@ class Perms:
     USER_VIEW = "user:view"
     USER_LIST = "user:list"
     USER_EDIT = "user:edit"
+
+    # Asset: gatepass
+    GATEPASS_CREATE = "gatepass:create"
+    GATEPASS_REVIEW = "gatepass:review"
+    GATEPASS_SCAN = "gatepass:scan"
+
+    # Asset: attendance
+    ATTENDANCE_MARK = "attendance:mark"

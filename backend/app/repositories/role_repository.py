@@ -6,10 +6,16 @@ from sqlalchemy.orm import selectinload
 
 from app.models.rbac import Role, Permission, Asset, Action, RolePermission
 from app.models.user import User
+from app.repositories.base_repository import GenericRepository
 
-class RoleRepository:
+class RoleRepository(GenericRepository[Role]):
     def __init__(self, db: AsyncSession):
-        self.db = db
+        super().__init__(db, Role)
+
+    async def get_by_code(self, code: str) -> Optional[Role]:
+        stmt = select(Role).where(Role.code == code)
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def list_roles_with_counts(self) -> List[Tuple[Role, int]]:
         stmt = (
@@ -18,7 +24,7 @@ class RoleRepository:
             .group_by(Role.id)
         )
         result = await self.db.execute(stmt)
-        return list(result.all())
+        return [(row.Role, row.assignment_count) for row in result.all()]
 
     async def get_all_assets(self) -> List[Asset]:
         stmt = select(Asset)

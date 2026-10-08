@@ -4,10 +4,11 @@ from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.notification import Notification
+from app.repositories.base_repository import GenericRepository
 
-class NotificationRepository:
+class NotificationRepository(GenericRepository[Notification]):
     def __init__(self, db: AsyncSession):
-        self.db = db
+        super().__init__(db, Notification)
 
     async def list_by_user(self, user_id: str, limit: int = 50) -> List[Notification]:
         stmt = select(Notification).where(Notification.user_id == user_id).order_by(desc(Notification.created_at)).limit(limit)

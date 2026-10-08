@@ -33,7 +33,7 @@ async def create_notice(
     target_course_id: Optional[UUID] = Form(None),
     target_department_id: Optional[UUID] = Form(None),
     target_year: Optional[int] = Form(None),
-    target_hostel: Optional[str] = Form(None),
+    target_hostel_id: Optional[UUID] = Form(None),
     target_user_types: Optional[str] = Form(None),
     target_audience_group_id: Optional[UUID] = Form(None),
     file: Optional[UploadFile] = File(None),
@@ -50,8 +50,7 @@ async def create_notice(
         file_content = await file.read()
         attachment_url = await upload_notice_attachment(file_content, file.content_type or "application/octet-stream")
         
-    if target_hostel:
-        target_hostel = target_hostel.strip()
+    # Target hostel is now a UUID
 
     notice = Notice(
         title=title,
@@ -61,7 +60,7 @@ async def create_notice(
         target_course_id=target_course_id,
         target_department_id=target_department_id,
         target_year=target_year,
-        target_hostel=target_hostel,
+        target_hostel_id=target_hostel_id,
         target_user_types=target_user_types,
         target_audience_group_id=target_audience_group_id
     )

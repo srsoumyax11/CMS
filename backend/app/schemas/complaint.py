@@ -6,8 +6,8 @@ from app.models.complaint import ComplaintCategory, ComplaintVisibility, Complai
 
 class ComplaintCreateRequest(BaseModel):
     category: ComplaintCategory
-    location_hostel: str
-    location_room: Optional[str] = None
+    hostel_id: Optional[UUID] = None
+    room_number: Optional[str] = None
     building_id: Optional[UUID] = None
     room_id: Optional[UUID] = None
     description: str
@@ -26,8 +26,8 @@ class ComplaintResponse(BaseModel):
     id: UUID
     raised_by: UUID
     category: ComplaintCategory
-    location_hostel: str
-    location_room: Optional[str] = None
+    hostel_id: Optional[UUID] = None
+    room_number: Optional[str] = None
     building_id: Optional[UUID] = None
     room_id: Optional[UUID] = None
     description: str
@@ -46,7 +46,7 @@ class ComplaintListResponse(BaseModel):
 
 class RecurringIssueResponse(BaseModel):
     category: ComplaintCategory
-    location_hostel: str
+    hostel_id: Optional[UUID] = None
     count: int
     window_days: int
 
