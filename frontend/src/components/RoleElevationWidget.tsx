@@ -84,8 +84,16 @@ export const RoleElevationWidget: React.FC = () => {
 
   useEffect(() => {
     if (selectedRole === 'student' || selectedRole === 'faculty' || selectedRole === 'staff') {
-      metadataApi.getCourses().then((r) => setCourses(r.data.data || [])).catch(() => {});
-      metadataApi.getDepartments().then((r) => setDepartments(r.data.data || [])).catch(() => {});
+      const extractItems = (r: any): MetadataItem[] => {
+        const payload = r?.data?.data;
+        if (Array.isArray(payload)) return payload;
+        if (payload && Array.isArray(payload.items)) return payload.items;
+        if (Array.isArray(r?.data)) return r.data;
+        return [];
+      };
+
+      metadataApi.getCourses().then((r) => setCourses(extractItems(r))).catch(() => {});
+      metadataApi.getDepartments().then((r) => setDepartments(extractItems(r))).catch(() => {});
     }
   }, [selectedRole]);
 

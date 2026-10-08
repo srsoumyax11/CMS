@@ -153,7 +153,6 @@ export function RoleApplicationsManagement() {
     {
       id: 'status',
       label: 'Status',
-      type: 'select',
       defaultValue: 'pending',
       options: [
         { label: 'Pending Verification', value: 'pending' },
@@ -165,7 +164,6 @@ export function RoleApplicationsManagement() {
     {
       id: 'target_role',
       label: 'Target Role',
-      type: 'select',
       defaultValue: '',
       options: [
         { label: 'All Roles', value: '' },
