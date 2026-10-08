@@ -113,6 +113,11 @@ export const API_ROUTES = {
   ADMIN_USER_DETAIL: (id: string) => `/api/admin/users/${id}`,
   ROLES: '/api/roles',
   ROLE_DETAIL: (id: string) => `/api/roles/${id}`,
+  PERMISSION_MATRIX: '/api/roles/permission-matrix',
+  ROLE_PERMISSIONS: (id: string) => `/api/roles/${id}/permissions`,
+  ROLE_ASSIGN: (id: string) => `/api/roles/${id}/assign`,
+  ROLE_ASSIGNMENT_COUNT: (id: string) => `/api/roles/${id}/assignments/count`,
+  ROLE_DELETE: (id: string) => `/api/roles/${id}`,
 } as const;
 
 export const STORAGE_KEYS = {

@@ -5,6 +5,7 @@ from app.core.database import AsyncSessionLocal
 from app.models.rbac import Role
 from app.core.config import settings
 from seed_settings import seed_settings
+from seed_permissions import seed_permissions
 
 async def seed_roles():
     async with AsyncSessionLocal() as db:
@@ -55,7 +56,10 @@ async def seed_roles():
         await db.commit()
         print(f"✅ Roles and Admin user ('{admin_email}') seeded successfully.")
 
-    # Also run system settings seeding
+    # Run permission matrix seeder
+    await seed_permissions()
+
+    # Run system settings seeder
     await seed_settings()
 
 if __name__ == "__main__":
