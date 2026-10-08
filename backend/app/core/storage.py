@@ -7,17 +7,21 @@ from app.core.config import settings
 
 supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
+from typing import Optional
+
 async def upload_avatar(file: UploadFile, user_id: str) -> str:
     """
     Uploads a user's avatar to Supabase storage.
     Returns the public URL of the uploaded image.
     """
     bucket_name = "avatars"
-    file_extension = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    filename = file.filename or ""
+    file_extension = filename.split(".")[-1] if "." in filename else "jpg"
     file_path = f"{user_id}/{uuid.uuid4()}.{file_extension}"
     
     file_bytes = await file.read()
-    content_type = file.content_type or mimetypes.guess_type(file.filename)[0] or "image/jpeg"
+    guessed_type = mimetypes.guess_type(filename)[0] if filename else None
+    content_type = file.content_type or guessed_type or "image/jpeg"
     
     res = supabase.storage.from_(bucket_name).upload(
         path=file_path,
@@ -35,11 +39,13 @@ async def upload_complaint_photo(file: UploadFile, user_id: str) -> str:
     Returns the file path within the bucket, NOT a public URL.
     """
     bucket_name = "complaint-attachments"
-    file_extension = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    filename = file.filename or ""
+    file_extension = filename.split(".")[-1] if "." in filename else "jpg"
     file_path = f"{user_id}/{uuid.uuid4()}.{file_extension}"
     
     file_bytes = await file.read()
-    content_type = file.content_type or mimetypes.guess_type(file.filename)[0] or "image/jpeg"
+    guessed_type = mimetypes.guess_type(filename)[0] if filename else None
+    content_type = file.content_type or guessed_type or "image/jpeg"
     
     supabase.storage.from_(bucket_name).upload(
         path=file_path,
@@ -49,7 +55,7 @@ async def upload_complaint_photo(file: UploadFile, user_id: str) -> str:
     
     return file_path
 
-def get_signed_url(bucket_name: str, file_path: str, expires_in: int = 900) -> str:
+def get_signed_url(bucket_name: str, file_path: Optional[str], expires_in: int = 900) -> Optional[str]:
     """
     Generates a short-lived signed URL for accessing private bucket files.
     """
@@ -59,8 +65,11 @@ def get_signed_url(bucket_name: str, file_path: str, expires_in: int = 900) -> s
     try:
         response = supabase.storage.from_(bucket_name).create_signed_url(file_path, expires_in)
         if isinstance(response, dict) and "signedURL" in response:
-            return response["signedURL"]
-        return response.get("signedURL")
+            return str(response["signedURL"])
+        if isinstance(response, dict):
+            url = response.get("signedURL") or response.get("signedUrl")
+            return str(url) if url else None
+        return str(response) if response else None
     except Exception:
         return None
 

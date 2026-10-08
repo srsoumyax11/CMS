@@ -30,7 +30,7 @@ class RoleService:
         assets = await self.repository.get_all_assets()
         all_perms = await self.repository.get_all_permissions_with_actions()
         
-        asset_perm_map = {}
+        asset_perm_map: Dict[UUID, List[Any]] = {}
         for p in all_perms:
             if p.asset_id not in asset_perm_map:
                 asset_perm_map[p.asset_id] = []

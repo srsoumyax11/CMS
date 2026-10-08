@@ -93,7 +93,7 @@ async def _send_email_worker(to_email: str, subject: str, template_name: str, co
         use_tls = (port == 465)
         start_tls = (port == 587)
         
-        send_kwargs = {
+        send_kwargs: Dict[str, Any] = {
             "hostname": host,
             "port": port,
             "use_tls": use_tls,

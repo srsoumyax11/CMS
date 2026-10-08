@@ -10,12 +10,12 @@ class NotificationRepository(GenericRepository[Notification]):
     def __init__(self, db: AsyncSession):
         super().__init__(db, Notification)
 
-    async def list_by_user(self, user_id: str, limit: int = 50) -> List[Notification]:
+    async def list_by_user(self, user_id: UUID, limit: int = 50) -> List[Notification]:
         stmt = select(Notification).where(Notification.user_id == user_id).order_by(desc(Notification.created_at)).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_unread_count(self, user_id: str) -> int:
+    async def get_unread_count(self, user_id: UUID) -> int:
         stmt = select(func.count()).where(Notification.user_id == user_id, Notification.is_read == False)
         result = await self.db.execute(stmt)
         return result.scalar_one()
@@ -25,7 +25,7 @@ class NotificationRepository(GenericRepository[Notification]):
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_unread_by_user(self, user_id: str) -> List[Notification]:
+    async def get_unread_by_user(self, user_id: UUID) -> List[Notification]:
         stmt = select(Notification).where(Notification.user_id == user_id, Notification.is_read == False)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())

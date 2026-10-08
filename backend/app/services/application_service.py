@@ -93,8 +93,7 @@ class ApplicationService:
             kwargs = {}
             if status:
                 kwargs["status"] = status
-            apps = await u.role_applications.list(filters=kwargs, skip=skip, limit=limit)
-            apps = apps[skip:skip+limit]
+            apps, total = await u.role_applications.list(filters=kwargs, skip=skip, limit=limit)
 
             return [
                 RoleApplicationResponse(
@@ -118,12 +117,12 @@ class ApplicationService:
                 result = await u.db.execute(stmt)
                 return result.scalar_one_or_none() is None
             elif role in ["FACULTY", "STAFF"]:
-                stmt = select(FacultyProfile).where(FacultyProfile.employee_id == value)
-                result1 = await u.db.execute(stmt)
+                stmt_fac = select(FacultyProfile).where(FacultyProfile.employee_id == value)
+                result1 = await u.db.execute(stmt_fac)
                 if result1.scalar_one_or_none():
                     return False
-                stmt = select(StaffProfile).where(StaffProfile.employee_id == value)
-                result2 = await u.db.execute(stmt)
+                stmt_staff = select(StaffProfile).where(StaffProfile.employee_id == value)
+                result2 = await u.db.execute(stmt_staff)
                 if result2.scalar_one_or_none():
                     return False
                 return True
@@ -146,37 +145,37 @@ class ApplicationService:
             data = app.form_data or {}
             
             if role.code == "STUDENT":
-                profile = StudentProfile(
+                stud_prof = StudentProfile(
                     user_id=target_user.id,
                     registration_no=data.get("registration_no", ""),
                     course_id=data.get("course_id") if data.get("course_id") else None,
                     department_id=data.get("department_id") if data.get("department_id") else None,
                 )
                 target_user.user_type = UserType.student
-                u.db.add(profile)
+                u.db.add(stud_prof)
             elif role.code == "FACULTY":
-                profile = FacultyProfile(
+                fac_prof = FacultyProfile(
                     user_id=target_user.id,
                     employee_id=data.get("employee_id", ""),
                     department_id=data.get("department_id") if data.get("department_id") else None
                 )
                 target_user.user_type = UserType.faculty
-                u.db.add(profile)
+                u.db.add(fac_prof)
             elif role.code == "STAFF":
-                profile = StaffProfile(
+                staff_prof = StaffProfile(
                     user_id=target_user.id,
                     employee_id=data.get("employee_id", ""),
                     department_id=data.get("department_id") if data.get("department_id") else None
                 )
                 target_user.user_type = UserType.staff
-                u.db.add(profile)
+                u.db.add(staff_prof)
             elif role.code == "PARENT":
-                profile = ParentProfile(
+                parent_prof = ParentProfile(
                     user_id=target_user.id,
                     relation=data.get("relation", "Parent")
                 )
                 target_user.user_type = UserType.parent
-                u.db.add(profile)
+                u.db.add(parent_prof)
 
             target_user.account_status = AccountStatus.active
             target_user.role_id = role.id
@@ -224,8 +223,9 @@ class ApplicationService:
                 raise ValueError("Application not found.")
             
             target_user = await u.users.get_by_id(app.user_id)
-            if not target_user:
-                raise ValueError("User not found.")
+            role = await u.roles.get_by_id(app.role_id)
+            if not target_user or not role:
+                raise ValueError("User or Role missing.")
             
             app.status = ApplicationStatus.rejected
             app.review_note = admin_notes

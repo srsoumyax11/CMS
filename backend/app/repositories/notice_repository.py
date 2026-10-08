@@ -54,7 +54,8 @@ class NoticeRepository(GenericRepository[Notice]):
         count = await self.db.scalar(count_stmt)
         
         result = await self.db.execute(stmt.offset(skip).limit(limit))
-        return result.all(), count or 0
+        items = [(row[0], bool(row[1])) for row in result.all()]
+        return items, count or 0
 
     async def mark_as_read(self, notice_id: UUID, user_id: UUID) -> bool:
         stmt = select(NoticeRead).where(
@@ -74,4 +75,7 @@ class NoticeRepository(GenericRepository[Notice]):
         
         stmt = select(Notice, read_exists.label("is_read")).where(Notice.id == notice_id)
         result = await self.db.execute(stmt)
-        return result.first()
+        row = result.first()
+        if row:
+            return (row[0], bool(row[1]))
+        return None

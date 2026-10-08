@@ -49,8 +49,8 @@ class CommunicationService:
         async with self.uow.transaction() as u:
             # Reusing the existing repository logic if it's there, but we updated notice_repo earlier
             # For now just list all
-            notices = await u.notices.list(skip=skip, limit=limit)
-            return notices, len(notices)
+            notices, total = await u.notices.list(skip=skip, limit=limit)
+            return notices, total
 
     async def mark_notice_read(self, user: User, notice_id: UUID) -> None:
         async with self.uow.transaction() as u:
@@ -80,8 +80,8 @@ class CommunicationService:
 
     async def get_my_complaints(self, user: User, skip: int = 0, limit: int = 50) -> Tuple[List[Complaint], int]:
         async with self.uow.transaction() as u:
-            complaints = await u.complaints.list(filters={"raised_by": user.id}, skip=skip, limit=limit)
-            return complaints, len(complaints)
+            complaints, total = await u.complaints.list(filters={"raised_by": user.id}, skip=skip, limit=limit)
+            return complaints, total
 
     async def list_complaints_for_admin(self, admin_user: User, skip: int = 0, limit: int = 50) -> Tuple[List[Complaint], int]:
         async with self.uow.transaction() as u:
@@ -94,13 +94,13 @@ class CommunicationService:
                 res = await u.db.execute(stmt)
                 hostel = res.scalar_one_or_none()
                 if hostel:
-                    complaints = await u.complaints.list(filters={"hostel_id": hostel.id}, skip=skip, limit=limit)
+                    complaints, total = await u.complaints.list(filters={"hostel_id": hostel.id}, skip=skip, limit=limit)
                 else:
-                    complaints = []
-                return complaints, len(complaints)
+                    complaints, total = [], 0
+                return complaints, total
             else:
-                complaints = await u.complaints.list(skip=skip, limit=limit)
-                return complaints, len(complaints)
+                complaints, total = await u.complaints.list(skip=skip, limit=limit)
+                return complaints, total
 
     async def update_complaint_status(self, admin_user: User, complaint_id: UUID, status: str, admin_notes: Optional[str] = None) -> Complaint:
         from app.models.complaint import ComplaintStatusLog

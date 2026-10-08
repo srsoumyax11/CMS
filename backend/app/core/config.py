@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     MESS_OPTOUT_CUTOFF_HOUR: int = 10
     
     # Cache / Redis
-    REDIS_URL: str = "redis://localhost:6379"
+    REDIS_URL: str = "redis://127.0.0.1:6379"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

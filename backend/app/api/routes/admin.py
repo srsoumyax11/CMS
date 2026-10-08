@@ -489,8 +489,7 @@ async def list_users(
     return APIResponse(
         success=True,
         data=[UserManagementItemResponse.model_validate(user) for user in users],
-        error=None,
-        meta={"total": total, "skip": skip, "limit": limit}
+        error=None
     )
 
 @router.patch(

@@ -173,19 +173,6 @@ class AuthService:
         
         return user
 
-    async def generate_2fa_otp(self, user: User, background_tasks: BackgroundTasks) -> str:
-        otp_code = str(random.randint(100000, 999999))
-        otp_hash = hash_password(otp_code)
-        session_token = create_otp_session_token(subject=str(user.id), new_email=user.email, otp_hash=otp_hash)
-        
-        send_email_background(
-            background_tasks=background_tasks,
-            to_email=user.email,
-            subject="Your Login Security Code",
-            template_name="2fa_login_otp.html",
-            context={"name": user.name or "User", "otp_code": otp_code}
-        )
-        return session_token
 
     async def refresh_token(self, refresh_token_str: str) -> str:
         try:

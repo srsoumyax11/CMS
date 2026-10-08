@@ -1,0 +1,123 @@
+# MyPy Type Error & Warning Checklist
+
+Total errors found by mypy analysis. Checkbox `[ ]` prefix added for tracking resolution.
+
+- [ ] `app\repositories\notice_repository.py:57: error: Incompatible return value type (got "tuple[Sequence[Row[tuple[Notice, bool]]], int]", expected "tuple[list[tuple[Notice, bool]], int]")  [return-value]`
+- [ ] `app\repositories\notice_repository.py:77: error: Incompatible return value type (got "Row[tuple[Notice, bool]] | None", expected "tuple[Notice, bool] | None")  [return-value]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | None"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | Sequence[str] | None"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "Sequence[str] | None"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "int | None"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | bytes | None"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "Callable[[], Awaitable[str]] | None"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "tuple[str, int] | None"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "float | None"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "bool"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "bool | None"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "SSLContext | None"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | bytes | PathLike[str] | None"  [arg-type]`
+- [ ] `app\utils\email.py:108: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "socket | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | Sequence[str] | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "Sequence[str] | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "int | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | bytes | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "Callable[[], Awaitable[str]] | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "tuple[str, int] | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "float | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "bool"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "bool | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "SSLContext | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | bytes | PathLike[str] | None"  [arg-type]`
+- [ ] `app\utils\email.py:116: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "socket | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | Sequence[str] | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "Sequence[str] | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "int | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | bytes | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "Callable[[], Awaitable[str]] | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "tuple[str, int] | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "float | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "bool"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "bool | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "SSLContext | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "str | bytes | PathLike[str] | None"  [arg-type]`
+- [ ] `app\utils\email.py:121: error: Argument 2 to "send" has incompatible type "**dict[str, int | str | None]"; expected "socket | None"  [arg-type]`
+- [ ] `app\core\security.py:72: error: Incompatible return value type (got "None", expected "dict[str, Any]")  [return-value]`
+- [ ] `app\core\security.py:83: error: Incompatible types in assignment (expression has type "Any | None", variable has type "str")  [assignment]`
+- [ ] `app\services\role_service.py:33: error: Need type annotation for "asset_perm_map" (hint: "asset_perm_map: dict[<type>, <type>] = ...")  [var-annotated]`
+- [ ] `app\services\notification_service.py:16: error: Argument 1 to "list_by_user" of "NotificationRepository" has incompatible type "UUID"; expected "str"  [arg-type]`
+- [ ] `app\services\notification_service.py:17: error: Argument 1 to "get_unread_count" of "NotificationRepository" has incompatible type "UUID"; expected "str"  [arg-type]`
+- [ ] `app\services\notification_service.py:31: error: Argument 1 to "get_unread_by_user" of "NotificationRepository" has incompatible type "UUID"; expected "str"  [arg-type]`
+- [ ] `app\services\metadata_service.py:211: error: Need type annotation for "tree" (hint: "tree: dict[<type>, <type>] = ...")  [var-annotated]`
+- [ ] `app\services\gate_pass_service.py:26: error: Item "list[GatePass]" of "list[GatePass] | int" has no attribute "status"  [union-attr]`
+- [ ] `app\services\gate_pass_service.py:26: error: Item "int" of "list[GatePass] | int" has no attribute "status"  [union-attr]`
+- [ ] `app\services\gate_pass_service.py:27: error: Item "list[GatePass]" of "list[GatePass] | int" has no attribute "status"  [union-attr]`
+- [ ] `app\services\gate_pass_service.py:27: error: Item "int" of "list[GatePass] | int" has no attribute "status"  [union-attr]`
+- [ ] `app\services\gate_pass_service.py:76: error: Argument 1 to "update" of "GenericRepository" has incompatible type "list[GatePass]"; expected "GatePass"  [arg-type]`
+- [ ] `app\services\gate_pass_service.py:77: error: Incompatible return value type (got "list[GatePass]", expected "GatePass")  [return-value]`
+- [ ] `app\services\gate_pass_service.py:93: error: Argument 1 to "update" of "GenericRepository" has incompatible type "list[GatePass]"; expected "GatePass"  [arg-type]`
+- [ ] `app\services\gate_pass_service.py:94: error: Incompatible return value type (got "list[GatePass]", expected "GatePass")  [return-value]`
+- [ ] `app\services\gate_pass_service.py:99: error: Incompatible return value type (got "tuple[tuple[list[GatePass], int], int]", expected "tuple[list[GatePass], int]")  [return-value]`
+- [ ] `app\services\gate_pass_service.py:104: error: Incompatible return value type (got "tuple[tuple[list[GatePass], int], int]", expected "tuple[list[GatePass], int]")  [return-value]`
+- [ ] `app\services\complaint_service.py:83: error: Incompatible types in assignment (expression has type "UUID", variable has type "Column[UUID]")  [assignment]`
+- [ ] `app\services\complaint_service.py:142: error: Incompatible return value type (got "Sequence[Complaint]", expected "list[Complaint]")  [return-value]`
+- [ ] `app\services\communication_service.py:53: error: Incompatible return value type (got "tuple[tuple[list[Notice], int], int]", expected "tuple[list[Notice], int]")  [return-value]`
+- [ ] `app\services\communication_service.py:84: error: Incompatible return value type (got "tuple[tuple[list[Complaint], int], int]", expected "tuple[list[Complaint], int]")  [return-value]`
+- [ ] `app\services\communication_service.py:99: error: Incompatible types in assignment (expression has type "list[Never]", variable has type "tuple[list[Complaint], int]")  [assignment]`
+- [ ] `app\services\communication_service.py:100: error: Incompatible return value type (got "tuple[tuple[list[Complaint], int], int]", expected "tuple[list[Complaint], int]")  [return-value]`
+- [ ] `app\services\communication_service.py:103: error: Incompatible return value type (got "tuple[tuple[list[Complaint], int], int]", expected "tuple[list[Complaint], int]")  [return-value]`
+- [ ] `app\services\attendance_service.py:20: error: Incompatible return value type (got "list[AttendanceSession]", expected "AttendanceSession")  [return-value]`
+- [ ] `app\services\attendance_service.py:57: error: Argument 1 to "update" of "GenericRepository" has incompatible type "list[AttendanceRecord]"; expected "AttendanceRecord"  [arg-type]`
+- [ ] `app\services\application_service.py:97: error: Incompatible types in assignment (expression has type "tuple[list[RoleApplication] | int, ...]", variable has type "tuple[list[RoleApplication], int]")  [assignment]`
+- [ ] `app\services\application_service.py:101: error: Item "list[RoleApplication]" of "list[RoleApplication] | int" has no attribute "id"  [union-attr]`
+- [ ] `app\services\application_service.py:101: error: Item "int" of "list[RoleApplication] | int" has no attribute "id"  [union-attr]`
+- [ ] `app\services\application_service.py:102: error: Item "list[RoleApplication]" of "list[RoleApplication] | int" has no attribute "user_id"  [union-attr]`
+- [ ] `app\services\application_service.py:102: error: Item "int" of "list[RoleApplication] | int" has no attribute "user_id"  [union-attr]`
+- [ ] `app\services\application_service.py:104: error: Item "list[RoleApplication]" of "list[RoleApplication] | int" has no attribute "status"  [union-attr]`
+- [ ] `app\services\application_service.py:104: error: Item "int" of "list[RoleApplication] | int" has no attribute "status"  [union-attr]`
+- [ ] `app\services\application_service.py:105: error: Item "list[RoleApplication]" of "list[RoleApplication] | int" has no attribute "form_data"  [union-attr]`
+- [ ] `app\services\application_service.py:105: error: Item "int" of "list[RoleApplication] | int" has no attribute "form_data"  [union-attr]`
+- [ ] `app\services\application_service.py:106: error: Item "list[RoleApplication]" of "list[RoleApplication] | int" has no attribute "review_note"  [union-attr]`
+- [ ] `app\services\application_service.py:106: error: Item "int" of "list[RoleApplication] | int" has no attribute "review_note"  [union-attr]`
+- [ ] `app\services\application_service.py:107: error: Item "list[RoleApplication]" of "list[RoleApplication] | int" has no attribute "created_at"  [union-attr]`
+- [ ] `app\services\application_service.py:107: error: Item "int" of "list[RoleApplication] | int" has no attribute "created_at"  [union-attr]`
+- [ ] `app\services\application_service.py:108: error: Item "list[RoleApplication]" of "list[RoleApplication] | int" has no attribute "updated_at"  [union-attr]`
+- [ ] `app\services\application_service.py:108: error: Item "int" of "list[RoleApplication] | int" has no attribute "updated_at"  [union-attr]`
+- [ ] `app\services\application_service.py:121: error: Incompatible types in assignment (expression has type "Select[tuple[FacultyProfile]]", variable has type "Select[tuple[StudentProfile]]")  [assignment]`
+- [ ] `app\services\application_service.py:125: error: Incompatible types in assignment (expression has type "Select[tuple[StaffProfile]]", variable has type "Select[tuple[StudentProfile]]")  [assignment]`
+- [ ] `app\services\application_service.py:158: error: Incompatible types in assignment (expression has type "FacultyProfile", variable has type "StudentProfile")  [assignment]`
+- [ ] `app\services\application_service.py:166: error: Incompatible types in assignment (expression has type "StaffProfile", variable has type "StudentProfile")  [assignment]`
+- [ ] `app\services\application_service.py:174: error: Incompatible types in assignment (expression has type "ParentProfile", variable has type "StudentProfile")  [assignment]`
+- [ ] `app\services\ai_service.py:69: error: Argument 1 to "join" of "str" has incompatible type "list[Column[str]] | list[str]"; expected "Iterable[str]"  [arg-type]`
+- [ ] `app\services\auth_service.py:176: error: Name "generate_2fa_otp" already defined on line 148  [no-redef]`
+- [ ] `app\api\deps.py:119: error: Item "None" of "StaffProfile | None" has no attribute "department_id"  [union-attr]`
+- [ ] `app\api\deps.py:177: error: Incompatible import of "get_uow" (imported name has type "Callable[[AsyncSession], Coroutine[Any, Any, UnitOfWork]]", local name has type "Callable[[AsyncSession], UnitOfWork]")  [assignment]`
+- [ ] `app\core\storage.py:16: error: Item "None" of "str | None" has no attribute "split"  [union-attr]`
+- [ ] `app\core\storage.py:16: error: Unsupported right operand type for in ("str | None")  [operator]`
+- [ ] `app\core\storage.py:20: error: Argument 1 to "guess_type" has incompatible type "str | None"; expected "str | PathLike[str]"  [arg-type]`
+- [ ] `app\core\storage.py:38: error: Item "None" of "str | None" has no attribute "split"  [union-attr]`
+- [ ] `app\core\storage.py:38: error: Unsupported right operand type for in ("str | None")  [operator]`
+- [ ] `app\core\storage.py:42: error: Argument 1 to "guess_type" has incompatible type "str | None"; expected "str | PathLike[str]"  [arg-type]`
+- [ ] `app\core\storage.py:57: error: Incompatible return value type (got "None", expected "str")  [return-value]`
+- [ ] `app\core\storage.py:62: error: Incompatible return value type (got "str | None", expected "str")  [return-value]`
+- [ ] `app\core\storage.py:65: error: Incompatible return value type (got "None", expected "str")  [return-value]`
+- [ ] `app\api\routes\auth.py:329: error: Item "None" of "Role | None" has no attribute "name"  [union-attr]`
+- [ ] `app\api\routes\auth.py:343: error: Item "None" of "StudentProfile | None" has no attribute "academic_status"  [union-attr]`
+- [ ] `app\api\routes\auth.py:344: error: Item "None" of "FacultyProfile | None" has no attribute "employment_status"  [union-attr]`
+- [ ] `app\api\routes\admin.py:489: error: Unexpected keyword argument "meta" for "APIResponse"  [call-arg]`
+- [ ] `app\api\routes\admin.py:489: note: "APIResponse" defined in "app.schemas.common"`
+- [ ] `app\api\routes\complaints.py:53: error: Unsupported operand types for <= ("int" and "None")  [operator]`
+- [ ] `app\api\routes\complaints.py:53: note: Left operand is of type "int | None"`
+- [ ] `app\api\routes\complaints.py:108: error: Argument 2 to "get_signed_url" has incompatible type "Column[str]"; expected "str"  [arg-type]`
+- [ ] `app\api\routes\complaints.py:132: error: Argument 2 to "get_signed_url" has incompatible type "Column[str]"; expected "str"  [arg-type]`
+- [ ] `app\api\routes\complaints.py:178: error: Argument "raised_by" to "ComplaintResponse" has incompatible type "Column[UUID]"; expected "UUID"  [arg-type]`
+- [ ] `app\api\routes\complaints.py:186: error: Argument "assigned_to" to "ComplaintResponse" has incompatible type "Column[UUID]"; expected "UUID | None"  [arg-type]`
+- [ ] `app\api\routes\complaints.py:195: error: Argument 2 to "get_signed_url" has incompatible type "Column[str]"; expected "str"  [arg-type]`
+- [ ] `app\api\routes\complaints.py:228: error: Argument 2 to "get_signed_url" has incompatible type "Column[str]"; expected "str"  [arg-type]`
+- [ ] `app\api\routes\complaints.py:268: error: Item "None" of "Complaint | None" has no attribute "photo_url"  [union-attr]`
+- [ ] `app\api\routes\complaints.py:269: error: Item "None" of "Complaint | None" has no attribute "photo_url"  [union-attr]`
+- [ ] `app\api\routes\complaints.py:269: error: Argument 2 to "get_signed_url" has incompatible type "Column[str] | Any"; expected "str"  [arg-type]`
+- [ ] `app\api\routes\complaints.py:343: error: Argument 2 to "get_signed_url" has incompatible type "Column[str]"; expected "str"  [arg-type]`
+- [ ] `app\api\routes\complaints.py:374: error: Argument 2 to "get_signed_url" has incompatible type "Column[str]"; expected "str"  [arg-type]`
+  Found 116 errors in 18 files (checked 126 source files)

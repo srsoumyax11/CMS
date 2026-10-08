@@ -83,20 +83,19 @@ async def check_smtp_status():
         logger.warning(f"⚠️ Could not verify SMTP settings from DB: {err}")
 
 def ensure_redis_container():
-    """Ensure local Redis Docker container is running."""
+    """Ensure local Redis Docker container is running with published port 6379."""
     import subprocess
     logger.info("Checking Redis Docker container status...")
     try:
-        res = subprocess.run(["docker", "ps", "--filter", "name=cms-redis", "--format", "{{.Names}}"], capture_output=True, text=True)
-        if "cms-redis" in res.stdout:
-            logger.info("✅ Local Redis container 'cms-redis' is running.")
+        res = subprocess.run(["docker", "ps", "--filter", "name=cms-redis", "--format", "{{.Ports}}"], capture_output=True, text=True)
+        if "6379->" in res.stdout:
+            logger.info("✅ Local Redis container 'cms-redis' is running on port 6379.")
             return
 
-        logger.info("Starting local Redis Docker container ('cms-redis')...")
-        start_res = subprocess.run(["docker", "start", "cms-redis"], capture_output=True, text=True)
-        if start_res.returncode != 0:
-            subprocess.run(["docker", "run", "-d", "--name", "cms-redis", "-p", "6379:6379", "redis:alpine"], capture_output=True, text=True)
-        logger.info("✅ Redis container started successfully!")
+        logger.info("Starting / creating local Redis Docker container ('cms-redis')...")
+        subprocess.run(["docker", "rm", "-f", "cms-redis"], capture_output=True, text=True)
+        subprocess.run(["docker", "run", "-d", "--name", "cms-redis", "-p", "6379:6379", "redis:alpine"], capture_output=True, text=True)
+        logger.info("✅ Redis container started successfully on port 6379!")
     except Exception as e:
         logger.warning(f"⚠️ Could not start Redis Docker container ({e}). Rate limiting will fail open cleanly.")
 

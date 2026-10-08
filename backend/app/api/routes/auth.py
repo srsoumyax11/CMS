@@ -326,11 +326,11 @@ async def get_me(current_user: User = Depends(get_current_user)):
     Get current logged in user details. Doesn't require any RBAC permissions.
     Allows users with "pending" profiles to check their status.
     """
-    rbac_roles = [current_user.role.name] if getattr(current_user, "role", None) else []
+    rbac_roles = [current_user.role.name] if current_user.role else []
     permissions = list({
         f"{perm.asset.name}:{perm.action.code}"
-        for perm in getattr(current_user.role, "permissions", [])
-    }) if getattr(current_user, "role", None) else []
+        for perm in current_user.role.permissions
+    }) if current_user.role else []
 
     return APIResponse(
         success=True,
@@ -340,8 +340,8 @@ async def get_me(current_user: User = Depends(get_current_user)):
             account_status=current_user.account_status,
             status_note=current_user.status_note,
             user_type=current_user.user_type,
-            academic_status=current_user.student_profile.academic_status if getattr(current_user, "student_profile", None) else None,
-            employment_status=current_user.faculty_profile.employment_status if getattr(current_user, "faculty_profile", None) else None,
+            academic_status=current_user.student_profile.academic_status if current_user.student_profile else None,
+            employment_status=current_user.faculty_profile.employment_status if current_user.faculty_profile else None,
             name=current_user.name,
             photo_url=current_user.photo_url,
             email_notifications=current_user.email_notifications,

@@ -61,15 +61,15 @@ class AIService:
                 response_text = f"You have {len(slots)} class slots scheduled in the timetable catalog. Check your Silent Mode calendar feed or Timetable tab for complete details!"
             elif "map" in prompt_lower or "navigate" in prompt_lower or "room" in prompt_lower or "building" in prompt_lower:
                 locations, _ = await u.map_locations.list(limit=5)
-                loc_names = [loc.name for loc in locations] if locations else ["Main Academic Block"]
+                loc_names = [str(loc.name) for loc in locations] if locations else ["Main Academic Block"]
                 response_text = f"Campus Navigation Active: Key locations near you include {', '.join(loc_names)}. Use our interactive Dijkstra navigation route tool under the Map tab to get step-by-step walking directions!"
             elif "notice" in prompt_lower or "announcement" in prompt_lower:
                 notices, _ = await u.notices.list(limit=3)
-                titles = [n.title for n in notices] if notices else ["No active high priority notices today."]
+                titles = [str(n.title) for n in notices] if notices else ["No active high priority notices today."]
                 response_text = f"Latest Announcements: {'; '.join(titles)}"
             elif "hostel" in prompt_lower or "room" in prompt_lower:
                 hostels, _ = await u.hostels.list(limit=3)
-                h_names = [h.name for h in hostels] if hostels else ["Boys Hostel 1", "Girls Hostel 1"]
+                h_names = [str(h.name) for h in hostels] if hostels else ["Boys Hostel 1", "Girls Hostel 1"]
                 response_text = f"Hostel Infrastructure: Campus hostels include {', '.join(h_names)}. For room allocations or gate passes, visit your Hostel Portal."
             else:
                 response_text = f"I am your BPUT Campus Assistant. How can I assist you with your academic schedule, hostel allocation, gate pass requests, digital notices, or campus map navigation?"

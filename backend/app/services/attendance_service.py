@@ -15,7 +15,7 @@ class AttendanceService:
         async with self.uow.transaction() as u:
             # Check if session already exists
             filters = {"slot_id": slot_id, "date": session_date}
-            existing = await u.attendance_sessions.list(filters=filters)
+            existing, _ = await u.attendance_sessions.list(filters=filters)
             if existing:
                 return existing[0]
 
@@ -49,7 +49,7 @@ class AttendanceService:
                 
                 # Check if record exists
                 rec_filters = {"session_id": session_id, "student_user_id": student_id}
-                existing = await u.attendance_records.list(filters=rec_filters)
+                existing, _ = await u.attendance_records.list(filters=rec_filters)
                 
                 if existing:
                     existing[0].status = status

@@ -125,11 +125,11 @@ async def lifespan(app: FastAPI):
         sys.exit(1)
         
     logger.info("Initializing Redis...")
-    try:
-        await init_redis()
+    from app.core.cache import redis_client as r_client
+    await init_redis()
+    from app.core.cache import redis_client as r_client_after
+    if r_client_after:
         logger.info("Redis connection established!")
-    except Exception as e:
-        logger.warning(f"Redis connection failed (rate limiting will fail open): {e}")
 
     # Launch background scheduler task
     scheduler_task = asyncio.create_task(start_background_scheduler())

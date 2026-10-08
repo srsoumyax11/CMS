@@ -208,7 +208,7 @@ class MetadataService:
         depts_dict = {d.id: d for d in depts}
         faculties = faculty_res.scalars().all()
         
-        tree = {}
+        tree: Dict[Any, Dict[str, Any]] = {}
         for d in depts:
             tree[d.id] = {
                 "department_id": str(d.id),

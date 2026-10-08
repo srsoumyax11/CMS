@@ -64,7 +64,7 @@ def create_refresh_token(subject: str | Any, expires_delta: Optional[timedelta] 
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 
-def decode_token(token: str) -> Dict[str, Any]:
+def decode_token(token: str) -> Optional[Dict[str, Any]]:
     try:
         decoded_token = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         return decoded_token
@@ -80,9 +80,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     payload = decode_token(token)
     if payload is None:
         raise credentials_exception
-    user_id: str = payload.get("sub")
-    if user_id is None:
+    user_id_val = payload.get("sub")
+    if user_id_val is None:
         raise credentials_exception
+    user_id: str = str(user_id_val)
         
     stmt = select(User).options(selectinload(User.student_profile), selectinload(User.faculty_profile)).where(User.id == user_id)
     result = await db.execute(stmt)

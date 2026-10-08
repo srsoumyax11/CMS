@@ -80,7 +80,7 @@ class ComplaintService:
             if not complaint:
                 return None
                 
-            complaint.assigned_to = assigned_to
+            setattr(complaint, "assigned_to", assigned_to)
             
         return complaint
 
@@ -139,4 +139,4 @@ class ComplaintService:
             .order_by(Complaint.created_at.asc())
         )
         result = await self.uow.db.execute(stmt)
-        return result.scalars().all()
+        return list(result.scalars().all())

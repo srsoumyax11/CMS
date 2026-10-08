@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.core.uow import UnitOfWork
+from app.core.uow import UnitOfWork, get_uow
 from app.core.security import decode_token
 from app.models.user import User, UserType
 from app.models.rbac import Role, Permission, Asset, Action
@@ -16,9 +16,6 @@ from app.models.complaint import Complaint, ComplaintVisibility
 from app.core.permissions import Perms
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
-
-def get_uow(db: AsyncSession = Depends(get_db)) -> UnitOfWork:
-    return UnitOfWork(db)
 
 class RateLimiter:
     """
@@ -115,7 +112,7 @@ async def get_department_scope(
         return current_user.faculty_profile.department_id
     if current_user.user_type == UserType.student and current_user.student_profile:
         return current_user.student_profile.department_id
-    if current_user.user_type == UserType.staff and getattr(current_user, 'staff_profile', None):
+    if current_user.user_type == UserType.staff and current_user.staff_profile:
         return current_user.staff_profile.department_id
     return None
 
@@ -174,7 +171,6 @@ def can_view_complaint_detail(complaint: Complaint, current_user: User, user_per
 
 
 
-from app.core.uow import UnitOfWork, get_uow
 from app.services.notification_service import NotificationService
 from app.services.metadata_service import MetadataService
 from app.services.complaint_service import ComplaintService

@@ -27,6 +27,7 @@ supabase db reset
 .\venv\Scripts\activate
 alembic upgrade head
 python -m scripts.pre_start
+python  .\seed_roles.py
 uvicorn app.main:app --reload --port 8000
 
 ### Start Frontend

@@ -50,7 +50,7 @@ async def create_complaint(
     result = await uow.db.execute(stmt)
     count = result.scalar()
     
-    if count >= 3:
+    if count is not None and count >= 3:
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Maximum 3 complaints per hour.")
 
     photo_path = None
@@ -82,7 +82,7 @@ async def create_complaint(
     # Re-fetch for response mapping if needed, or construct response
     response_data = ComplaintResponse.model_validate(complaint)
     if response_data.photo_url:
-        response_data.photo_url = get_signed_url("complaint-attachments", response_data.photo_url)
+        response_data.photo_url = get_signed_url("complaint-attachments", str(response_data.photo_url))
         
     return APIResponse(success=True, data=response_data)
 
@@ -105,7 +105,7 @@ async def get_my_complaints(
     for c in complaints:
         c_res = ComplaintResponse.model_validate(c)
         if c.photo_url:
-            c_res.photo_url = get_signed_url("complaint-attachments", c.photo_url)
+            c_res.photo_url = get_signed_url("complaint-attachments", str(c.photo_url))
         items.append(c_res)
         
     return APIResponse(success=True, data=ComplaintListResponse(total=total, items=items))
@@ -129,7 +129,7 @@ async def get_public_complaints(
     for c in complaints:
         c_res = ComplaintResponse.model_validate(c)
         if c.photo_url:
-            c_res.photo_url = get_signed_url("complaint-attachments", c.photo_url)
+            c_res.photo_url = get_signed_url("complaint-attachments", str(c.photo_url))
         items.append(c_res)
         
     return APIResponse(success=True, data=ComplaintListResponse(total=total, items=items))
@@ -174,8 +174,8 @@ async def list_all_complaints(
         if c.visibility == ComplaintVisibility.private and not can_view_private:
             # Minimal shape redaction fallback
             redacted = ComplaintResponse(
-                id=c.id,
-                raised_by=c.raised_by, # Typically redacted, but schema requires it. Let's just pass for now as we don't have roles lacking view_private.
+                id=c.id, # type: ignore
+                raised_by=c.raised_by, # type: ignore
                 category=c.category,
                 hostel_id=c.hostel_id,
                 room_number=c.room_number,
@@ -183,7 +183,7 @@ async def list_all_complaints(
                 photo_url=None,
                 visibility=c.visibility,
                 status=c.status,
-                assigned_to=c.assigned_to,
+                assigned_to=c.assigned_to, # type: ignore
                 created_at=c.created_at,
                 updated_at=c.updated_at
             )
@@ -192,7 +192,7 @@ async def list_all_complaints(
             
         c_res = ComplaintResponse.model_validate(c)
         if c.photo_url:
-            c_res.photo_url = get_signed_url("complaint-attachments", c.photo_url)
+            c_res.photo_url = get_signed_url("complaint-attachments", str(c.photo_url))
         items.append(c_res)
         
     return APIResponse(success=True, data=ComplaintListResponse(total=total, items=items))
@@ -225,7 +225,7 @@ async def update_complaint_status(
         
     response_data = ComplaintResponse.model_validate(complaint)
     if complaint.photo_url:
-        response_data.photo_url = get_signed_url("complaint-attachments", complaint.photo_url)
+        response_data.photo_url = get_signed_url("complaint-attachments", str(complaint.photo_url))
         
     return APIResponse(success=True, data=response_data)
 
@@ -260,13 +260,15 @@ async def assign_complaint(
             detail="Cannot assign complaint to a non-staff user. Target user must be Faculty or SuperAdmin."
         )
         
-    complaint = await service.assign_complaint(id, req.assigned_to)
-    if complaint:
-        await uow.db.refresh(complaint)
+    updated_complaint = await service.assign_complaint(id, req.assigned_to)
+    if not updated_complaint:
+        raise HTTPException(status_code=404, detail="Complaint assignment failed")
         
-    response_data = ComplaintResponse.model_validate(complaint)
-    if complaint.photo_url:
-        response_data.photo_url = get_signed_url("complaint-attachments", complaint.photo_url)
+    await uow.db.refresh(updated_complaint)
+        
+    response_data = ComplaintResponse.model_validate(updated_complaint)
+    if updated_complaint.photo_url:
+        response_data.photo_url = get_signed_url("complaint-attachments", str(updated_complaint.photo_url))
         
     return APIResponse(success=True, data=response_data)
 
@@ -340,7 +342,7 @@ async def get_complaint(
         
     response_data = ComplaintResponse.model_validate(complaint)
     if complaint.photo_url:
-        response_data.photo_url = get_signed_url("complaint-attachments", complaint.photo_url)
+        response_data.photo_url = get_signed_url("complaint-attachments", str(complaint.photo_url))
         
     return APIResponse(success=True, data=response_data)
 
@@ -371,6 +373,6 @@ async def cancel_complaint(
         
     response_data = ComplaintResponse.model_validate(complaint)
     if complaint.photo_url:
-        response_data.photo_url = get_signed_url("complaint-attachments", complaint.photo_url)
+        response_data.photo_url = get_signed_url("complaint-attachments", str(complaint.photo_url))
         
     return APIResponse(success=True, data=response_data)

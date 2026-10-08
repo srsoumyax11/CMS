@@ -20,7 +20,7 @@ class GatePassService:
             # Check if there's already an active gate pass
             filters = {"student_user_id": student_id}
             # Simplified check: we could fetch list and check status in Python for now
-            existing_passes = await u.gate_passes.list(filters=filters)
+            existing_passes, _ = await u.gate_passes.list(filters=filters)
             active_statuses = [GatePassStatus.requested, GatePassStatus.approved, GatePassStatus.out, GatePassStatus.overdue]
             for gp in existing_passes:
                 if gp.status in active_statuses:
@@ -63,8 +63,7 @@ class GatePassService:
 
     async def mark_exit(self, security_guard_id: UUID, pass_code: str) -> GatePass:
         async with self.uow.transaction() as u:
-            # We need to find by pass_code. We can use list()
-            results = await u.gate_passes.list(filters={"pass_code": pass_code, "status": GatePassStatus.approved})
+            results, _ = await u.gate_passes.list(filters={"pass_code": pass_code, "status": GatePassStatus.approved})
             if not results:
                 raise ValueError("Invalid or expired pass code.")
                 
@@ -78,7 +77,7 @@ class GatePassService:
 
     async def mark_return(self, security_guard_id: UUID, pass_code: str) -> GatePass:
         async with self.uow.transaction() as u:
-            results = await u.gate_passes.list(filters={"pass_code": pass_code})
+            results, _ = await u.gate_passes.list(filters={"pass_code": pass_code})
             if not results:
                 raise ValueError("Invalid pass code.")
                 
@@ -95,10 +94,10 @@ class GatePassService:
 
     async def get_student_passes(self, student_id: UUID, skip: int = 0, limit: int = 50) -> Tuple[List[GatePass], int]:
         async with self.uow.transaction() as u:
-            passes = await u.gate_passes.list(filters={"student_user_id": student_id}, skip=skip, limit=limit)
-            return passes, len(passes)
+            passes, total = await u.gate_passes.list(filters={"student_user_id": student_id}, skip=skip, limit=limit)
+            return passes, total
 
     async def list_all_passes(self, skip: int = 0, limit: int = 50) -> Tuple[List[GatePass], int]:
         async with self.uow.transaction() as u:
-            passes = await u.gate_passes.list(skip=skip, limit=limit)
-            return passes, len(passes)
+            passes, total = await u.gate_passes.list(skip=skip, limit=limit)
+            return passes, total
