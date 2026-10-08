@@ -15,7 +15,8 @@ from app.schemas.admin import (
     StudentAdminUpdateRequest,
     FacultyCreateRequest, 
     FacultyUpdateRequest,
-    FacultyStatusUpdateRequest
+    FacultyStatusUpdateRequest,
+    UserManagementUpdateRequest
 )
 from app.schemas.staff import (
     StaffCreateRequest,
@@ -431,6 +432,63 @@ class AdminService:
                     "employment_status": profile.employment_status.value if profile and profile.employment_status else None
                 },
                 reason=data.status_note
+            )
+            return user
+
+    async def list_users(self, skip: int = 0, limit: int = 100) -> Tuple[List[User], int]:
+        return await self.user_repo.list_all_users(skip=skip, limit=limit)
+
+    async def update_user(self, user_id: UUID, data: UserManagementUpdateRequest, current_user: User) -> User:
+        from typing import Any
+        async with self.uow.transaction():
+            user = await self.user_repo.get_by_id(user_id)
+            if not user:
+                raise ValueError("User not found")
+
+            old_values: dict[str, Any] = {}
+            if data.name is not None:
+                old_values["name"] = user.name
+                user.name = data.name
+            if data.user_type is not None:
+                old_values["user_type"] = user.user_type.value
+                user.user_type = data.user_type
+            if data.account_status is not None:
+                old_values["account_status"] = user.account_status.value
+                user.account_status = data.account_status
+            if data.status_note is not None:
+                old_values["status_note"] = user.status_note
+                user.status_note = data.status_note
+            if data.phone is not None:
+                old_values["phone"] = user.phone
+                user.phone = data.phone
+            if data.email_notifications is not None:
+                old_values["email_notifications"] = user.email_notifications
+                user.email_notifications = data.email_notifications
+            if data.in_app_alerts is not None:
+                old_values["in_app_alerts"] = user.in_app_alerts
+                user.in_app_alerts = data.in_app_alerts
+            if data.is_2fa_enabled is not None:
+                old_values["is_2fa_enabled"] = user.is_2fa_enabled
+                user.is_2fa_enabled = data.is_2fa_enabled
+            if data.role_id is not None:
+                old_values["role_id"] = str(user.role_id) if user.role_id else None
+                role = await self.uow.db.get(Role, data.role_id)
+                if not role:
+                    raise ValueError("Role not found")
+                user.role_id = data.role_id
+
+            await self.audit_service.log_action(
+                actor_id=current_user.id,
+                resource_type="User",
+                resource_id=user.id,
+                action="UPDATE_USER",
+                old_values=old_values,
+                new_values={
+                    "name": user.name,
+                    "user_type": user.user_type.value,
+                    "account_status": user.account_status.value,
+                    "role_id": str(user.role_id) if user.role_id else None
+                }
             )
             return user
 

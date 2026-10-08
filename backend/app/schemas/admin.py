@@ -189,7 +189,7 @@ class UserManagementItemResponse(BaseModel):
     in_app_alerts: bool
     is_2fa_enabled: bool
     target_role: Optional[str] = None
-    name: str
+    name: Optional[str] = None
     email: str
     user_type: UserType
     account_status: AccountStatus

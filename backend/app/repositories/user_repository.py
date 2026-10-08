@@ -144,3 +144,17 @@ class UserRepository(GenericRepository[User]):
             )
         )
         return (await self.db.execute(stmt)).scalar_one_or_none()
+
+    async def list_all_users(self, skip: int = 0, limit: int = 100) -> Tuple[List[User], int]:
+        from sqlalchemy import func
+        stmt = (
+            select(User)
+            .where(User.deleted_at.is_(None))
+            .options(selectinload(User.role))
+            .order_by(User.created_at.desc())
+        )
+        count_stmt = select(func.count()).select_from(User).where(User.deleted_at.is_(None))
+        total = await self.db.scalar(count_stmt) or 0
+        result = await self.db.execute(stmt.offset(skip).limit(limit))
+        users = list(result.scalars().all())
+        return users, total
