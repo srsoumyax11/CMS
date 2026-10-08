@@ -5,10 +5,13 @@ import type { APIResponse } from '@/types/api';
 export interface RoleApplicationData {
   id: string;
   user_id: string;
+  applicant_name?: string | null;
+  applicant_email?: string | null;
   target_role: string;
   status: 'pending' | 'approved' | 'rejected' | 'revision';
   application_data: Record<string, any>;
   admin_notes?: string | null;
+  reviewed_by?: string | null;
   created_at: string;
   updated_at: string;
 }
