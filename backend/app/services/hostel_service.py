@@ -8,7 +8,8 @@ from app.models.profiles import StudentProfile
 from app.schemas.hostel import (
     HostelCreate, HostelUpdate,
     HostelRoomCreate, HostelRoomUpdate,
-    RoomAllocationRequest, RoomAllocationResponse
+    RoomAllocationRequest, RoomAllocationResponse,
+    StudentHostelAllocationResponse
 )
 
 class HostelService:
@@ -79,8 +80,24 @@ class HostelService:
             if not profile:
                 raise ValueError("Student profile not found.")
 
-            # Check room
-            room = await u.hostel_rooms.get_room_by_number(req.hostel_id, req.room_number)
+            # Check if student is already in this exact room
+            if profile.hostel_id == req.hostel_id and profile.room_number == req.room_number:
+                return RoomAllocationResponse(
+                    success=True,
+                    message=f"Student is already allocated to Room '{req.room_number}'.",
+                    student_user_id=req.student_user_id,
+                    hostel_id=req.hostel_id,
+                    room_number=req.room_number
+                )
+
+            # Check room with row-level lock
+            stmt_room = select(HostelRoom).where(
+                HostelRoom.hostel_id == req.hostel_id,
+                HostelRoom.room_number == req.room_number
+            ).with_for_update()
+            res_room = await u.db.execute(stmt_room)
+            room = res_room.scalar_one_or_none()
+
             if not room or not room.status:
                 raise ValueError("Specified hostel room is invalid or inactive.")
 
@@ -89,7 +106,12 @@ class HostelService:
 
             # Deallocate previous room if any
             if profile.hostel_id and profile.room_number:
-                prev_room = await u.hostel_rooms.get_room_by_number(profile.hostel_id, profile.room_number)
+                prev_stmt = select(HostelRoom).where(
+                    HostelRoom.hostel_id == profile.hostel_id,
+                    HostelRoom.room_number == profile.room_number
+                ).with_for_update()
+                prev_res = await u.db.execute(prev_stmt)
+                prev_room = prev_res.scalar_one_or_none()
                 if prev_room and prev_room.current_occupancy > 0:
                     prev_room.current_occupancy -= 1
                     await u.hostel_rooms.update(prev_room, {})
@@ -126,3 +148,35 @@ class HostelService:
                 profile.room_number = None
 
             return True
+
+    async def get_my_allocation(self, student_user_id: UUID) -> Optional[StudentHostelAllocationResponse]:
+        async with self.uow.transaction() as u:
+            stmt = select(StudentProfile).where(StudentProfile.user_id == student_user_id)
+            res = await u.db.execute(stmt)
+            profile = res.scalar_one_or_none()
+            if not profile or not profile.hostel_id or not profile.room_number:
+                return None
+
+            hostel = await u.hostels.get_by_id(profile.hostel_id)
+            room = await u.hostel_rooms.get_room_by_number(profile.hostel_id, profile.room_number)
+
+            warden_name = None
+            warden_email = None
+            if hostel and hostel.warden_user_id:
+                warden = await u.users.get_by_id(hostel.warden_user_id)
+                if warden:
+                    warden_name = warden.name
+                    warden_email = warden.email
+
+            return StudentHostelAllocationResponse(
+                hostel_id=profile.hostel_id,
+                building_name=hostel.name if hostel else "Hostel Building",
+                room_number=profile.room_number,
+                room_capacity=room.capacity if room else 2,
+                occupied_count=room.current_occupancy if room else 1,
+                status="allocated",
+                allocated_at=profile.updated_at or profile.created_at,
+                warden_name=warden_name,
+                warden_email=warden_email
+            )
+

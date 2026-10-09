@@ -2,6 +2,7 @@ from uuid import UUID
 from datetime import datetime, timezone
 from typing import Optional, Any, List
 from fastapi import BackgroundTasks
+from sqlalchemy import select
 
 from app.core.uow import UnitOfWork
 from app.models.user import User, AccountStatus, UserType
@@ -154,13 +155,36 @@ class ApplicationService:
                 return True
             return True
 
+    def _safe_uuid(self, val: Any) -> Optional[UUID]:
+        if not val:
+            return None
+        if isinstance(val, UUID):
+            return val
+        try:
+            return UUID(str(val))
+        except (ValueError, TypeError):
+            return None
+
     async def approve_application(self, app_id: UUID, reviewer: User, admin_notes: Optional[str], background_tasks: BackgroundTasks) -> RoleApplicationResponse:
         async with self.uow.transaction() as u:
             app = await u.role_applications.get_by_id(app_id)
             if not app:
                 raise ValueError("Application not found.")
             if app.status == ApplicationStatus.approved:
-                raise ValueError("Application is already approved.")
+                role = await u.roles.get_by_id(app.role_id)
+                return RoleApplicationResponse(
+                    id=app.id,
+                    user_id=app.user_id,
+                    target_role=role.code if role else "UNKNOWN",
+                    status=app.status.value,
+                    application_data=app.form_data or {},
+                    admin_notes=app.review_note,
+                    created_at=app.submitted_at,
+                    updated_at=app.reviewed_at or app.submitted_at
+                )
+
+            if reviewer.id == app.user_id:
+                raise ValueError("Self-approval is not permitted.")
 
             target_user = await u.users.get_by_id(app.user_id)
             role = await u.roles.get_by_id(app.role_id)
@@ -169,36 +193,125 @@ class ApplicationService:
                 raise ValueError("User or Role missing.")
 
             data = app.form_data or {}
-            
+            from app.models.academic import Course, Department
+
             if role.code == "STUDENT":
+                reg_no = str(data.get("registration_no", "")).strip()
+                if not reg_no:
+                    reg_no = f"STU-{target_user.id.hex[:8].upper()}"
+
+                stmt_stud_dup = select(StudentProfile).where(StudentProfile.registration_no == reg_no, StudentProfile.user_id != target_user.id)
+                if (await u.db.execute(stmt_stud_dup)).scalar_one_or_none():
+                    raise ValueError(f"Registration number '{reg_no}' is already registered to another student.")
+
+                course_id = self._safe_uuid(data.get("course_id"))
+                dept_id = self._safe_uuid(data.get("department_id"))
+
+                if not course_id or not dept_id:
+                    default_dept = (await u.db.execute(select(Department))).scalars().first()
+                    default_course = (await u.db.execute(select(Course))).scalars().first()
+                    dept_id = dept_id or (default_dept.id if default_dept else None)
+                    course_id = course_id or (default_course.id if default_course else None)
+
+                if not course_id or not dept_id:
+                    raise ValueError("A valid Course and Department are required to approve Student profiles.")
+
+                stmt_stud_ex = select(StudentProfile).where(StudentProfile.user_id == target_user.id)
+                ex_stud_prof = (await u.db.execute(stmt_stud_ex)).scalar_one_or_none()
+                if ex_stud_prof:
+                    await u.db.delete(ex_stud_prof)
+                    await u.db.flush()
+
                 stud_prof = StudentProfile(
                     user_id=target_user.id,
-                    registration_no=data.get("registration_no", ""),
-                    course_id=data.get("course_id") if data.get("course_id") else None,
-                    department_id=data.get("department_id") if data.get("department_id") else None,
+                    registration_no=reg_no,
+                    course_id=course_id,
+                    department_id=dept_id,
                 )
                 target_user.user_type = UserType.student
                 u.db.add(stud_prof)
+
             elif role.code == "FACULTY":
+                emp_id = str(data.get("employee_id", "")).strip()
+                if not emp_id:
+                    emp_id = f"FAC-{target_user.id.hex[:8].upper()}"
+
+                stmt_fac_dup = select(FacultyProfile).where(FacultyProfile.employee_id == emp_id, FacultyProfile.user_id != target_user.id)
+                if (await u.db.execute(stmt_fac_dup)).scalar_one_or_none():
+                    raise ValueError(f"Employee ID '{emp_id}' is already registered to another faculty member.")
+
+                dept_id = self._safe_uuid(data.get("department_id"))
+                if not dept_id:
+                    default_dept = (await u.db.execute(select(Department))).scalars().first()
+                    dept_id = default_dept.id if default_dept else None
+
+                if not dept_id:
+                    raise ValueError("A valid Department is required to approve Faculty profiles.")
+
+                designation = str(data.get("designation") or data.get("title") or "Faculty Member").strip()
+
+                stmt_fac_ex = select(FacultyProfile).where(FacultyProfile.user_id == target_user.id)
+                ex_fac_prof = (await u.db.execute(stmt_fac_ex)).scalar_one_or_none()
+                if ex_fac_prof:
+                    await u.db.delete(ex_fac_prof)
+                    await u.db.flush()
+
                 fac_prof = FacultyProfile(
                     user_id=target_user.id,
-                    employee_id=data.get("employee_id", ""),
-                    department_id=data.get("department_id") if data.get("department_id") else None
+                    employee_id=emp_id,
+                    department_id=dept_id,
+                    designation=designation
                 )
                 target_user.user_type = UserType.faculty
                 u.db.add(fac_prof)
+
             elif role.code == "STAFF":
+                emp_id = str(data.get("employee_id", "")).strip()
+                if not emp_id:
+                    emp_id = f"STF-{target_user.id.hex[:8].upper()}"
+
+                stmt_staff_dup = select(StaffProfile).where(StaffProfile.employee_id == emp_id, StaffProfile.user_id != target_user.id)
+                if (await u.db.execute(stmt_staff_dup)).scalar_one_or_none():
+                    raise ValueError(f"Employee ID '{emp_id}' is already registered to another staff member.")
+
+                dept_id = self._safe_uuid(data.get("department_id"))
+                designation = str(data.get("designation") or "Staff Member").strip()
+
+                stmt_staff_ex = select(StaffProfile).where(StaffProfile.user_id == target_user.id)
+                ex_staff_prof = (await u.db.execute(stmt_staff_ex)).scalar_one_or_none()
+                if ex_staff_prof:
+                    await u.db.delete(ex_staff_prof)
+                    await u.db.flush()
+
                 staff_prof = StaffProfile(
                     user_id=target_user.id,
-                    employee_id=data.get("employee_id", ""),
-                    department_id=data.get("department_id") if data.get("department_id") else None
+                    employee_id=emp_id,
+                    department_id=dept_id,
+                    designation=designation
                 )
                 target_user.user_type = UserType.staff
                 u.db.add(staff_prof)
+
             elif role.code == "PARENT":
+                stud_id = self._safe_uuid(data.get("student_id"))
+                if not stud_id:
+                    first_stud = (await u.db.execute(select(StudentProfile))).scalars().first()
+                    if first_stud:
+                        stud_id = first_stud.user_id
+
+                if not stud_id:
+                    raise ValueError("Parent application requires a valid Student ID.")
+
+                stmt_parent_ex = select(ParentProfile).where(ParentProfile.user_id == target_user.id)
+                ex_parent_prof = (await u.db.execute(stmt_parent_ex)).scalar_one_or_none()
+                if ex_parent_prof:
+                    await u.db.delete(ex_parent_prof)
+                    await u.db.flush()
+
                 parent_prof = ParentProfile(
                     user_id=target_user.id,
-                    relation=data.get("relation", "Parent")
+                    student_id=stud_id,
+                    relationship_type=str(data.get("relation") or data.get("relationship_type") or "Parent").strip()
                 )
                 target_user.user_type = UserType.parent
                 u.db.add(parent_prof)
@@ -247,6 +360,9 @@ class ApplicationService:
             app = await u.role_applications.get_by_id(app_id)
             if not app:
                 raise ValueError("Application not found.")
+
+            if reviewer.id == app.user_id:
+                raise ValueError("Self-approval is not permitted.")
             
             target_user = await u.users.get_by_id(app.user_id)
             role = await u.roles.get_by_id(app.role_id)

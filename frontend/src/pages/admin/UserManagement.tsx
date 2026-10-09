@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/adminApi';
 import { QUERY_KEYS } from '@/lib/constants';
 import { PageHeader } from '@/components/shared/page-header/PageHeader';
@@ -11,7 +12,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { PERMISSIONS } from '@/config/permissions';
-import { Plus, ShieldAlert, CheckCircle2, UserCheck, GraduationCap, Briefcase, UserCog, Users } from 'lucide-react';
+import { Plus, ShieldAlert, CheckCircle2, UserCheck, GraduationCap, Briefcase, UserCog, Users, Pencil } from 'lucide-react';
+import { toast } from 'sonner';
 import type { 
   StudentItemResponse, 
   FacultyItemResponse, 
@@ -27,6 +29,7 @@ import { useMetadata } from '@/hooks/useMetadata';
 import { StudentActionModal, type UpdateActionPayload } from './components/StudentActionModal';
 import { StudentCreateModal } from './components/StudentCreateModal';
 import { FacultyCreateModal } from './components/FacultyCreateModal';
+import { UserEditModal } from './components/UserEditModal';
 
 export type UserRoleTab = 'all' | 'student' | 'faculty' | 'staff' | 'parent' | 'admin';
 
@@ -41,10 +44,11 @@ export function UserManagement() {
     });
   };
 
+  const queryClient = useQueryClient();
   const { departments, courses } = useMetadata();
 
   // ── 1. Data Fetching for All Role Types ──
-  const { items: allUsers, isLoading: loadingAll } = useAdminList<any, string | undefined>(
+  const { items: allUsers, isLoading: loadingAll, refetch: refetchAllUsers } = useAdminList<any, string | undefined>(
     [QUERY_KEYS.ADMIN_USERS],
     () => adminApi.listUsers({ limit: 200 }),
     undefined
@@ -112,6 +116,10 @@ export function UserManagement() {
   const createFacultyModal = useDialogState();
   const [pendingAction, setPendingAction] = useState<UpdateActionPayload | null>(null);
 
+  // Edit User modal state
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [isSavingUser, setIsSavingUser] = useState(false);
+
   const handleStudentAction = (student: StudentItemResponse, actionType: 'approve' | 'reject') => {
     if (actionType === 'approve') {
       setPendingAction({
@@ -125,6 +133,42 @@ export function UserManagement() {
         payload: { account_status: 'rejected' },
         label: `Reject student application for ${student.name}`,
       });
+    }
+  };
+
+  const handleSaveUser = async (payload: {
+    userId: string;
+    userData: any;
+    profileData?: any;
+    profileType?: 'student' | 'faculty';
+  }) => {
+    setIsSavingUser(true);
+    try {
+      // 1. Update core user details
+      await adminApi.updateUser(payload.userId, payload.userData);
+
+      // 2. Update specific profile if provided
+      if (payload.profileType === 'student' && payload.profileData) {
+        await adminApi.updateStudentDetails(payload.userId, payload.profileData);
+      } else if (payload.profileType === 'faculty' && payload.profileData) {
+        await adminApi.updateFaculty(payload.userId, payload.profileData);
+      }
+
+      toast.success('User updated successfully');
+      setEditingUser(null);
+
+      // Invalidate queries to refresh lists
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_USERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FACULTY] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMINS] });
+      refetchAllUsers();
+      refetchStudents();
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.error || err?.message || 'Failed to update user details';
+      toast.error(errorMsg);
+    } finally {
+      setIsSavingUser(false);
     }
   };
 
@@ -172,6 +216,27 @@ export function UserManagement() {
       sortable: true,
       width: '130px',
       align: 'center',
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (_, row) => (
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <PermissionGuard permission={PERMISSIONS.USER.EDIT}>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              title="Edit User Account"
+              onClick={() => setEditingUser(row)}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          </PermissionGuard>
+        </div>
+      ),
+      width: '80px',
+      align: 'right',
     },
   ];
 
@@ -240,19 +305,30 @@ export function UserManagement() {
       header: 'Actions',
       cell: (_, row) => (
         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <PermissionGuard permission={PERMISSIONS.USER.EDIT}>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              title="Edit Student Profile"
+              onClick={() => setEditingUser(row)}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          </PermissionGuard>
           {row.account_status === 'pending' && (
             <>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 hover:bg-emerald-50" onClick={() => handleStudentAction(row, 'approve')}>
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 hover:bg-emerald-50" title="Approve Student" onClick={() => handleStudentAction(row, 'approve')}>
                 <CheckCircle2 className="h-3.5 w-3.5" />
               </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => handleStudentAction(row, 'reject')}>
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10" title="Reject Student" onClick={() => handleStudentAction(row, 'reject')}>
                 <ShieldAlert className="h-3.5 w-3.5" />
               </Button>
             </>
           )}
         </div>
       ),
-      width: '90px',
+      width: '100px',
       align: 'right',
     },
   ];
@@ -316,6 +392,27 @@ export function UserManagement() {
       sortable: true,
       width: '120px',
       align: 'center',
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (_, row) => (
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <PermissionGuard permission={PERMISSIONS.USER.EDIT}>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              title="Edit Faculty / Staff Profile"
+              onClick={() => setEditingUser(row)}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          </PermissionGuard>
+        </div>
+      ),
+      width: '80px',
+      align: 'right',
     },
   ];
 
@@ -510,6 +607,16 @@ export function UserManagement() {
           setPendingAction(null);
           refetchStudents();
         }}
+      />
+
+      {/* User Edit Modal */}
+      <UserEditModal
+        isOpen={!!editingUser}
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+        departments={departments}
+        onSave={handleSaveUser}
+        isPending={isSavingUser}
       />
     </div>
   );

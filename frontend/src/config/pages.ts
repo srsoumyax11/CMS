@@ -168,7 +168,30 @@ export const PAGES_CONFIG: Record<string, PageMetadata> = {
     showInSidebar: true,
     order: 2,
   },
+  'campus.gate_passes': {
+    id: 'campus.gate_passes',
+    path: '/gate-passes',
+    title: 'Gate Passes',
+    description: 'Request day/night out leave passes, review pending requests, or scan gate codes.',
+    section: 'Campus Operations',
+    icon: Key,
+    allowedRoles: ['admin', 'staff', 'student', 'faculty', 'user'],
+    showInSidebar: true,
+    order: 3,
+  },
   // --- Campus Facilities ---
+  'admin.hostels': {
+    id: 'admin.hostels',
+    path: '/admin/hostels',
+    title: 'Hostel Management',
+    description: 'Manage hostel buildings, room allocations, occupancy, and warden assignments.',
+    section: 'Campus Facilities',
+    icon: Building2,
+    allowedRoles: ['admin', 'staff'],
+    requiredPermissions: ['hostel:manage'],
+    showInSidebar: true,
+    order: 1,
+  },
   // --- Administration & System ---
   'admin.all_users': {
     id: 'admin.all_users',

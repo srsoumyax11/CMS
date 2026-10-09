@@ -20,7 +20,7 @@ export const ROLE_ROUTES: Record<UserType, string> = {
   admin: '/admin',
   user: '/user',
   parent: '/parent',
-  staff: '/staff', // added staff just in case
+  staff: '/admin',
 };
 
 export const ROLE_LABELS: Record<UserType, string> = {

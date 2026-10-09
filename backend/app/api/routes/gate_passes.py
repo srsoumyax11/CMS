@@ -13,7 +13,7 @@ from app.services.gate_pass_service import GatePassService
 router = APIRouter(tags=["Gate Passes"])
 
 @router.post(
-    "",
+    "/",
     summary="Request Gate Pass",
     description="Creates a new gate pass request for a student. **Requires:** `gatepass:create`",
     response_model=APIResponse[GatePassResponse]
@@ -26,7 +26,7 @@ async def request_gate_pass(
     service = GatePassService(uow)
     try:
         gate_pass = await service.request_gate_pass(current_user.id, req.model_dump())
-        return APIResponse(success=True, data=GatePassResponse.model_validate(gate_pass))
+        return APIResponse(success=True, data=gate_pass)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -44,25 +44,24 @@ async def get_my_gate_passes(
 ):
     service = GatePassService(uow)
     passes, total = await service.get_student_passes(current_user.id, skip, limit)
-    items = [GatePassResponse.model_validate(p) for p in passes]
-    return APIResponse(success=True, data=GatePassListResponse(total=total, items=items))
+    return APIResponse(success=True, data=GatePassListResponse(total=total, items=passes))
 
 @router.get(
-    "",
+    "/",
     summary="List All Gate Passes",
     description="Fetches all gate passes for review. **Requires:** `gatepass:review`",
     response_model=APIResponse[GatePassListResponse]
 )
 async def list_gate_passes(
+    status_filter: Optional[str] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     uow: UnitOfWork = Depends(get_uow),
     _: User = Depends(require_permission(Perms.GATEPASS_REVIEW))
 ):
     service = GatePassService(uow)
-    passes, total = await service.list_all_passes(skip, limit)
-    items = [GatePassResponse.model_validate(p) for p in passes]
-    return APIResponse(success=True, data=GatePassListResponse(total=total, items=items))
+    passes, total = await service.list_all_passes(status_filter, skip, limit)
+    return APIResponse(success=True, data=GatePassListResponse(total=total, items=passes))
 
 @router.patch(
     "/{pass_id}/review",
@@ -79,7 +78,7 @@ async def review_gate_pass(
     service = GatePassService(uow)
     try:
         gate_pass = await service.review_gate_pass(current_user.id, pass_id, req.status, req.note)
-        return APIResponse(success=True, data=GatePassResponse.model_validate(gate_pass))
+        return APIResponse(success=True, data=gate_pass)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -97,7 +96,7 @@ async def mark_exit(
     service = GatePassService(uow)
     try:
         gate_pass = await service.mark_exit(current_user.id, req.pass_code)
-        return APIResponse(success=True, data=GatePassResponse.model_validate(gate_pass))
+        return APIResponse(success=True, data=gate_pass)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -115,6 +114,6 @@ async def mark_return(
     service = GatePassService(uow)
     try:
         gate_pass = await service.mark_return(current_user.id, req.pass_code)
-        return APIResponse(success=True, data=GatePassResponse.model_validate(gate_pass))
+        return APIResponse(success=True, data=gate_pass)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

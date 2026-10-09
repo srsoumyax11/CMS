@@ -195,6 +195,19 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             )
             raise e
 
+class TrailingSlashNormalizerMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.scope.get("path", "")
+        if path and path.startswith("/api/"):
+            routes = {r.path for r in request.app.routes if hasattr(r, "path")}
+            if path not in routes:
+                if not path.endswith("/") and (path + "/") in routes:
+                    request.scope["path"] = path + "/"
+                elif path.endswith("/") and path[:-1] in routes:
+                    request.scope["path"] = path[:-1]
+        return await call_next(request)
+
+app.add_middleware(TrailingSlashNormalizerMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 
 

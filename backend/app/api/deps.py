@@ -138,7 +138,7 @@ def require_permission(permission_code: str) -> Callable:
         if permission_code not in user_permissions:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authenticated / Unauthorized"
+                detail="Forbidden: Insufficient permissions for this action"
             )
         return current_user
     return dependency
@@ -147,7 +147,7 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if current_user.user_type != UserType.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authenticated / Unauthorized"
+            detail="Forbidden: Administrative privileges required"
         )
     return current_user
 

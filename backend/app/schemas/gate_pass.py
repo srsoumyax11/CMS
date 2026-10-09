@@ -41,8 +41,14 @@ class GatePassResponse(BaseModel):
     marked_out_by: Optional[UUID]
     marked_in_by: Optional[UUID]
     parent_notified: bool
-    created_at: datetime
-    updated_at: datetime
+    student_name: Optional[str] = None
+    student_email: Optional[str] = None
+    roll_number: Optional[str] = None
+    hostel_name: Optional[str] = None
+    room_number: Optional[str] = None
+    approver_name: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
 

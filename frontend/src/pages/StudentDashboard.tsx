@@ -14,9 +14,10 @@ import {
   BookOpen,
   ChevronRight,
   LayoutDashboard,
+  Key,
   type LucideIcon,
 } from 'lucide-react';
-
+import { StudentHostelCard } from '@/components/StudentHostelCard';
 
 export function StudentDashboard() {
 
@@ -27,7 +28,9 @@ export function StudentDashboard() {
   const quickLinks = [
     { icon: Megaphone, label: 'Notices', desc: 'Announcements', path: `${basePath}/notices` },
     { icon: ClipboardList, label: 'Complaints', desc: 'Track issues', path: `${basePath}/complaints` },
-    ];
+    { icon: CalendarDays, label: 'Timetable', desc: 'Schedule', path: `${basePath}/timetable` },
+    { icon: Key, label: 'Gate Passes', desc: 'Leave passes', path: '/gate-passes' },
+  ];
 
   const { data: noticesResp } = useQuery({
     queryKey: ['student-notices-recent'],
@@ -97,7 +100,9 @@ export function StudentDashboard() {
       </div>
 
       {user.account_status === 'active' && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <StudentHostelCard />
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* My Requests Column */}
           <div className="space-y-6">
             <div className="rounded-xl border bg-card p-5 shadow-sm flex flex-col h-full">
@@ -154,6 +159,7 @@ export function StudentDashboard() {
               )}
             </div>
           </div>
+        </div>
         </div>
       )}
     </div>

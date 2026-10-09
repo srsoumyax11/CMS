@@ -67,3 +67,15 @@ class RoomAllocationResponse(BaseModel):
     student_user_id: UUID
     hostel_id: UUID
     room_number: str
+
+class StudentHostelAllocationResponse(BaseModel):
+    hostel_id: Optional[UUID] = None
+    building_name: Optional[str] = None
+    room_number: Optional[str] = None
+    room_capacity: int = 2
+    occupied_count: int = 0
+    status: str = "allocated"
+    allocated_at: Optional[datetime] = None
+    warden_name: Optional[str] = None
+    warden_email: Optional[str] = None
+

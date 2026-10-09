@@ -10,11 +10,25 @@ from app.schemas.common import APIResponse
 from app.schemas.hostel import (
     HostelCreate, HostelUpdate, HostelResponse, HostelListResponse,
     HostelRoomCreate, HostelRoomUpdate, HostelRoomResponse, HostelRoomListResponse,
-    RoomAllocationRequest, RoomAllocationResponse
+    RoomAllocationRequest, RoomAllocationResponse, StudentHostelAllocationResponse
 )
 from app.services.hostel_service import HostelService
 
 router = APIRouter(tags=["Hostels"])
+
+@router.get(
+    "/mine",
+    summary="Get My Hostel Allocation",
+    description="Retrieves active hostel allocation for authenticated student.",
+    response_model=APIResponse[Optional[StudentHostelAllocationResponse]]
+)
+async def get_my_hostel_allocation(
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(get_current_user)
+):
+    service = HostelService(uow)
+    res = await service.get_my_allocation(current_user.id)
+    return APIResponse(success=True, data=res)
 
 @router.post(
     "/",

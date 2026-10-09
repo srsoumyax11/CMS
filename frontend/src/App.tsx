@@ -48,6 +48,10 @@ const AcademicManagement = React.lazy(() => import('@/pages/admin/AcademicManage
 const PersonalTimetable = React.lazy(() => import('@/pages/timetable/PersonalTimetable').then(module => ({ default: module.PersonalTimetable })));
 const TimetableManagement = React.lazy(() => import('@/pages/admin/TimetableManagement').then(module => ({ default: module.TimetableManagement })));
 
+// Hostels & Gate Passes
+const HostelManagement = React.lazy(() => import('@/pages/admin/HostelManagement').then(module => ({ default: module.HostelManagement })));
+const GatePassManagement = React.lazy(() => import('@/pages/gate-passes/GatePassManagement').then(module => ({ default: module.GatePassManagement })));
+
 function RoleRedirect() {
   const { role } = useAuth();
   const target = role && ROLE_ROUTES[role] ? ROLE_ROUTES[role] : '/login';
@@ -60,6 +64,7 @@ export function UserRoutes() {
       <Routes>
         <Route index element={<UserDashboard />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="gate-passes" element={<GatePassManagement />} />
       </Routes>
     </Suspense>
   );
@@ -73,6 +78,7 @@ export function StudentRoutes() {
       <Route path="notices" element={<NoticeList />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
       <Route path="timetable" element={<PersonalTimetable />} />
+      <Route path="gate-passes" element={<GatePassManagement />} />
       <Route path="complaints" element={<MyComplaints />} />
       <Route path="complaints/new" element={<ComplaintCreate />} />
       <Route path="complaints/:id" element={<ComplaintDetail />} />
@@ -91,6 +97,7 @@ export function FacultyRoutes() {
       <Route path="notices/new" element={<NoticeCreate />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
       <Route path="timetable" element={<PersonalTimetable />} />
+      <Route path="gate-passes" element={<GatePassManagement />} />
       <Route path="complaints" element={<MyComplaints />} />
       <Route path="complaints/:id" element={<ComplaintDetail />} />
       <Route path="profile" element={<Profile />} />
@@ -117,6 +124,8 @@ export function AdminRoutes() {
       <Route path="permissions" element={<RolesPermissions />} />
       <Route path="academic" element={<AcademicManagement />} />
       <Route path="timetable" element={<TimetableManagement />} />
+      <Route path="hostels" element={<HostelManagement />} />
+      <Route path="gate-passes" element={<GatePassManagement />} />
       <Route path="departments" element={<Navigate to="/admin/academic?tab=departments" replace />} />
       <Route path="courses" element={<Navigate to="/admin/academic?tab=courses" replace />} />
       <Route path="terms" element={<Navigate to="/admin/academic?tab=terms" replace />} />
@@ -150,6 +159,7 @@ function AppRoutes() {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<RoleRedirect />} />
+          <Route path="/gate-passes" element={<GatePassManagement />} />
 
           <Route element={<ProtectedRoute allowedRoles={['user', 'parent']} />}>
 
@@ -167,6 +177,7 @@ function AppRoutes() {
 
           <Route element={<ProtectedRoute allowedRoles={['admin', 'staff']} />}>
             <Route path="/admin/*" element={<AdminRoutes />} />
+            <Route path="/staff/*" element={<AdminRoutes />} />
           </Route>
         </Route>
       </Route>

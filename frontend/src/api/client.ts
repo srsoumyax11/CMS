@@ -22,6 +22,42 @@ client.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Auto-normalize trailing slashes for collection routes to prevent 307 redirects & auth header stripping
+    if (config.url && typeof config.url === 'string') {
+      const [path, queryString] = config.url.split('?');
+      // If path is a collection route endpoint without trailing slash or extension
+      if (
+        path.startsWith('/api/') &&
+        !path.endsWith('/') &&
+        !path.split('/').pop()?.includes('.')
+      ) {
+        // List of endpoints that expect trailing slash in FastAPI router definitions
+        const trailingSlashEndpoints = [
+          '/api/hostels',
+          '/api/gate-passes',
+          '/api/complaints',
+          '/api/notices',
+          '/api/notifications',
+          '/api/applications',
+          '/api/roles',
+          '/api/admin/users',
+          '/api/academic/departments',
+          '/api/academic/courses',
+          '/api/academic/terms',
+          '/api/academic/subjects',
+          '/api/academic/class-groups',
+          '/api/academic/holidays',
+          '/api/documents/types',
+          '/api/documents/requests',
+        ];
+
+        if (trailingSlashEndpoints.includes(path)) {
+          config.url = queryString ? `${path}/?${queryString}` : `${path}/`;
+        }
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

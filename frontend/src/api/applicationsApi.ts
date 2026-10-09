@@ -8,7 +8,7 @@ export interface RoleApplicationData {
   applicant_name?: string | null;
   applicant_email?: string | null;
   target_role: string;
-  status: 'pending' | 'approved' | 'rejected' | 'revision';
+  status: 'pending' | 'submitted' | 'approved' | 'rejected' | 'revision';
   application_data: Record<string, any>;
   admin_notes?: string | null;
   reviewed_by?: string | null;

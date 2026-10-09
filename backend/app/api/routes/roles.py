@@ -14,7 +14,7 @@ from pydantic import BaseModel
 router = APIRouter()
 
 @router.get(
-    "", 
+    "/", 
     summary="List All Roles", 
     description="Returns all system roles and their assigned permissions. **Requires:** `role:list`",
     response_model=APIResponse[List[RoleResponse]]
@@ -42,7 +42,7 @@ async def get_permission_matrix(
     return APIResponse(success=True, data=data, error=None)
 
 @router.post(
-    "", 
+    "/", 
     summary="Create Role", 
     description="Creates a new custom role with specific permissions. **Requires:** `role:create`",
     response_model=APIResponse[RoleResponse]
