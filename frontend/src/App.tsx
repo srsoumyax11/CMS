@@ -33,7 +33,7 @@ const ComplaintDetail = React.lazy(() => import('@/pages/complaints/ComplaintDet
 
 
 
-// Admin
+const UserManagement = React.lazy(() => import('@/pages/admin/UserManagement').then(module => ({ default: module.UserManagement })));
 const StudentManagement = React.lazy(() => import('@/pages/admin/StudentManagement').then(module => ({ default: module.StudentManagement })));
 const AllUsersManagement = React.lazy(() => import('@/pages/admin/AllUsersManagement').then(module => ({ default: module.AllUsersManagement })));
 const FacultyManagement = React.lazy(() => import('@/pages/admin/FacultyManagement').then(module => ({ default: module.FacultyManagement })));
@@ -110,9 +110,10 @@ export function AdminRoutes() {
       <Route path="role-applications" element={<RoleApplicationsManagement />} />
       <Route path="complaints" element={<ComplaintManagement />} />
       <Route path="complaints/:id" element={<ComplaintDetail />} />
-      <Route path="students" element={<StudentManagement />} />
-      <Route path="users" element={<FacultyManagement />} />
-      <Route path="all-users" element={<AllUsersManagement />} />
+      <Route path="students" element={<Navigate to="/admin/users?tab=student" replace />} />
+      <Route path="users" element={<UserManagement />} />
+      <Route path="all-users" element={<Navigate to="/admin/users?tab=all" replace />} />
+      <Route path="faculty" element={<Navigate to="/admin/users?tab=faculty" replace />} />
       <Route path="permissions" element={<RolesPermissions />} />
       <Route path="academic" element={<AcademicManagement />} />
       <Route path="timetable" element={<TimetableManagement />} />
