@@ -33,3 +33,12 @@ class RoleApplication(Base):
     user = relationship("User", foreign_keys=[user_id], back_populates="role_applications")
     role = relationship("Role")
     reviewer = relationship("User", foreign_keys=[reviewed_by])
+
+    @property
+    def created_at(self) -> datetime:
+        return self.submitted_at
+
+    @property
+    def updated_at(self) -> Optional[datetime]:
+        return self.reviewed_at or self.submitted_at
+

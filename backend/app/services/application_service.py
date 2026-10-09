@@ -32,8 +32,10 @@ class ApplicationService:
             if req.role_id:
                 role = await u.roles.get_by_id(req.role_id)
             elif req.target_role:
-                target_code = req.target_role.lower()
+                target_code = req.target_role.strip().upper()
                 roles, _ = await u.roles.list(filters={"code": target_code})
+                if not roles:
+                    roles, _ = await u.roles.list(filters={"code": target_code.lower()})
                 role = roles[0] if roles else None
 
             if not role:
@@ -54,12 +56,12 @@ class ApplicationService:
             await u.users.update(db_user, {})
 
             audit = AuditLog(
-                user_id=db_user.id,
-                permission_code="role_application.submit",
+                actor_id=db_user.id,
+                resource_type="RoleApplication",
+                resource_id=app.id,
                 action="submit",
-                target_type="RoleApplication",
-                target_id=str(app.id),
-                result="ALLOWED"
+                new_values={"target_role": role.code, "status": app.status.value},
+                reason="Submitted role application"
             )
             await u.audit_logs.create(audit)
 
@@ -70,8 +72,8 @@ class ApplicationService:
                 status=app.status.value,
                 application_data=app.form_data or {},
                 admin_notes=app.review_note,
-                created_at=app.created_at,
-                updated_at=app.updated_at
+                created_at=app.submitted_at,
+                updated_at=app.reviewed_at or app.submitted_at
             )
 
     async def get_my_status(self, user: User) -> Optional[RoleApplicationResponse]:
@@ -80,7 +82,7 @@ class ApplicationService:
             if not apps:
                 return None
             
-            app = sorted(apps, key=lambda x: x.created_at, reverse=True)[0]
+            app = sorted(apps, key=lambda x: x.submitted_at, reverse=True)[0]
             role = await u.roles.get_by_id(app.role_id)
             target_role = role.code if role else "UNKNOWN"
             
@@ -91,13 +93,12 @@ class ApplicationService:
                 status=app.status.value,
                 application_data=app.form_data or {},
                 admin_notes=app.review_note,
-                created_at=app.created_at,
-                updated_at=app.updated_at
+                created_at=app.submitted_at,
+                updated_at=app.reviewed_at or app.submitted_at
             )
 
     async def list_applications(self, status: Optional[str] = None, skip: int = 0, limit: int = 50) -> List[RoleApplicationResponse]:
         async with self.uow.transaction() as u:
-            # We would add skip/limit to list() if supported, assuming it filters.
             kwargs = {}
             if status:
                 kwargs["status"] = status
@@ -107,12 +108,12 @@ class ApplicationService:
                 RoleApplicationResponse(
                     id=app.id,
                     user_id=app.user_id,
-                    target_role="UNKNOWN", # Should join Roles to get this, keeping UNKNOWN for list to save queries
+                    target_role="UNKNOWN",
                     status=app.status.value,
                     application_data=app.form_data or {},
                     admin_notes=app.review_note,
-                    created_at=app.created_at,
-                    updated_at=app.updated_at
+                    created_at=app.submitted_at,
+                    updated_at=app.reviewed_at or app.submitted_at
                 ) for app in apps
             ]
 
@@ -204,12 +205,12 @@ class ApplicationService:
             await u.notifications.create(notif)
 
             audit = AuditLog(
-                user_id=reviewer.id,
-                permission_code="role_application.approve",
+                actor_id=reviewer.id,
+                resource_type="RoleApplication",
+                resource_id=app.id,
                 action="approve",
-                target_type="RoleApplication",
-                target_id=str(app.id),
-                result="ALLOWED"
+                new_values={"status": app.status.value, "target_user_id": str(target_user.id)},
+                reason=admin_notes or "Approved role application"
             )
             await u.audit_logs.create(audit)
 
@@ -220,8 +221,8 @@ class ApplicationService:
                 status=app.status.value,
                 application_data=app.form_data or {},
                 admin_notes=app.review_note,
-                created_at=app.created_at,
-                updated_at=app.updated_at
+                created_at=app.submitted_at,
+                updated_at=app.reviewed_at or app.submitted_at
             )
 
     async def reject_application(self, app_id: UUID, reviewer: User, admin_notes: Optional[str], background_tasks: BackgroundTasks) -> RoleApplicationResponse:
@@ -246,12 +247,12 @@ class ApplicationService:
             await u.users.update(target_user, {})
 
             audit = AuditLog(
-                user_id=reviewer.id,
-                permission_code="role_application.reject",
+                actor_id=reviewer.id,
+                resource_type="RoleApplication",
+                resource_id=app.id,
                 action="reject",
-                target_type="RoleApplication",
-                target_id=str(app.id),
-                result="ALLOWED"
+                new_values={"status": app.status.value, "target_user_id": str(target_user.id)},
+                reason=admin_notes or "Rejected role application"
             )
             await u.audit_logs.create(audit)
 
@@ -262,6 +263,6 @@ class ApplicationService:
                 status=app.status.value,
                 application_data=app.form_data or {},
                 admin_notes=app.review_note,
-                created_at=app.created_at,
-                updated_at=app.updated_at
+                created_at=app.submitted_at,
+                updated_at=app.reviewed_at or app.submitted_at
             )

@@ -32,12 +32,12 @@ class CommunicationService:
             notice = await u.notices.create(notice)
             
             audit = AuditLog(
-                user_id=author.id,
-                permission_code="notice.create",
+                actor_id=author.id,
+                resource_type="Notice",
+                resource_id=notice.id,
                 action="create",
-                target_type="Notice",
-                target_id=str(notice.id),
-                result="ALLOWED"
+                new_values={"title": notice.title},
+                reason="Created official notice"
             )
             await u.audit_logs.create(audit)
             return notice
@@ -123,12 +123,12 @@ class CommunicationService:
             u.db.add(log)
             
             audit = AuditLog(
-                user_id=admin_user.id,
-                permission_code="complaint.update",
+                actor_id=admin_user.id,
+                resource_type="Complaint",
+                resource_id=complaint.id,
                 action="update",
-                target_type="Complaint",
-                target_id=str(complaint.id),
-                result="ALLOWED"
+                new_values={"status": complaint.status.value},
+                reason=admin_notes or "Updated complaint status"
             )
             await u.audit_logs.create(audit)
             return complaint

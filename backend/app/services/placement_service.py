@@ -60,11 +60,11 @@ class PlacementService:
 
     async def apply_for_drive(self, student_user_id: UUID, notice_id: UUID, app_in: PlacementApplicationCreate) -> PlacementApplication:
         async with self.uow.transaction() as u:
-            notice = await u.placement_notices.get_by_id(notice_id)
-            if not notice or notice.status != PlacementStatus.published:
+            p_notice = await u.placement_notices.get_by_id(notice_id)
+            if not p_notice or p_notice.status != PlacementStatus.published:
                 raise ValueError("Placement notice not available for application.")
 
-            if notice.last_date and date.today() > notice.last_date:
+            if p_notice.last_date and date.today() > p_notice.last_date:
                 raise ValueError("Application deadline for this placement drive has passed.")
 
             existing = await u.placement_applications.get_by_student_and_notice(student_user_id, notice_id)
@@ -80,13 +80,13 @@ class PlacementService:
                 student_cgpa = getattr(profile, "cgpa", None)
                 student_batch_year = getattr(profile, "batch_year", None)
 
-                if notice.min_cgpa is not None and student_cgpa is not None:
-                    if float(student_cgpa) < notice.min_cgpa:
-                        raise ValueError(f"Ineligible: Minimum required CGPA is {notice.min_cgpa}, but your CGPA is {student_cgpa}.")
+                if p_notice.min_cgpa is not None and student_cgpa is not None:
+                    if float(student_cgpa) < p_notice.min_cgpa:
+                        raise ValueError(f"Ineligible: Minimum required CGPA is {p_notice.min_cgpa}, but your CGPA is {student_cgpa}.")
                 
-                if notice.passout_year is not None and student_batch_year is not None:
-                    if int(student_batch_year) != notice.passout_year:
-                        raise ValueError(f"Ineligible: Target passout year is {notice.passout_year}.")
+                if p_notice.passout_year is not None and student_batch_year is not None:
+                    if int(student_batch_year) != p_notice.passout_year:
+                        raise ValueError(f"Ineligible: Target passout year is {p_notice.passout_year}.")
 
 
             application = PlacementApplication(
