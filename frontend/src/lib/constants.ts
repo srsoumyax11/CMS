@@ -35,6 +35,7 @@ export const API_ROUTES = {
 
   // Complaints
   COMPLAINTS: '/api/complaints',
+  ADMIN_COMPLAINTS: '/api/complaints',
   MY_COMPLAINTS: '/api/complaints/mine',
   PUBLIC_COMPLAINTS: '/api/complaints/public',
   COMPLAINT_DETAIL: (id: string) => `/api/complaints/${id}`,
@@ -66,7 +67,7 @@ export const API_ROUTES = {
   DOCUMENT_TYPES: '/api/documents/types',
   DOCUMENT_REQUESTS: '/api/documents/requests',
   DOCUMENT_REQUEST_DETAIL: (id: string) => `/api/documents/requests/${id}`,
-  DOCUMENT_REQUEST_APPROVE: (id: string) => `/api/documents/requests/${id}/approve`,
+  DOCUMENT_REQUEST_APPROVE: (id: string) => `/api/documents/requests/${id}/review`,
   DOCUMENT_VERIFY: (code: string) => `/api/documents/verify/${code}`,
 
   // Placements
@@ -94,6 +95,7 @@ export const API_ROUTES = {
   MY_SCHEDULE: '/api/timetable/mine',
 
   // Attendance
+  ATTENDANCE_ROSTER: '/api/attendance/roster',
   ATTENDANCE_SESSIONS: '/api/attendance/sessions',
   ATTENDANCE_RECORDS: '/api/attendance/records',
   MY_ATTENDANCE_STATS: '/api/attendance/mine/stats',
@@ -202,6 +204,9 @@ export const QUERY_KEYS = {
   AI_CONVERSATIONS: 'ai-conversations',
   SYSTEM_SETTINGS: 'system-settings',
   ADMIN_USERS: 'admin-users',
+  RECURRING_ISSUES: 'recurring-issues',
+  AGEING_COMPLAINTS: 'ageing-complaints',
+  PERMISSION_MATRIX: 'permission-matrix',
 } as const;
 
 export const DEFAULT_PAGE_SIZE = 20;

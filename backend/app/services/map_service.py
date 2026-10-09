@@ -12,6 +12,13 @@ class MapService:
     def __init__(self, uow: UnitOfWork):
         self.uow = uow
 
+    async def get_location(self, loc_id: UUID) -> MapLocation:
+        async with self.uow.transaction() as u:
+            loc = await u.map_locations.get_by_id(loc_id)
+            if not loc:
+                raise ValueError("Map location not found.")
+            return loc
+
     async def create_location(self, loc_in: MapLocationCreate) -> MapLocation:
         async with self.uow.transaction() as u:
             if await u.map_locations.get_by_code(loc_in.code):
@@ -40,8 +47,16 @@ class MapService:
                 raise ValueError("Map location not found.")
             return await u.map_locations.update(loc, loc_in.model_dump(exclude_unset=True))
 
+    async def delete_location(self, loc_id: UUID) -> bool:
+        async with self.uow.transaction() as u:
+            loc = await u.map_locations.get_by_id(loc_id)
+            if not loc:
+                raise ValueError("Map location not found.")
+            return await u.map_locations.delete(loc_id)
+
     async def list_locations(
         self,
+        q: Optional[str] = None,
         location_type: Optional[LocationType] = None,
         floor: Optional[int] = None,
         parent_id: Optional[UUID] = None,
@@ -50,6 +65,7 @@ class MapService:
     ) -> Tuple[List[MapLocation], int]:
         async with self.uow.transaction() as u:
             return await u.map_locations.list_locations(
+                q=q,
                 location_type=location_type,
                 floor=floor,
                 parent_id=parent_id,
@@ -72,6 +88,13 @@ class MapService:
                 accessible=path_in.accessible
             )
             return await u.map_paths.create(path)
+
+    async def delete_path(self, path_id: UUID) -> bool:
+        async with self.uow.transaction() as u:
+            path = await u.map_paths.get_by_id(path_id)
+            if not path:
+                raise ValueError("Navigation path edge not found.")
+            return await u.map_paths.delete(path_id)
 
     async def calculate_shortest_path(self, from_id: UUID, to_id: UUID) -> RouteResponse:
         async with self.uow.transaction() as u:
@@ -135,17 +158,19 @@ class MapService:
 
             path_ids.reverse()
 
-            # Map to RouteStep objects
-            steps = []
-            for node_id in path_ids:
-                loc_obj = await u.map_locations.get_by_id(node_id)
-                if loc_obj:
-                    steps.append(RouteStep(
-                        location_id=loc_obj.id,
-                        name=loc_obj.name,
-                        type=loc_obj.type,
-                        floor=loc_obj.floor
-                    ))
+            # Batch fetch all node objects in 1 single DB query (prevents N+1 query loop)
+            loc_objects = await u.map_locations.get_by_ids(path_ids)
+            loc_map = {loc.id: loc for loc in loc_objects}
+
+            steps = [
+                RouteStep(
+                    location_id=loc_map[node_id].id,
+                    name=loc_map[node_id].name,
+                    type=loc_map[node_id].type,
+                    floor=loc_map[node_id].floor
+                )
+                for node_id in path_ids if node_id in loc_map
+            ]
 
             total_dist = round(distances[to_id], 1)
             return RouteResponse(
@@ -154,3 +179,4 @@ class MapService:
                 steps=steps,
                 message=f"Walking route found ({total_dist} meters, {len(steps)} steps)."
             )
+

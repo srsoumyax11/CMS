@@ -12,7 +12,7 @@ export function StudentHostelCard() {
     retry: 1,
   });
 
-  const alloc = data?.data?.data;
+  const alloc = data?.data;
 
   if (isLoading) {
     return (
@@ -71,7 +71,12 @@ export function StudentHostelCard() {
           <Calendar className="h-4 w-4 text-primary shrink-0" />
           <div>
             <span className="block font-semibold text-foreground">Allocated On</span>
-            <span>{alloc.allocated_at || alloc.created_at ? format(new Date(alloc.allocated_at || alloc.created_at), 'MMM d, yyyy') : 'N/A'}</span>
+            <span>
+              {(() => {
+                const dateVal = alloc.allocated_at || alloc.created_at;
+                return dateVal ? format(new Date(dateVal), 'MMM d, yyyy') : 'N/A';
+              })()}
+            </span>
           </div>
         </div>
       </CardContent>

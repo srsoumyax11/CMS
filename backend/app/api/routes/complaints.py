@@ -33,6 +33,8 @@ async def create_complaint(
     category: ComplaintCategory = Form(...),
     hostel_id: Optional[UUID] = Form(None),
     room_number: Optional[str] = Form(None),
+    location_hostel: Optional[str] = Form(None),
+    location_room: Optional[str] = Form(None),
     description: str = Form(...),
     visibility: ComplaintVisibility = Form(ComplaintVisibility.public),
     photo: Optional[UploadFile] = File(None),
@@ -64,11 +66,19 @@ async def create_complaint(
             logging.getLogger(__name__).error(f"Complaint photo upload error: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail="Failed to upload complaint evidence")
 
+    effective_room = room_number or location_room
+    effective_hostel_id = hostel_id
+    if not effective_hostel_id and location_hostel:
+        try:
+            effective_hostel_id = UUID(location_hostel)
+        except ValueError:
+            pass
+
     complaint = Complaint(
         raised_by=current_user.id,
         category=category,
-        hostel_id=hostel_id,
-        room_number=room_number,
+        hostel_id=effective_hostel_id,
+        room_number=effective_room,
         description=description,
         visibility=visibility,
         photo_url=photo_path,
@@ -79,8 +89,9 @@ async def create_complaint(
     if complaint:
         await uow.db.refresh(complaint)
         
-    # Re-fetch for response mapping if needed, or construct response
     response_data = ComplaintResponse.model_validate(complaint)
+    response_data.location_hostel = str(complaint.hostel_id) if complaint.hostel_id else location_hostel
+    response_data.location_room = complaint.room_number or location_room
     if response_data.photo_url:
         response_data.photo_url = get_signed_url("complaint-attachments", str(response_data.photo_url))
         
@@ -312,8 +323,8 @@ async def get_ageing_analytics(
         items.append(AgeingComplaintResponse(
             id=c.id,
             category=c.category,
-            location_hostel=c.location_hostel,
-            location_room=c.location_room,
+            location_hostel=str(c.hostel_id) if c.hostel_id else "N/A",
+            location_room=c.room_number,
             status=c.status,
             created_at=c.created_at,
             age_days=age_days

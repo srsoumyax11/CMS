@@ -15,6 +15,7 @@ import {
   ChevronRight,
   LayoutDashboard,
   Key,
+  Compass,
   type LucideIcon,
 } from 'lucide-react';
 import { StudentHostelCard } from '@/components/StudentHostelCard';
@@ -30,7 +31,9 @@ export function StudentDashboard() {
     { icon: ClipboardList, label: 'Complaints', desc: 'Track issues', path: `${basePath}/complaints` },
     { icon: CalendarDays, label: 'Timetable', desc: 'Schedule', path: `${basePath}/timetable` },
     { icon: Key, label: 'Gate Passes', desc: 'Leave passes', path: '/gate-passes' },
+    { icon: Compass, label: 'Campus Map', desc: 'Directions', path: '/map' },
   ];
+
 
   const { data: noticesResp } = useQuery({
     queryKey: ['student-notices-recent'],

@@ -31,12 +31,44 @@ class AttendanceRecordResponse(BaseModel):
     session_id: UUID
     student_user_id: UUID
     status: AttendanceStatus
-    marked_by: UUID
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 class AttendanceRecordListResponse(BaseModel):
     total: int
     items: List[AttendanceRecordResponse]
+
+class AttendanceRosterStudentResponse(BaseModel):
+    student_user_id: UUID
+    student_name: str
+    roll_number: Optional[str] = None
+    status: AttendanceStatus = AttendanceStatus.present
+
+class AttendanceRosterResponse(BaseModel):
+    session_id: Optional[UUID] = None
+    slot_id: UUID
+    subject_name: str
+    subject_code: Optional[str] = None
+    class_group_name: str
+    date: date
+    session_status: str = "OPEN"
+    students: List[AttendanceRosterStudentResponse]
+
+class SubjectAttendanceStatResponse(BaseModel):
+    subject_id: UUID
+    subject_name: str
+    subject_code: Optional[str] = None
+    total_conducted: int
+    total_attended: int
+    percentage: float
+    is_shortage: bool = False
+
+class StudentAttendanceStatsResponse(BaseModel):
+    overall_percentage: float
+    overall_shortage: bool = False
+    total_conducted: int
+    total_attended: int
+    subject_stats: List[SubjectAttendanceStatResponse]
+

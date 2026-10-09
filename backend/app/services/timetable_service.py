@@ -259,7 +259,7 @@ class TimetableService:
                 
                 fac = faculty_map.get(s.faculty_user_id)
                 if fac:
-                    res_obj.faculty_name = fac.full_name
+                    res_obj.faculty_name = fac.name or fac.email
                     
                 rm = room_map.get(s.room_location_id) if s.room_location_id else None
                 if rm:

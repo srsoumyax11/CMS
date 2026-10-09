@@ -150,6 +150,14 @@ export interface RegisterResponseData {
   status: string;
 }
 
+export interface StudentProfileSummary {
+  cgpa?: number | null;
+  department_id?: string | null;
+  course_id?: string | null;
+  passout_year?: number | null;
+  registration_no?: string | null;
+}
+
 export interface UserResponse {
   id: string;
   email: string;
@@ -166,11 +174,34 @@ export interface UserResponse {
   is_2fa_enabled: boolean;
   rbac_roles?: string[];
   permissions?: string[];
+  student_profile?: StudentProfileSummary | null;
+  target_role?: string | null;
 }
 
 export interface UserPreferencesUpdateRequest {
   email_notifications?: boolean;
   in_app_alerts?: boolean;
+}
+
+// ── Notifications ───────────────────────────────────────────────────
+
+export type NotificationType = 'info' | 'success' | 'warning' | 'error';
+
+export interface NotificationResponse {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  link?: string | null;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationListResponse {
+  items: NotificationResponse[];
+  unread_count: number;
 }
 
 export interface EmailUpdateRequest {
@@ -211,8 +242,10 @@ export interface ComplaintResponse {
   id: string;
   raised_by: string;
   category: ComplaintCategory;
-  location_hostel: string;
-  location_room: string | null;
+  hostel_id?: string | null;
+  room_number?: string | null;
+  location_hostel?: string | null;
+  location_room?: string | null;
   description: string;
   photo_url: string | null;
   visibility: ComplaintVisibility;
@@ -229,7 +262,9 @@ export interface ComplaintListResponse {
 
 export interface ComplaintCreateRequest {
   category: ComplaintCategory;
-  location_hostel: string;
+  hostel_id?: string | null;
+  room_number?: string | null;
+  location_hostel?: string;
   location_room?: string | null;
   description: string;
   visibility?: ComplaintVisibility;
@@ -307,33 +342,61 @@ export interface NoticeUpdateRequest {
 
 // ── Attendance ──────────────────────────────────────────────────────
 
-export interface RosterStudent {
-  student_id: string;
-  name: string;
-  roll_number: string;
-}
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
-export interface AttendanceRosterItem {
-  student_id: string;
-  status: 'present' | 'absent' | 'late' | 'excused';
-}
-
-export interface AttendanceBatchRequest {
+export interface AttendanceSessionResponse {
+  id: string;
   slot_id: string;
   date: string;
-  records: AttendanceRosterItem[];
+  taken_by: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface AttendanceStat {
+export interface AttendanceRosterStudent {
+  student_user_id: string;
+  student_name: string;
+  roll_number?: string | null;
+  status: AttendanceStatus;
+}
+
+export interface AttendanceRosterResponse {
+  session_id?: string | null;
+  slot_id: string;
   subject_name: string;
-  total_classes: number;
-  attended: number;
+  subject_code?: string | null;
+  class_group_name: string;
+  date: string;
+  session_status: string;
+  students: AttendanceRosterStudent[];
+}
+
+export interface AttendanceRecordSubmit {
+  student_user_id: string;
+  status: AttendanceStatus;
+}
+
+export interface AttendanceSubmitRequest {
+  records: AttendanceRecordSubmit[];
+}
+
+export interface SubjectAttendanceStat {
+  subject_id: string;
+  subject_name: string;
+  subject_code?: string | null;
+  total_conducted: number;
+  total_attended: number;
   percentage: number;
-  present?: number;
-  absent?: number;
-  late?: number;
-  excused?: number;
-  total?: number;
+  is_shortage: boolean;
+}
+
+export interface StudentAttendanceStatsResponse {
+  overall_percentage: number;
+  overall_shortage: boolean;
+  total_conducted: number;
+  total_attended: number;
+  subject_stats: SubjectAttendanceStat[];
 }
 
 // ── Admin: Students ──────────────────────────────────────────────────
@@ -855,4 +918,232 @@ export interface MyScheduleResponseData {
   slots: TimetableSlot[];
   exceptions: TimetableException[];
 }
+
+// ── Placement Drives & Applications ───────────────────────────────────
+
+export type PlacementStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED';
+export type ApplicationStatus = 'APPLIED' | 'SHORTLISTED' | 'SELECTED' | 'REJECTED';
+
+export interface PlacementNoticeCreateRequest {
+  company: string;
+  title: string;
+  description: string;
+  job_type?: string;
+  package_text?: string | null;
+  eligible_course_ids?: string[] | null;
+  eligible_department_ids?: string[] | null;
+  min_cgpa?: number | null;
+  passout_year?: number | null;
+  last_date?: string | null;
+  drive_date?: string | null;
+  status?: PlacementStatus;
+}
+
+export interface PlacementNoticeUpdateRequest {
+  company?: string;
+  title?: string;
+  description?: string;
+  job_type?: string;
+  package_text?: string | null;
+  eligible_course_ids?: string[] | null;
+  eligible_department_ids?: string[] | null;
+  min_cgpa?: number | null;
+  passout_year?: number | null;
+  last_date?: string | null;
+  drive_date?: string | null;
+  status?: PlacementStatus;
+}
+
+export interface PlacementNoticeResponse {
+  id: string;
+  company: string;
+  title: string;
+  description: string;
+  job_type: string;
+  package_text?: string | null;
+  eligible_course_ids?: string[] | null;
+  eligible_department_ids?: string[] | null;
+  min_cgpa?: number | null;
+  passout_year?: number | null;
+  last_date?: string | null;
+  drive_date?: string | null;
+  status: PlacementStatus;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlacementNoticeListResponse {
+  total: number;
+  items: PlacementNoticeResponse[];
+}
+
+export interface PlacementApplicationCreateRequest {
+  resume_url?: string | null;
+}
+
+export interface PlacementApplicationStatusUpdateRequest {
+  status: ApplicationStatus;
+}
+
+export interface PlacementApplicationResponse {
+  id: string;
+  notice_id: string;
+  student_user_id: string;
+  resume_url?: string | null;
+  status: ApplicationStatus;
+  updated_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlacementApplicationListResponse {
+  total: number;
+  items: PlacementApplicationResponse[];
+}
+
+// ── Silent Mode & iCal Sync ──────────────────────────────────────────
+
+export type SilentMode = 'silent' | 'vibrate' | 'dnd';
+export type SilentSource = 'timetable' | 'custom' | 'hybrid';
+
+export interface UserSilentSettingResponse {
+  id: string;
+  user_id: string;
+  enabled: boolean;
+  mode: SilentMode;
+  source: SilentSource;
+  minutes_before: number;
+  minutes_after: number;
+  allow_emergency: boolean;
+  custom_ranges?: any | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserSilentSettingUpdateRequest {
+  enabled?: boolean;
+  mode?: SilentMode;
+  source?: SilentSource;
+  minutes_before?: number;
+  minutes_after?: number;
+  allow_emergency?: boolean;
+  custom_ranges?: any | null;
+}
+
+export interface SilentScheduleItem {
+  title: string;
+  start_time: string;
+  end_time: string;
+  mode: SilentMode;
+}
+
+export interface SilentScheduleResponse {
+  date: string;
+  items: SilentScheduleItem[];
+}
+
+// ── Campus Map & Navigation Types ─────────────────────────────────────
+export type LocationType =
+  | 'BUILDING'
+  | 'CLASSROOM'
+  | 'LAB'
+  | 'HOSTEL'
+  | 'LIBRARY'
+  | 'CANTEEN'
+  | 'GATE'
+  | 'OFFICE'
+  | 'GROUND'
+  | 'PARKING'
+  | 'STAIRS'
+  | 'ELEVATOR'
+  | 'OTHER';
+
+export interface MapLocationCreateRequest {
+  code: string;
+  name: string;
+  type: LocationType;
+  parent_id?: string | null;
+  floor?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  geometry?: any | null;
+  description?: string | null;
+  image_url?: string | null;
+  is_public?: boolean;
+  status?: boolean;
+}
+
+export interface MapLocationUpdateRequest {
+  name?: string;
+  type?: LocationType;
+  parent_id?: string | null;
+  floor?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  geometry?: any | null;
+  description?: string | null;
+  image_url?: string | null;
+  is_public?: boolean;
+  status?: boolean;
+}
+
+export interface MapLocationResponse {
+  id: string;
+  code: string;
+  name: string;
+  type: LocationType;
+  parent_id?: string | null;
+  floor?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  geometry?: any | null;
+  description?: string | null;
+  image_url?: string | null;
+  is_public: boolean;
+  status: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MapLocationListResponse {
+  total: number;
+  items: MapLocationResponse[];
+}
+
+export interface MapPathCreateRequest {
+  from_location_id: string;
+  to_location_id: string;
+  distance_m?: number | null;
+  path_geojson?: any | null;
+  accessible?: boolean;
+}
+
+export interface MapPathResponse {
+  id: string;
+  from_location_id: string;
+  to_location_id: string;
+  distance_m?: number | null;
+  path_geojson?: any | null;
+  accessible: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RouteStep {
+  location_id: string;
+  name: string;
+  type: LocationType;
+  floor?: number | null;
+}
+
+export interface RouteResponse {
+  found: boolean;
+  total_distance_m: number;
+  steps: RouteStep[];
+  message: string;
+}
+
+
+
 

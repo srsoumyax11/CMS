@@ -14,8 +14,16 @@ class MapLocationRepository(GenericRepository[MapLocation]):
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_by_ids(self, ids: List[UUID]) -> List[MapLocation]:
+        if not ids:
+            return []
+        stmt = select(MapLocation).where(MapLocation.id.in_(ids))
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
     async def list_locations(
         self,
+        q: Optional[str] = None,
         location_type: Optional[LocationType] = None,
         floor: Optional[int] = None,
         parent_id: Optional[UUID] = None,
@@ -24,6 +32,16 @@ class MapLocationRepository(GenericRepository[MapLocation]):
     ) -> Tuple[List[MapLocation], int]:
         stmt = select(MapLocation).where(MapLocation.status.is_(True))
         count_stmt = select(func.count()).select_from(MapLocation).where(MapLocation.status.is_(True))
+
+        if q and q.strip():
+            search_pattern = f"%{q.strip()}%"
+            filter_clause = or_(
+                MapLocation.name.ilike(search_pattern),
+                MapLocation.code.ilike(search_pattern),
+                MapLocation.description.ilike(search_pattern)
+            )
+            stmt = stmt.where(filter_clause)
+            count_stmt = count_stmt.where(filter_clause)
 
         if location_type:
             stmt = stmt.where(MapLocation.type == location_type)
@@ -48,3 +66,14 @@ class MapPathRepository(GenericRepository[MapPath]):
         stmt = select(MapPath).where(MapPath.accessible.is_(True))
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_paths_for_location(self, location_id: UUID) -> List[MapPath]:
+        stmt = select(MapPath).where(
+            or_(
+                MapPath.from_location_id == location_id,
+                MapPath.to_location_id == location_id
+            )
+        )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+

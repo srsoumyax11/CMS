@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
 from uuid import UUID
+from datetime import date
 
 from app.core.uow import UnitOfWork
 from app.api.deps import get_uow, get_current_user, require_permission
@@ -12,11 +13,32 @@ from app.schemas.attendance import (
     AttendanceSubmitRequest, 
     AttendanceSessionResponse, 
     AttendanceRecordResponse, 
-    AttendanceRecordListResponse
+    AttendanceRecordListResponse,
+    AttendanceRosterResponse,
+    StudentAttendanceStatsResponse
 )
 from app.services.attendance_service import AttendanceService
 
 router = APIRouter(tags=["Attendance"])
+
+@router.get(
+    "/roster",
+    summary="Get Attendance Roster for Slot & Date",
+    description="Fetches the student roster for a class slot and date with existing attendance status. **Requires:** `attendance:mark`",
+    response_model=APIResponse[AttendanceRosterResponse]
+)
+async def get_session_roster(
+    slot_id: UUID = Query(...),
+    session_date: date = Query(..., alias="date"),
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.ATTENDANCE_MARK))
+):
+    service = AttendanceService(uow)
+    try:
+        roster = await service.get_session_roster(current_user.id, slot_id, session_date)
+        return APIResponse(success=True, data=AttendanceRosterResponse.model_validate(roster))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post(
     "/sessions",
@@ -75,8 +97,8 @@ async def lock_session(
 
 @router.get(
     "/mine",
-    summary="Get My Attendance",
-    description="Fetches attendance records for the authenticated student.",
+    summary="Get My Attendance Records",
+    description="Fetches raw attendance log records for the authenticated student.",
     response_model=APIResponse[AttendanceRecordListResponse]
 )
 async def get_my_attendance(
@@ -89,3 +111,18 @@ async def get_my_attendance(
     records, total = await service.get_student_attendance(current_user.id, skip, limit)
     items = [AttendanceRecordResponse.model_validate(r) for r in records]
     return APIResponse(success=True, data=AttendanceRecordListResponse(total=total, items=items))
+
+@router.get(
+    "/mine/stats",
+    summary="Get My Attendance Stats & Shortage Alerts",
+    description="Returns subject-wise attendance percentage, total conducted, attended, and shortage warning flag (<75%).",
+    response_model=APIResponse[StudentAttendanceStatsResponse]
+)
+async def get_my_attendance_stats(
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(get_current_user)
+):
+    service = AttendanceService(uow)
+    stats = await service.get_student_stats(current_user.id)
+    return APIResponse(success=True, data=StudentAttendanceStatsResponse.model_validate(stats))
+

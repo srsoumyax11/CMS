@@ -57,7 +57,6 @@ class SilentService:
         if not setting.enabled:
             return SilentScheduleResponse(date=schedule_date, items=[])
 
-        items: List[SilentScheduleItem] = []
         day_of_week_num = schedule_date.isoweekday() # 1 = Monday ... 7 = Sunday
 
         async with self.uow.transaction() as u:
@@ -74,15 +73,13 @@ class SilentService:
 
             slots: List[TimetableSlot] = []
             if profile:
-                # Fetch class group slots
-                filters = {"class_group_id": profile.course_id, "day_of_week": DayOfWeek(day_of_week_num), "status": True}
                 slots_raw, _ = await u.timetable_slots.list(filters={"day_of_week": DayOfWeek(day_of_week_num), "status": True})
                 slots = [s for s in slots_raw if s.class_group_id == profile.course_id or s.faculty_user_id == user_id]
             else:
-                # Fetch teaching slots
                 slots_raw, _ = await u.timetable_slots.list(filters={"faculty_user_id": user_id, "day_of_week": DayOfWeek(day_of_week_num), "status": True})
                 slots = slots_raw
 
+            raw_windows: List[Tuple[datetime, datetime, str]] = []
             for slot in slots:
                 # Check slot exceptions for date
                 exc_filters = {"slot_id": slot.id, "date": schedule_date}
@@ -93,13 +90,31 @@ class SilentService:
                 # Calculate start & end times with buffer minutes
                 start_dt = datetime.combine(schedule_date, slot.start_time) - timedelta(minutes=setting.minutes_before)
                 end_dt = datetime.combine(schedule_date, slot.end_time) + timedelta(minutes=setting.minutes_after)
+                raw_windows.append((start_dt, end_dt, "Class Lecture"))
 
-                items.append(SilentScheduleItem(
-                    title=f"Class Lecture (Slot {slot.id})",
-                    start_time=start_dt.strftime("%H:%M"),
-                    end_time=end_dt.strftime("%H:%M"),
+            # Contiguous Merging Pass: Merge overlapping or adjacent DND windows
+            raw_windows.sort(key=lambda x: x[0])
+            merged_windows: List[Tuple[datetime, datetime, str]] = []
+            for start_dt, end_dt, label in raw_windows:
+                if not merged_windows:
+                    merged_windows.append((start_dt, end_dt, label))
+                else:
+                    prev_start, prev_end, prev_label = merged_windows[-1]
+                    if start_dt <= prev_end:
+                        # Overlap or zero-gap continuous break -> merge into single window
+                        merged_windows[-1] = (prev_start, max(prev_end, end_dt), "Lecture Block")
+                    else:
+                        merged_windows.append((start_dt, end_dt, label))
+
+            items: List[SilentScheduleItem] = [
+                SilentScheduleItem(
+                    title=f"[DND] {label}",
+                    start_time=w_start.strftime("%H:%M"),
+                    end_time=w_end.strftime("%H:%M"),
                     mode=setting.mode
-                ))
+                )
+                for w_start, w_end, label in merged_windows
+            ]
 
         return SilentScheduleResponse(date=schedule_date, items=items)
 
@@ -110,18 +125,17 @@ class SilentService:
             "PRODID:-//CampusOne//Silent Mode Calendar Feed//EN",
             "CALSCALE:GREGORIAN",
             "METHOD:PUBLISH",
-            "X-WR-CALNAME:Campus Class Schedule"
+            "X-WR-CALNAME:Campus Class Schedule (Quiet Mode)"
         ]
 
         async with self.uow.transaction() as u:
-            # Query student/faculty slots
             slots_raw, _ = await u.timetable_slots.list(limit=200)
             for slot in slots_raw:
                 lines.extend([
                     "BEGIN:VEVENT",
                     f"UID:slot-{slot.id}@campusone.edu",
-                    f"SUMMARY:Academic Lecture",
-                    f"DESCRIPTION:Class lecture schedule for Day {slot.day_of_week.value}",
+                    "SUMMARY:[DND] Academic Lecture",
+                    f"DESCRIPTION:Automated Quiet Class Schedule Block for Day {slot.day_of_week.value}",
                     f"DTSTART:20261001T{slot.start_time.strftime('%H%M%S')}",
                     f"DTEND:20261001T{slot.end_time.strftime('%H%M%S')}",
                     "END:VEVENT"

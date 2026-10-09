@@ -25,11 +25,11 @@ class MapLocation(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "map_locations"
 
     code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    type: Mapped[LocationType] = mapped_column(Enum(LocationType, name="location_type_enum"), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
+    type: Mapped[LocationType] = mapped_column(Enum(LocationType, name="location_type_enum"), index=True, nullable=False)
     
-    parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("map_locations.id", ondelete="SET NULL"), nullable=True)
-    floor: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("map_locations.id", ondelete="SET NULL"), index=True, nullable=True)
+    floor: Mapped[Optional[int]] = mapped_column(Integer, index=True, nullable=True)
     
     latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
@@ -43,8 +43,9 @@ class MapLocation(Base, UUIDMixin, TimestampMixin):
 class MapPath(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "map_paths"
 
-    from_location_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("map_locations.id", ondelete="CASCADE"), nullable=False)
-    to_location_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("map_locations.id", ondelete="CASCADE"), nullable=False)
+    from_location_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("map_locations.id", ondelete="CASCADE"), index=True, nullable=False)
+    to_location_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("map_locations.id", ondelete="CASCADE"), index=True, nullable=False)
     distance_m: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     path_geojson: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
     accessible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+

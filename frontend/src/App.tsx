@@ -48,9 +48,20 @@ const AcademicManagement = React.lazy(() => import('@/pages/admin/AcademicManage
 const PersonalTimetable = React.lazy(() => import('@/pages/timetable/PersonalTimetable').then(module => ({ default: module.PersonalTimetable })));
 const TimetableManagement = React.lazy(() => import('@/pages/admin/TimetableManagement').then(module => ({ default: module.TimetableManagement })));
 
-// Hostels & Gate Passes
+// Attendance
+const FacultyAttendanceMarking = React.lazy(() => import('@/pages/attendance/FacultyAttendanceMarking').then(module => ({ default: module.FacultyAttendanceMarking })));
+const StudentAttendanceDashboard = React.lazy(() => import('@/pages/attendance/StudentAttendanceDashboard').then(module => ({ default: module.StudentAttendanceDashboard })));
+
+// Hostels & Gate Passes & Documents & Notifications
 const HostelManagement = React.lazy(() => import('@/pages/admin/HostelManagement').then(module => ({ default: module.HostelManagement })));
 const GatePassManagement = React.lazy(() => import('@/pages/gate-passes/GatePassManagement').then(module => ({ default: module.GatePassManagement })));
+const DocumentManagement = React.lazy(() => import('@/pages/documents/DocumentManagement').then(module => ({ default: module.DocumentManagement })));
+const PublicDocumentVerification = React.lazy(() => import('@/pages/documents/PublicDocumentVerification').then(module => ({ default: module.PublicDocumentVerification })));
+const NotificationsPage = React.lazy(() => import('@/pages/NotificationsPage').then(module => ({ default: module.NotificationsPage })));
+const PlacementList = React.lazy(() => import('@/pages/placements/PlacementList').then(module => ({ default: module.PlacementList })));
+const SilentModeSettings = React.lazy(() => import('@/pages/settings/SilentModeSettings').then(module => ({ default: module.SilentModeSettings })));
+const CampusMapPage = React.lazy(() => import('@/pages/map/CampusMapPage').then(module => ({ default: module.CampusMapPage })));
+const CampusSpatialStudio = React.lazy(() => import('@/pages/admin/CampusSpatialStudio').then(module => ({ default: module.CampusSpatialStudio })));
 
 function RoleRedirect() {
   const { role } = useAuth();
@@ -63,8 +74,10 @@ export function UserRoutes() {
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
         <Route index element={<UserDashboard />} />
+        <Route path="map" element={<Navigate to="/map" replace />} />
         <Route path="profile" element={<Profile />} />
         <Route path="gate-passes" element={<GatePassManagement />} />
+        <Route path="documents" element={<DocumentManagement />} />
       </Routes>
     </Suspense>
   );
@@ -75,10 +88,13 @@ export function StudentRoutes() {
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
       <Route index element={<StudentDashboard />} />
+      <Route path="map" element={<Navigate to="/map" replace />} />
       <Route path="notices" element={<NoticeList />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
       <Route path="timetable" element={<PersonalTimetable />} />
+      <Route path="attendance" element={<StudentAttendanceDashboard />} />
       <Route path="gate-passes" element={<GatePassManagement />} />
+      <Route path="documents" element={<DocumentManagement />} />
       <Route path="complaints" element={<MyComplaints />} />
       <Route path="complaints/new" element={<ComplaintCreate />} />
       <Route path="complaints/:id" element={<ComplaintDetail />} />
@@ -93,11 +109,14 @@ export function FacultyRoutes() {
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
       <Route index element={<StudentDashboard />} />
+      <Route path="map" element={<Navigate to="/map" replace />} />
       <Route path="notices" element={<NoticeList />} />
       <Route path="notices/new" element={<NoticeCreate />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
       <Route path="timetable" element={<PersonalTimetable />} />
+      <Route path="attendance" element={<FacultyAttendanceMarking />} />
       <Route path="gate-passes" element={<GatePassManagement />} />
+      <Route path="documents" element={<DocumentManagement />} />
       <Route path="complaints" element={<MyComplaints />} />
       <Route path="complaints/:id" element={<ComplaintDetail />} />
       <Route path="profile" element={<Profile />} />
@@ -111,6 +130,7 @@ export function AdminRoutes() {
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
       <Route index element={<AdminDashboard />} />
+      <Route path="map" element={<Navigate to="/map" replace />} />
       <Route path="notices" element={<NoticeList />} />
       <Route path="notices/new" element={<NoticeCreate />} />
       <Route path="notices/:id" element={<NoticeDetail />} />
@@ -125,7 +145,9 @@ export function AdminRoutes() {
       <Route path="academic" element={<AcademicManagement />} />
       <Route path="timetable" element={<TimetableManagement />} />
       <Route path="hostels" element={<HostelManagement />} />
+      <Route path="spatial" element={<CampusSpatialStudio />} />
       <Route path="gate-passes" element={<GatePassManagement />} />
+      <Route path="documents" element={<DocumentManagement />} />
       <Route path="departments" element={<Navigate to="/admin/academic?tab=departments" replace />} />
       <Route path="courses" element={<Navigate to="/admin/academic?tab=courses" replace />} />
       <Route path="terms" element={<Navigate to="/admin/academic?tab=terms" replace />} />
@@ -138,6 +160,7 @@ export function AdminRoutes() {
     </Suspense>
   );
 }
+
 
 import { ForgotPassword } from '@/pages/ForgotPassword';
 
@@ -153,13 +176,24 @@ function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/verify-document/:code?" element={<PublicDocumentVerification />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/onboarding" element={<Onboarding />} />
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<RoleRedirect />} />
+          <Route path="/map" element={<CampusMapPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/placements" element={<PlacementList />} />
+          <Route path="/settings/silent-mode" element={<SilentModeSettings />} />
           <Route path="/gate-passes" element={<GatePassManagement />} />
+          <Route path="/documents" element={<DocumentManagement />} />
+          <Route path="/complaints" element={<MyComplaints />} />
+          <Route path="/complaints/raise" element={<ComplaintCreate />} />
+          <Route path="/complaints/new" element={<ComplaintCreate />} />
+          <Route path="/complaints/:id" element={<ComplaintDetail />} />
+
 
           <Route element={<ProtectedRoute allowedRoles={['user', 'parent']} />}>
 

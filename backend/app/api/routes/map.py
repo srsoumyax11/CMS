@@ -19,10 +19,11 @@ router = APIRouter(tags=["Campus Map & Navigation"])
 @router.get(
     "/locations",
     summary="List Campus Map Locations",
-    description="Retrieve campus locations, buildings, floors, and rooms. Supports filtering by type, floor, or parent ID.",
+    description="Retrieve campus locations, buildings, floors, and rooms. Supports search, type, floor, or parent ID filtering.",
     response_model=APIResponse[MapLocationListResponse]
 )
 async def list_locations(
+    q: Optional[str] = Query(None, description="Search location name, code, or description"),
     location_type: Optional[LocationType] = Query(None),
     floor: Optional[int] = Query(None),
     parent_id: Optional[UUID] = Query(None),
@@ -32,6 +33,7 @@ async def list_locations(
 ):
     service = MapService(uow)
     items, total = await service.list_locations(
+        q=q,
         location_type=location_type,
         floor=floor,
         parent_id=parent_id,
@@ -51,11 +53,12 @@ async def get_location(
     loc_id: UUID,
     uow: UnitOfWork = Depends(get_uow)
 ):
-    async with uow.transaction() as u:
-        loc = await u.map_locations.get_by_id(loc_id)
-        if not loc:
-            raise HTTPException(status_code=404, detail="Map location not found")
+    service = MapService(uow)
+    try:
+        loc = await service.get_location(loc_id)
         return APIResponse(success=True, data=MapLocationResponse.model_validate(loc))
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 @router.post(
     "/locations",
@@ -94,6 +97,24 @@ async def update_location(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.delete(
+    "/locations/{loc_id}",
+    summary="Delete Campus Location",
+    description="Remove a map location node. **Requires:** `map:edit`",
+    response_model=APIResponse[bool]
+)
+async def delete_location(
+    loc_id: UUID,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.MAP_EDIT))
+):
+    service = MapService(uow)
+    try:
+        success = await service.delete_location(loc_id)
+        return APIResponse(success=True, data=success)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
 @router.post(
     "/paths",
     summary="Create Navigation Path Edge",
@@ -112,6 +133,24 @@ async def create_path(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.delete(
+    "/paths/{path_id}",
+    summary="Delete Navigation Path Edge",
+    description="Remove a walking navigation path edge between map nodes. **Requires:** `map:manage`",
+    response_model=APIResponse[bool]
+)
+async def delete_path(
+    path_id: UUID,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.MAP_MANAGE))
+):
+    service = MapService(uow)
+    try:
+        success = await service.delete_path(path_id)
+        return APIResponse(success=True, data=success)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
 @router.get(
     "/route",
     summary="Calculate Walking Route (Dijkstra Shortest Path)",
@@ -129,3 +168,4 @@ async def calculate_route(
         return APIResponse(success=True, data=route)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+

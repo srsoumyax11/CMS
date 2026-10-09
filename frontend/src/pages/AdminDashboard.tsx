@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { complaintsApi } from '@/api/complaintsApi';
 import { adminApi } from '@/api/adminApi';
+import { mapApi } from '@/api/mapApi';
 import { StatCard } from '@/components/shared/StatCard';
 import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import { OnboardingWidget } from '@/components/admin/OnboardingWidget';
@@ -18,6 +19,7 @@ import {
   Clock,
   LayoutDashboard,
   UserCheck,
+  MapPin,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -41,7 +43,9 @@ const adminModules: {
   { icon: ClipboardList, label: 'Complaints', desc: 'Resolve issues', path: '/admin/complaints' },
   { icon: Users, label: 'Users', desc: 'Manage students', path: '/admin/users' },
   { icon: ShieldCheck, label: 'Permissions', desc: 'Access control', path: '/admin/permissions' },
+  { icon: MapPin, label: 'Spatial Studio', desc: 'Buildings & maps', path: '/admin/spatial' },
 ];
+
 
 export function AdminDashboard() {
   const { user } = useAuth();
@@ -59,6 +63,12 @@ export function AdminDashboard() {
     enabled: !!user,
   });
 
+  const { data: mapResp } = useQuery({
+    queryKey: ['admin-map-stats'],
+    queryFn: () => mapApi.listLocations({ limit: 500 }),
+    enabled: !!user,
+  });
+
   if (!user) return null;
 
   const complaints = complaintsResp?.data?.data?.items || [];
@@ -66,6 +76,8 @@ export function AdminDashboard() {
   
   const students = studentsResp?.data?.data || [];
   const pendingStudents = students.filter((s: any) => s.account_status === 'pending').length;
+
+  const totalMapLocations = mapResp?.data?.items?.length ?? 0;
 
   // Chart data
   const categoryCounts = complaints.reduce((acc: Record<string, number>, c: any) => {
@@ -102,8 +114,15 @@ export function AdminDashboard() {
           hint="Awaiting account approval"
           className="border-info/30 bg-info/10 text-info-foreground"
         />
-        
+        <StatCard
+          icon={MapPin}
+          label="Spatial Locations"
+          value={totalMapLocations}
+          hint="Campus buildings & nodes"
+          className="border-primary/30 bg-primary/10 text-primary"
+        />
       </div>
+
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 rounded-xl border bg-card p-6 shadow-sm">

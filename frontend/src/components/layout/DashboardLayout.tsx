@@ -4,7 +4,8 @@ import { useAuth } from '@/context/AuthContext';
 import { NAV_GROUPS, ROLE_LABELS, getBreadcrumbLabel } from '@/lib/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { NotificationBell } from '@/components/layout/NotificationBell';
+import { NotificationBellDropdown } from '@/components/notifications/NotificationBellDropdown';
+import { useTabAttention } from '@/hooks/useTabAttention';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,7 @@ export function DashboardLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { getAttentionForPath } = useTabAttention();
 
   if (!user || !role) return null;
 
@@ -101,6 +103,7 @@ export function DashboardLayout() {
                 const isActive = isExact 
                   ? location.pathname === item.to 
                   : location.pathname.startsWith(item.to);
+                const attention = getAttentionForPath(item.to);
 
                 return (
                   <Tooltip key={item.to}>
@@ -110,25 +113,36 @@ export function DashboardLayout() {
                         end={isExact}
                         onClick={() => isMobile && setMobileOpen(false)}
                         className={cn(
-                          'flex items-center rounded-lg text-sm font-medium transition-all duration-300 ease-in-out',
+                          'flex items-center rounded-lg text-sm font-medium transition-all duration-300 ease-in-out relative',
                           collapsed ? 'justify-center w-10 h-10 mx-auto p-0' : 'px-3 py-2.5 gap-3 w-full',
                           isActive
                             ? 'bg-primary text-primary-foreground shadow-sm'
                             : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                         )}
                       >
-                        <item.icon className={cn("shrink-0", collapsed ? "h-5 w-5" : "h-4 w-4")} />
+                        <div className="relative flex items-center justify-center">
+                          <item.icon className={cn("shrink-0", collapsed ? "h-5 w-5" : "h-4 w-4")} />
+                          {attention?.hasAttention && collapsed && (
+                            <span className={cn("absolute -top-1 -right-1 h-2 w-2 rounded-full animate-pulse ring-2 ring-card", attention.color)} />
+                          )}
+                        </div>
                         <span className={cn(
-                          "whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out",
+                          "whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out flex-1 flex items-center justify-between gap-2",
                           collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
                         )}>
-                          {item.label}
+                          <span>{item.label}</span>
+                          {attention?.hasAttention && !collapsed && (
+                            <span className={cn("h-2.5 w-2.5 rounded-full animate-pulse shrink-0 ring-2 ring-card/30", attention.color)} />
+                          )}
                         </span>
                       </NavLink>
                     </TooltipTrigger>
                     {collapsed && !isMobile && (
-                      <TooltipContent side="right" className="font-medium">
-                        {item.label}
+                      <TooltipContent side="right" className="font-medium flex items-center gap-2">
+                        <span>{item.label}</span>
+                        {attention?.hasAttention && (
+                          <span className={cn("h-2 w-2 rounded-full animate-pulse", attention.color)} />
+                        )}
                       </TooltipContent>
                     )}
                   </Tooltip>
@@ -194,7 +208,7 @@ export function DashboardLayout() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <NotificationBell />
+            <NotificationBellDropdown />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 px-2">

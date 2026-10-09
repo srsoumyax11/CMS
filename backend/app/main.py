@@ -102,7 +102,12 @@ tags_metadata = [
         "name": "Hostels",
         "description": "Hostel buildings, room capacity, and student room allocations.",
     },
+    {
+        "name": "Campus Map & Navigation",
+        "description": "Spatial location nodes, campus buildings, room hierarchy, floor inventory, and Dijkstra shortest-path walking directions.",
+    },
 ]
+
 
 
 

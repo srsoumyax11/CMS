@@ -18,7 +18,9 @@ export const complaintsApi = {
   create: (data: ComplaintCreateRequest) => {
     const formData = new FormData();
     formData.append('category', data.category);
-    formData.append('location_hostel', data.location_hostel);
+    if (data.hostel_id) formData.append('hostel_id', data.hostel_id);
+    if (data.room_number) formData.append('room_number', data.room_number);
+    if (data.location_hostel) formData.append('location_hostel', data.location_hostel);
     if (data.location_room) formData.append('location_room', data.location_room);
     formData.append('description', data.description);
     if (data.visibility) formData.append('visibility', data.visibility);

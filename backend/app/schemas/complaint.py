@@ -28,15 +28,17 @@ class ComplaintResponse(BaseModel):
     category: ComplaintCategory
     hostel_id: Optional[UUID] = None
     room_number: Optional[str] = None
+    location_hostel: Optional[str] = None
+    location_room: Optional[str] = None
     building_id: Optional[UUID] = None
     room_id: Optional[UUID] = None
     description: str
     photo_url: Optional[str] # Will be a signed URL
     visibility: ComplaintVisibility
     status: ComplaintStatus
-    assigned_to: Optional[UUID]
+    assigned_to: Optional[UUID] = None
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -53,8 +55,8 @@ class RecurringIssueResponse(BaseModel):
 class AgeingComplaintResponse(BaseModel):
     id: UUID
     category: ComplaintCategory
-    location_hostel: str
-    location_room: Optional[str]
+    location_hostel: Optional[str] = None
+    location_room: Optional[str] = None
     status: ComplaintStatus
     created_at: datetime
     age_days: int

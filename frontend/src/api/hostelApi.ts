@@ -30,6 +30,7 @@ export interface StudentHostelAllocationData {
   occupied_count?: number;
   status?: string;
   allocated_at?: string | null;
+  created_at?: string | null;
   warden_name?: string | null;
   warden_email?: string | null;
 }

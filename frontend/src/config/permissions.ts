@@ -73,6 +73,43 @@ export const PERMISSIONS = {
   DEPARTMENT: {
     MANAGE: 'department:manage',
   },
+  GATEPASS: {
+    CREATE: 'gatepass:create',
+    REVIEW: 'gatepass:review',
+    SCAN: 'gatepass:scan',
+  },
+  TIMETABLE: {
+    LIST: 'timetable:list',
+    CREATE: 'timetable:create',
+    EDIT: 'timetable:edit',
+    DELETE: 'timetable:delete',
+  },
+  DOCUMENT: {
+    APPLY: 'document:apply',
+    VIEW: 'document:view',
+    APPROVE: 'document:approve',
+    MANAGE: 'document:manage',
+  },
+  PLACEMENT: {
+    VIEW: 'placement:view',
+    APPLY: 'placement:apply',
+    MANAGE: 'placement:manage',
+    VIEW_APPLICANTS: 'placement:view_applicants',
+  },
+  ACADEMIC: {
+    MANAGE: 'academic:manage',
+    VIEW: 'academic:view',
+  },
+  HOSTEL: {
+    MANAGE: 'hostel:manage',
+    VIEW: 'hostel:view',
+    ALLOCATE: 'hostel:allocate',
+  },
+  MAP: {
+    VIEW: 'map:view',
+    EDIT: 'map:edit',
+    MANAGE: 'map:manage',
+  },
 } as const;
 
 export type PermissionCode =
@@ -81,7 +118,15 @@ export type PermissionCode =
   | typeof PERMISSIONS.ROLE[keyof typeof PERMISSIONS.ROLE]
   | typeof PERMISSIONS.NOTICE[keyof typeof PERMISSIONS.NOTICE]
   | typeof PERMISSIONS.COMPLAINT[keyof typeof PERMISSIONS.COMPLAINT]
-      | typeof PERMISSIONS.ATTENDANCE[keyof typeof PERMISSIONS.ATTENDANCE]
+  | typeof PERMISSIONS.ATTENDANCE[keyof typeof PERMISSIONS.ATTENDANCE]
   | typeof PERMISSIONS.MESS[keyof typeof PERMISSIONS.MESS]
   | typeof PERMISSIONS.SYSTEM_SETTING[keyof typeof PERMISSIONS.SYSTEM_SETTING]
-  | typeof PERMISSIONS.DEPARTMENT[keyof typeof PERMISSIONS.DEPARTMENT];
+  | typeof PERMISSIONS.DEPARTMENT[keyof typeof PERMISSIONS.DEPARTMENT]
+  | typeof PERMISSIONS.GATEPASS[keyof typeof PERMISSIONS.GATEPASS]
+  | typeof PERMISSIONS.TIMETABLE[keyof typeof PERMISSIONS.TIMETABLE]
+  | typeof PERMISSIONS.DOCUMENT[keyof typeof PERMISSIONS.DOCUMENT]
+  | typeof PERMISSIONS.PLACEMENT[keyof typeof PERMISSIONS.PLACEMENT]
+  | typeof PERMISSIONS.ACADEMIC[keyof typeof PERMISSIONS.ACADEMIC]
+  | typeof PERMISSIONS.HOSTEL[keyof typeof PERMISSIONS.HOSTEL]
+  | typeof PERMISSIONS.MAP[keyof typeof PERMISSIONS.MAP];
+
