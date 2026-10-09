@@ -147,10 +147,18 @@ class UserRepository(GenericRepository[User]):
 
     async def list_all_users(self, skip: int = 0, limit: int = 100) -> Tuple[List[User], int]:
         from sqlalchemy import func
+        from app.models.profiles import StudentProfile, FacultyProfile, StaffProfile, ParentProfile
         stmt = (
             select(User)
             .where(User.deleted_at.is_(None))
-            .options(selectinload(User.role))
+            .options(
+                selectinload(User.role),
+                selectinload(User.student_profile).selectinload(StudentProfile.department),
+                selectinload(User.faculty_profile).selectinload(FacultyProfile.department),
+                selectinload(User.staff_profile).selectinload(StaffProfile.department),
+                selectinload(User.parent_profile).selectinload(ParentProfile.student).selectinload(User.student_profile),
+                selectinload(User.role_applications)
+            )
             .order_by(User.created_at.desc())
         )
         count_stmt = select(func.count()).select_from(User).where(User.deleted_at.is_(None))

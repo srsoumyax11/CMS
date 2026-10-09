@@ -10,7 +10,7 @@ from app.services.notification_service import NotificationService
 router = APIRouter(tags=["Notifications"])
 
 @router.get(
-    "/", 
+    "", 
     summary="List My Notifications", 
     response_model=APIResponse[NotificationListResponse]
 )

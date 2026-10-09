@@ -23,7 +23,7 @@ from app.api.deps import get_complaint_service
 router = APIRouter()
 
 @router.post(
-    "/", 
+    "", 
     summary="Create Complaint", 
     description="Raises a new complaint. Can optionally include a photo upload. Rate-limited to 3 per hour. **Requires:** `complaint:create`",
     response_model=APIResponse[ComplaintResponse],
@@ -136,7 +136,7 @@ async def get_public_complaints(
 
 
 @router.get(
-    "/", 
+    "", 
     summary="List All Complaints (Admin)", 
     description="Fetches complaints across the system for admins/faculty. **Requires:** `complaint:list`",
     response_model=APIResponse[ComplaintListResponse]

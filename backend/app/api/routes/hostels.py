@@ -31,7 +31,7 @@ async def get_my_hostel_allocation(
     return APIResponse(success=True, data=res)
 
 @router.post(
-    "/",
+    "",
     summary="Create Hostel",
     description="Creates a new hostel building record. **Requires:** `hostel:manage`",
     response_model=APIResponse[HostelResponse]
@@ -49,7 +49,7 @@ async def create_hostel(
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get(
-    "/",
+    "",
     summary="List Hostels",
     description="Lists all hostels. **Requires:** `hostel:view`",
     response_model=APIResponse[HostelListResponse]
@@ -64,6 +64,43 @@ async def list_hostels(
     items_raw, total = await service.list_hostels(skip=skip, limit=limit)
     items = [HostelResponse.model_validate(item) for item in items_raw]
     return APIResponse(success=True, data=HostelListResponse(total=total, items=items))
+
+@router.patch(
+    "/{hostel_id}",
+    summary="Update Hostel Building",
+    description="Updates a hostel building details. **Requires:** `hostel:manage`",
+    response_model=APIResponse[HostelResponse]
+)
+async def update_hostel(
+    hostel_id: UUID,
+    req: HostelUpdate,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.HOSTEL_MANAGE))
+):
+    service = HostelService(uow)
+    try:
+        hostel = await service.update_hostel(hostel_id, req)
+        return APIResponse(success=True, message="Hostel updated successfully", data=HostelResponse.model_validate(hostel))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete(
+    "/{hostel_id}",
+    summary="Delete Hostel Building",
+    description="Deletes a hostel building if it has no active occupants. **Requires:** `hostel:manage`",
+    response_model=APIResponse[dict]
+)
+async def delete_hostel(
+    hostel_id: UUID,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.HOSTEL_MANAGE))
+):
+    service = HostelService(uow)
+    try:
+        await service.delete_hostel(hostel_id)
+        return APIResponse(success=True, data={"message": "Hostel building deleted successfully."})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post(
     "/{hostel_id}/rooms",

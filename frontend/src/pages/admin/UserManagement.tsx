@@ -8,11 +8,34 @@ import { ProTable, type ProColumn, type TableFilterDef } from '@/components/shar
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { GlobalProfileAvatar } from '@/components/shared/GlobalProfileAvatar';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { PERMISSIONS } from '@/config/permissions';
-import { Plus, ShieldAlert, CheckCircle2, UserCheck, GraduationCap, Briefcase, UserCog, Users, Pencil } from 'lucide-react';
+import { 
+  Plus, 
+  ShieldAlert, 
+  CheckCircle2, 
+  UserCheck, 
+  GraduationCap, 
+  Briefcase, 
+  UserCog, 
+  Users, 
+  Pencil, 
+  Eye, 
+  MoreVertical, 
+  ShieldCheck, 
+  ShieldOff, 
+  Phone, 
+  Calendar 
+} from 'lucide-react';
 import { toast } from 'sonner';
 import type { 
   StudentItemResponse, 
@@ -29,7 +52,7 @@ import { useMetadata } from '@/hooks/useMetadata';
 import { StudentActionModal, type UpdateActionPayload } from './components/StudentActionModal';
 import { StudentCreateModal } from './components/StudentCreateModal';
 import { FacultyCreateModal } from './components/FacultyCreateModal';
-import { UserEditModal } from './components/UserEditModal';
+import { SmartUserModal, type SmartModalMode } from './components/SmartUserModal';
 
 export type UserRoleTab = 'all' | 'student' | 'faculty' | 'staff' | 'parent' | 'admin';
 
@@ -116,9 +139,15 @@ export function UserManagement() {
   const createFacultyModal = useDialogState();
   const [pendingAction, setPendingAction] = useState<UpdateActionPayload | null>(null);
 
-  // Edit User modal state
-  const [editingUser, setEditingUser] = useState<any | null>(null);
+  // Smart User modal state
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [modalMode, setModalMode] = useState<SmartModalMode>('view');
   const [isSavingUser, setIsSavingUser] = useState(false);
+
+  const openUserModal = (user: any, mode: SmartModalMode = 'view') => {
+    setSelectedUser(user);
+    setModalMode(mode);
+  };
 
   const handleStudentAction = (student: StudentItemResponse, actionType: 'approve' | 'reject') => {
     if (actionType === 'approve') {
@@ -155,7 +184,7 @@ export function UserManagement() {
       }
 
       toast.success('User updated successfully');
-      setEditingUser(null);
+      setSelectedUser(null);
 
       // Invalidate queries to refresh lists
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_USERS] });
@@ -172,22 +201,47 @@ export function UserManagement() {
     }
   };
 
+  const handlePhotoChange = async (userId: string, file: File | null) => {
+    try {
+      if (file) {
+        await adminApi.uploadUserPhoto(userId, file);
+        toast.success('Profile photo updated successfully');
+      } else {
+        await adminApi.updateUser(userId, { photo_url: null });
+        toast.success('Profile photo removed');
+      }
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_USERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FACULTY] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMINS] });
+      refetchAllUsers();
+      refetchStudents();
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.error || err?.message || 'Failed to update photo';
+      toast.error(errorMsg);
+    }
+  };
+
   // ── Column Definitions ──
 
-  // All Users Table Columns
+  // All Users Table Columns (Grouped Universal Information + 3-Dot Actions)
   const allUsersColumns: ProColumn<any>[] = [
     {
       id: 'name',
       header: 'User Account',
       accessorKey: 'name',
       cell: (val, row) => (
-        <div className="flex items-center gap-2.5">
-          <Avatar className="h-8 w-8 border">
-            <AvatarImage src={row.photo_url || undefined} alt={row.name || row.email} />
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-              {(row.name || row.email || 'U').charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+        <div className="flex items-center gap-3">
+          <div onClick={(e) => e.stopPropagation()}>
+            <GlobalProfileAvatar
+              src={row.photo_url}
+              name={row.name || row.email}
+              email={row.email}
+              size="md"
+              editable={true}
+              onImageChange={(file) => handlePhotoChange(row.id, file)}
+            />
+          </div>
           <div>
             <p className="font-semibold text-foreground text-sm">{row.name || 'Unnamed User'}</p>
             <p className="text-xs text-muted-foreground">{row.email}</p>
@@ -197,45 +251,84 @@ export function UserManagement() {
       sortable: true,
     },
     {
-      id: 'user_type',
-      header: 'Role',
-      accessorKey: 'user_type',
-      cell: (val) => (
-        <Badge variant="outline" className="capitalize text-xs font-medium bg-muted/40">
-          {val || 'user'}
-        </Badge>
+      id: 'contact_security',
+      header: 'Contact & Security',
+      cell: (_, row) => (
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-foreground font-medium">
+            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>{row.phone || '—'}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {row.is_2fa_enabled ? (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-medium">
+                <ShieldCheck className="h-3 w-3 mr-0.5" /> 2FA Active
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-muted/60 text-muted-foreground border-muted-foreground/20 font-normal">
+                <ShieldOff className="h-3 w-3 mr-0.5" /> 2FA Off
+              </Badge>
+            )}
+          </div>
+        </div>
       ),
-      sortable: true,
-      width: '120px',
     },
     {
-      id: 'account_status',
-      header: 'Account Status',
-      accessorKey: 'account_status',
-      cell: (val) => <StatusBadge status={val} type="account" />,
+      id: 'role_status',
+      header: 'Role & Status',
+      cell: (_, row) => (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className="capitalize text-xs font-semibold bg-muted/50">
+            {row.user_type || 'user'}
+          </Badge>
+          <StatusBadge status={row.account_status} type="account" />
+        </div>
+      ),
       sortable: true,
-      width: '130px',
-      align: 'center',
+    },
+    {
+      id: 'created_at',
+      header: 'Registered On',
+      accessorKey: 'created_at',
+      cell: (val) => (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+          <span>
+            {val ? new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+          </span>
+        </div>
+      ),
+      sortable: true,
+      width: '140px',
     },
     {
       id: 'actions',
       header: 'Actions',
       cell: (_, row) => (
-        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-          <PermissionGuard permission={PERMISSIONS.USER.EDIT}>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              title="Edit User Account"
-              onClick={() => setEditingUser(row)}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-          </PermissionGuard>
+        <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">Open Menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => openUserModal(row, 'view')} className="gap-2 cursor-pointer text-xs font-medium">
+                <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                View User Details
+              </DropdownMenuItem>
+              <PermissionGuard permission={PERMISSIONS.USER.EDIT}>
+                <DropdownMenuItem onClick={() => openUserModal(row, 'edit')} className="gap-2 cursor-pointer text-xs font-medium">
+                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  Edit Account & Status
+                </DropdownMenuItem>
+              </PermissionGuard>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ),
-      width: '80px',
+      width: '70px',
       align: 'right',
     },
   ];
@@ -248,11 +341,16 @@ export function UserManagement() {
       accessorKey: 'name',
       cell: (val, row) => (
         <div className="flex items-center gap-2.5">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-              {row.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <div onClick={(e) => e.stopPropagation()}>
+            <GlobalProfileAvatar
+              src={row.photo_url}
+              name={row.name}
+              email={row.email}
+              size="sm"
+              editable={true}
+              onImageChange={(file) => handlePhotoChange(row.id, file)}
+            />
+          </div>
           <div>
             <span className="font-semibold text-foreground text-sm">{row.name}</span>
             <p className="text-xs text-muted-foreground">{row.email}</p>
@@ -304,31 +402,43 @@ export function UserManagement() {
       id: 'actions',
       header: 'Actions',
       cell: (_, row) => (
-        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-          <PermissionGuard permission={PERMISSIONS.USER.EDIT}>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              title="Edit Student Profile"
-              onClick={() => setEditingUser(row)}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-          </PermissionGuard>
-          {row.account_status === 'pending' && (
-            <>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 hover:bg-emerald-50" title="Approve Student" onClick={() => handleStudentAction(row, 'approve')}>
-                <CheckCircle2 className="h-3.5 w-3.5" />
+        <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">Open Menu</span>
               </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10" title="Reject Student" onClick={() => handleStudentAction(row, 'reject')}>
-                <ShieldAlert className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => openUserModal(row, 'view')} className="gap-2 cursor-pointer text-xs font-medium">
+                <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                View Student Profile
+              </DropdownMenuItem>
+              <PermissionGuard permission={PERMISSIONS.USER.EDIT}>
+                <DropdownMenuItem onClick={() => openUserModal(row, 'edit')} className="gap-2 cursor-pointer text-xs font-medium">
+                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  Edit Student Details
+                </DropdownMenuItem>
+              </PermissionGuard>
+              {row.account_status === 'pending' && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleStudentAction(row, 'approve')} className="gap-2 cursor-pointer text-xs font-medium text-emerald-600 focus:text-emerald-600">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Approve Application
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStudentAction(row, 'reject')} className="gap-2 cursor-pointer text-xs font-medium text-destructive focus:text-destructive">
+                    <ShieldAlert className="h-3.5 w-3.5" />
+                    Reject Application
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ),
-      width: '100px',
+      width: '70px',
       align: 'right',
     },
   ];
@@ -341,12 +451,16 @@ export function UserManagement() {
       accessorKey: 'name',
       cell: (val, row) => (
         <div className="flex items-center gap-2.5">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={row.photo_url || undefined} alt={row.name} />
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-              {row.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <div onClick={(e) => e.stopPropagation()}>
+            <GlobalProfileAvatar
+              src={row.photo_url}
+              name={row.name}
+              email={row.email}
+              size="sm"
+              editable={true}
+              onImageChange={(file) => handlePhotoChange(row.id, file)}
+            />
+          </div>
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-semibold text-foreground text-sm">{row.name}</span>
@@ -397,21 +511,128 @@ export function UserManagement() {
       id: 'actions',
       header: 'Actions',
       cell: (_, row) => (
-        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-          <PermissionGuard permission={PERMISSIONS.USER.EDIT}>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              title="Edit Faculty / Staff Profile"
-              onClick={() => setEditingUser(row)}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-          </PermissionGuard>
+        <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">Open Menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => openUserModal(row, 'view')} className="gap-2 cursor-pointer text-xs font-medium">
+                <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                View Staff Details
+              </DropdownMenuItem>
+              <PermissionGuard permission={PERMISSIONS.USER.EDIT}>
+                <DropdownMenuItem onClick={() => openUserModal(row, 'edit')} className="gap-2 cursor-pointer text-xs font-medium">
+                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  Edit Staff Profile
+                </DropdownMenuItem>
+              </PermissionGuard>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ),
-      width: '80px',
+      width: '70px',
+      align: 'right',
+    },
+  ];
+
+  // Parent Table Columns
+  const parentColumns: ProColumn<any>[] = [
+    {
+      id: 'name',
+      header: 'Parent Account',
+      accessorKey: 'name',
+      cell: (val, row) => (
+        <div className="flex items-center gap-2.5">
+          <div onClick={(e) => e.stopPropagation()}>
+            <GlobalProfileAvatar
+              src={row.photo_url}
+              name={row.name || row.email}
+              email={row.email}
+              size="sm"
+              editable={true}
+              onImageChange={(file) => handlePhotoChange(row.id, file)}
+            />
+          </div>
+          <div>
+            <span className="font-semibold text-foreground text-sm">{row.name || 'Unnamed Parent'}</span>
+            <p className="text-xs text-muted-foreground">{row.email}</p>
+          </div>
+        </div>
+      ),
+      sortable: true,
+    },
+    {
+      id: 'relationship',
+      header: 'Relationship',
+      cell: (_, row) => (
+        <Badge variant="outline" className="capitalize text-xs font-medium bg-muted/40">
+          {row.relationship_type || 'Parent'}
+        </Badge>
+      ),
+    },
+    {
+      id: 'associated_student',
+      header: 'Linked Student',
+      cell: (_, row) => (
+        <div>
+          <span className="text-xs font-semibold text-foreground">{row.associated_student_name || '—'}</span>
+          {row.associated_student_reg_no && (
+            <p className="text-[10px] font-mono text-muted-foreground">Reg: {row.associated_student_reg_no}</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'emergency_contact',
+      header: 'Emergency Phone',
+      cell: (_, row) => (
+        <div className="flex items-center gap-1.5 text-xs text-foreground font-medium">
+          <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+          <span>{row.emergency_phone || row.phone || '—'}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'account_status',
+      header: 'Status',
+      accessorKey: 'account_status',
+      cell: (val) => <StatusBadge status={val} type="account" />,
+      sortable: true,
+      width: '110px',
+      align: 'center',
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (_, row) => (
+        <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">Open Menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => openUserModal(row, 'view')} className="gap-2 cursor-pointer text-xs font-medium">
+                <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                View Parent Details
+              </DropdownMenuItem>
+              <PermissionGuard permission={PERMISSIONS.USER.EDIT}>
+                <DropdownMenuItem onClick={() => openUserModal(row, 'edit')} className="gap-2 cursor-pointer text-xs font-medium">
+                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  Edit Parent Profile
+                </DropdownMenuItem>
+              </PermissionGuard>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+      width: '70px',
       align: 'right',
     },
   ];
@@ -497,9 +718,10 @@ export function UserManagement() {
           isLoading={loadingAll}
           rowKey={(row) => row.id}
           filters={accountStatusFilters}
-          searchPlaceholder="Search all platform users by name or email..."
+          searchPlaceholder="Search all platform users by name, email, phone..."
           exportFileName="all-platform-users"
           emptyTitle="No platform users found"
+          onRowClick={(row) => openUserModal(row, 'view')}
         />
       )}
 
@@ -513,6 +735,7 @@ export function UserManagement() {
           searchPlaceholder="Search students by name, reg number, email..."
           exportFileName="student-directory"
           emptyTitle="No students found"
+          onRowClick={(row) => openUserModal(row, 'view')}
         />
       )}
 
@@ -526,6 +749,7 @@ export function UserManagement() {
           searchPlaceholder="Search academic faculty by name, staff ID, department..."
           exportFileName="faculty-directory"
           emptyTitle="No academic faculty members found"
+          onRowClick={(row) => openUserModal(row, 'view')}
         />
       )}
 
@@ -539,19 +763,21 @@ export function UserManagement() {
           searchPlaceholder="Search administrative staff members..."
           exportFileName="staff-directory"
           emptyTitle="No administrative staff found"
+          onRowClick={(row) => openUserModal(row, 'view')}
         />
       )}
 
       {activeTab === 'parent' && (
         <ProTable
-          columns={allUsersColumns}
+          columns={parentColumns}
           data={parentUsers}
           isLoading={loadingAll}
           rowKey={(row) => row.id}
           filters={accountStatusFilters}
-          searchPlaceholder="Search parent accounts..."
+          searchPlaceholder="Search parent accounts by student, name, relationship..."
           exportFileName="parents-directory"
           emptyTitle="No parent accounts found"
+          onRowClick={(row) => openUserModal(row, 'view')}
         />
       )}
 
@@ -565,6 +791,7 @@ export function UserManagement() {
           searchPlaceholder="Search administrator accounts..."
           exportFileName="administrators-directory"
           emptyTitle="No administrator accounts found"
+          onRowClick={(row) => openUserModal(row, 'view')}
         />
       )}
 
@@ -609,14 +836,17 @@ export function UserManagement() {
         }}
       />
 
-      {/* User Edit Modal */}
-      <UserEditModal
-        isOpen={!!editingUser}
-        user={editingUser}
-        onClose={() => setEditingUser(null)}
+      {/* Smart User Dual-Mode Modal (View & Edit) */}
+      <SmartUserModal
+        isOpen={!!selectedUser}
+        user={selectedUser}
+        activeTab={activeTab}
+        initialMode={modalMode}
+        onClose={() => setSelectedUser(null)}
         departments={departments}
         onSave={handleSaveUser}
         isPending={isSavingUser}
+        onPhotoChange={handlePhotoChange}
       />
     </div>
   );

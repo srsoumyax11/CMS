@@ -98,12 +98,17 @@ class AuthService:
             await u.notifications.create(welcome_notif)
 
         if background_tasks:
+            frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:5173").rstrip("/")
             send_email_background(
                 background_tasks=background_tasks,
                 to_email=new_user.email,
-                subject="Welcome to CMS! 🎉",
+                subject="Welcome to BPUT CMS — Email Verified",
                 template_name="welcome.html",
-                context={"name": new_user.name or "User", "email": new_user.email}
+                context={
+                    "name": new_user.name or "User",
+                    "email": new_user.email,
+                    "dashboard_url": f"{frontend_url}/dashboard"
+                }
             )
 
         access_token = create_access_token(subject=str(new_user.id))

@@ -50,7 +50,7 @@ async def get_my_status(
     return APIResponse(success=True, data=status_res)
 
 @router.get(
-    "/",
+    "",
     summary="List Pending Role Applications (Admin)",
     description="Returns all role applications for admin review.",
     response_model=APIResponse[List[RoleApplicationResponse]]

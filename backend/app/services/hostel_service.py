@@ -48,6 +48,23 @@ class HostelService:
                 raise ValueError("Hostel not found.")
             return hostel
 
+    async def delete_hostel(self, hostel_id: UUID) -> bool:
+        async with self.uow.transaction() as u:
+            hostel = await u.hostels.get_by_id(hostel_id)
+            if not hostel:
+                raise ValueError("Hostel not found.")
+
+            stmt = select(StudentProfile).where(StudentProfile.hostel_id == hostel_id)
+            res = await u.db.execute(stmt)
+            occupants = res.scalars().all()
+            if len(occupants) > 0:
+                raise ValueError(
+                    f"Cannot delete hostel '{hostel.name}' because {len(occupants)} student(s) are currently residing here. Please deallocate or reassign all students first."
+                )
+
+            await u.db.delete(hostel)
+            return True
+
     async def create_room(self, hostel_id: UUID, room_in: HostelRoomCreate) -> HostelRoom:
         async with self.uow.transaction() as u:
             hostel = await u.hostels.get_by_id(hostel_id)

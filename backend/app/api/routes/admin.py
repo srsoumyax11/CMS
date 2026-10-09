@@ -72,13 +72,13 @@ async def list_students(
             id=s.id,
             user_id=str(s.id),
             registration_no=profile.registration_no if profile else "",
-            roll_no=profile.roll_no if profile else None,
+            roll_no=getattr(profile, "roll_no", None) if profile else None,
             name=s.name or s.email.split('@')[0],
             email=s.email,
             course_id=course.id if course else None,
-            course_name=str(course.name) if course else "Unknown",
+            course_name=course.name if course else "Unknown",
             department_id=dept.id if dept else None,
-            department_name=str(dept.name) if dept else "Unknown",
+            department_name=dept.name if dept else "Unknown",
             admission_year=profile.admission_year if profile else 2024,
             current_semester=profile.current_semester if profile else 1,
             section=profile.section if profile else "A",
@@ -473,6 +473,118 @@ async def get_onboarding_status(db: AsyncSession = Depends(get_db)):
     
     return APIResponse(success=True, data=OnboardingStatusResponse(completion_percentage=percentage, tasks=tasks))
 
+def map_user_management_response(user: User) -> UserManagementItemResponse:
+    reg_no = None
+    roll_no = None
+    dept_id = None
+    dept_name = None
+    acad_status = None
+    employee_id = None
+    desig = None
+    employment_status = None
+    join_year = None
+    is_hod = False
+
+    assoc_student_id = None
+    assoc_student_name = None
+    assoc_student_reg_no = None
+    relationship_type = None
+    emergency_name = None
+    emergency_phone = None
+
+    if getattr(user, "student_profile", None):
+        sp = user.student_profile
+        reg_no = sp.registration_no
+        roll_no = getattr(sp, "roll_no", None)
+        dept_id = sp.department_id
+        dept_name = sp.department.name if getattr(sp, "department", None) else None
+        acad_status = sp.academic_status.value if hasattr(sp.academic_status, "value") else str(sp.academic_status)
+    elif getattr(user, "faculty_profile", None):
+        fp = user.faculty_profile
+        employee_id = fp.employee_id
+        dept_id = fp.department_id
+        dept_name = fp.department.name if getattr(fp, "department", None) else None
+        desig = fp.designation
+        join_year = fp.join_year
+        employment_status = fp.employment_status.value if hasattr(fp.employment_status, "value") else str(fp.employment_status)
+        is_hod = getattr(fp.department, "head_id", None) == user.id if getattr(fp, "department", None) else False
+    elif getattr(user, "staff_profile", None):
+        st = user.staff_profile
+        employee_id = st.employee_id
+        dept_id = st.department_id
+        dept_name = st.department.name if getattr(st, "department", None) else None
+        desig = st.designation
+        join_year = st.join_year
+        employment_status = st.employment_status.value if hasattr(st.employment_status, "value") else str(st.employment_status)
+    elif getattr(user, "parent_profile", None):
+        pp = user.parent_profile
+        relationship_type = pp.relationship_type
+        emergency_name = pp.emergency_name
+        emergency_phone = pp.emergency_phone
+        if getattr(pp, "student", None):
+            assoc_student_id = pp.student.id
+            assoc_student_name = pp.student.name or pp.student.email
+            if getattr(pp.student, "student_profile", None):
+                assoc_student_reg_no = pp.student.student_profile.registration_no
+
+    if getattr(user, "role_applications", None):
+        for app in user.role_applications:
+            form_data = app.form_data or {}
+            if not reg_no and "registration_no" in form_data and form_data["registration_no"]:
+                reg_no = str(form_data["registration_no"])
+            if not roll_no and "roll_no" in form_data and form_data["roll_no"]:
+                roll_no = str(form_data["roll_no"])
+            if not employee_id and "employee_id" in form_data and form_data["employee_id"]:
+                employee_id = str(form_data["employee_id"])
+            if not desig and "designation" in form_data and form_data["designation"]:
+                desig = str(form_data["designation"])
+            if not relationship_type and "relationship_type" in form_data and form_data["relationship_type"]:
+                relationship_type = str(form_data["relationship_type"])
+            if not emergency_name and "emergency_name" in form_data and form_data["emergency_name"]:
+                emergency_name = str(form_data["emergency_name"])
+            if not emergency_phone and "emergency_phone" in form_data and form_data["emergency_phone"]:
+                emergency_phone = str(form_data["emergency_phone"])
+            if not assoc_student_reg_no and "student_registration_no" in form_data and form_data["student_registration_no"]:
+                assoc_student_reg_no = str(form_data["student_registration_no"])
+            if not dept_id and "department_id" in form_data and form_data["department_id"]:
+                try:
+                    dept_id = UUID(str(form_data["department_id"]))
+                except Exception:
+                    pass
+
+    return UserManagementItemResponse(
+        id=user.id,
+        email_notifications=user.email_notifications,
+        in_app_alerts=user.in_app_alerts,
+        is_2fa_enabled=user.is_2fa_enabled,
+        target_role=getattr(user, "target_role", None),
+        name=user.name,
+        email=user.email,
+        photo_url=user.photo_url,
+        user_type=user.user_type,
+        account_status=user.account_status,
+        role_id=user.role_id,
+        created_at=user.created_at,
+        status_note=user.status_note,
+        phone=user.phone,
+        registration_no=reg_no,
+        roll_no=roll_no or reg_no,
+        department_id=dept_id,
+        department_name=dept_name,
+        academic_status=acad_status,
+        employee_id=employee_id,
+        designation=desig,
+        employment_status=employment_status,
+        join_year=join_year,
+        is_hod=is_hod,
+        associated_student_id=assoc_student_id,
+        associated_student_name=assoc_student_name,
+        associated_student_reg_no=assoc_student_reg_no,
+        relationship_type=relationship_type,
+        emergency_name=emergency_name,
+        emergency_phone=emergency_phone
+    )
+
 @router.get(
     "/users",
     response_model=APIResponse[List[UserManagementItemResponse]],
@@ -485,10 +597,9 @@ async def list_users(
     _ = Depends(require_permission(Perms.USER_LIST))
 ):
     users, total = await service.list_users(skip=skip, limit=limit)
-    # Using UserManagementItemResponse will filter out sensitive fields
     return APIResponse(
         success=True,
-        data=[UserManagementItemResponse.model_validate(user) for user in users],
+        data=[map_user_management_response(user) for user in users],
         error=None
     )
 
@@ -505,9 +616,10 @@ async def update_user(
 ):
     try:
         user = await service.update_user(id, data, current_user)
+        full_user = await service.user_repo.get_by_id(user.id)
         return APIResponse(
             success=True,
-            data=UserManagementItemResponse.model_validate(user),
+            data=map_user_management_response(full_user or user),
             error=None
         )
     except ValueError as e:

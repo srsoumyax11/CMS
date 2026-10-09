@@ -35,7 +35,7 @@ export function DashboardLayout() {
       ...group,
       items: group.items.filter(item => {
         if (!item.requiredPermissions || item.requiredPermissions.length === 0) return true;
-        return item.requiredPermissions.every(perm => hasPermission(perm));
+        return item.requiredPermissions.some(perm => hasPermission(perm));
       })
     }))
     .filter(group => group.items.length > 0);

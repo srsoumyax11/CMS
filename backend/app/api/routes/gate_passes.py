@@ -13,7 +13,7 @@ from app.services.gate_pass_service import GatePassService
 router = APIRouter(tags=["Gate Passes"])
 
 @router.post(
-    "/",
+    "",
     summary="Request Gate Pass",
     description="Creates a new gate pass request for a student. **Requires:** `gatepass:create`",
     response_model=APIResponse[GatePassResponse]
@@ -47,7 +47,7 @@ async def get_my_gate_passes(
     return APIResponse(success=True, data=GatePassListResponse(total=total, items=passes))
 
 @router.get(
-    "/",
+    "",
     summary="List All Gate Passes",
     description="Fetches all gate passes for review. **Requires:** `gatepass:review`",
     response_model=APIResponse[GatePassListResponse]

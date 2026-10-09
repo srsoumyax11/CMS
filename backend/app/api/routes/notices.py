@@ -22,7 +22,7 @@ router = APIRouter(tags=["Notices"])
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 @router.post(
-    "/", 
+    "", 
     summary="Create Notice", 
     description="Creates a new targeted announcement. Supports file attachments. **Requires:** `notice:create`",
     response_model=APIResponse[NoticeResponse]
@@ -72,7 +72,7 @@ async def create_notice(
 
 
 @router.get(
-    "/", 
+    "", 
     summary="List Notices", 
     description="Fetches a feed of notices dynamically filtered by the user's role and target bounds (course, year, hostel). **Requires:** `notice:list`",
     response_model=APIResponse[NoticeListResponse]

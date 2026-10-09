@@ -30,10 +30,12 @@ import {
   Plus,
   RefreshCw,
   Trash2,
+  Pencil,
   Shield,
   Loader2,
   Bed,
   Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,6 +48,16 @@ export function HostelManagement() {
   const [hostelName, setHostelName] = useState('');
   const [wardenId, setWardenId] = useState('');
   const [capacity, setCapacity] = useState('100');
+
+  // Edit Hostel Modal State
+  const [editingHostel, setEditingHostel] = useState<HostelData | null>(null);
+  const [editHostelName, setEditHostelName] = useState('');
+  const [editWardenId, setEditWardenId] = useState('');
+  const [editCapacity, setEditCapacity] = useState('100');
+  const [editStatus, setEditStatus] = useState<boolean>(true);
+
+  // Delete Hostel Confirmation State
+  const [hostelToDelete, setHostelToDelete] = useState<HostelData | null>(null);
 
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
   const [selectedHostelId, setSelectedHostelId] = useState<string>('');
@@ -79,7 +91,7 @@ export function HostelManagement() {
   });
 
   const allUsers = Array.isArray(usersRes?.data) ? usersRes.data : [];
-  const wardens = useMemo(() => allUsers.filter((u: any) => u.user_type === 'staff' || u.user_type === 'admin'), [allUsers]);
+  const wardens = useMemo(() => allUsers.filter((u: any) => u.user_type === 'staff' || u.user_type === 'admin' || u.user_type === 'faculty'), [allUsers]);
   const students = useMemo(() => allUsers.filter((u: any) => u.user_type === 'student'), [allUsers]);
 
   const userMap = useMemo(() => {
@@ -110,6 +122,31 @@ export function HostelManagement() {
     },
     onError: (err: any) => {
       toast.error(getErrorMessage(err, 'Failed to create hostel building'));
+    },
+  });
+
+  const updateHostelMutation = useMutation({
+    mutationFn: ({ hostelId, data }: { hostelId: string; data: Partial<HostelData> }) =>
+      hostelApi.updateHostel(hostelId, data),
+    onSuccess: () => {
+      toast.success('Hostel building updated successfully');
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.HOSTELS] });
+      setEditingHostel(null);
+    },
+    onError: (err: any) => {
+      toast.error(getErrorMessage(err, 'Failed to update hostel building'));
+    },
+  });
+
+  const deleteHostelMutation = useMutation({
+    mutationFn: (hostelId: string) => hostelApi.deleteHostel(hostelId),
+    onSuccess: () => {
+      toast.success('Hostel building deleted successfully');
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.HOSTELS] });
+      setHostelToDelete(null);
+    },
+    onError: (err: any) => {
+      toast.error(getErrorMessage(err, 'Failed to delete hostel building'));
     },
   });
 
@@ -162,6 +199,28 @@ export function HostelManagement() {
       name: hostelName.trim(),
       warden_user_id: wardenId || null,
       capacity: parseInt(capacity) || 100,
+    });
+  };
+
+  const openEditHostel = (hostel: HostelData) => {
+    setEditingHostel(hostel);
+    setEditHostelName(hostel.name || '');
+    setEditWardenId(hostel.warden_user_id || '');
+    setEditCapacity(hostel.capacity ? String(hostel.capacity) : '100');
+    setEditStatus(hostel.status);
+  };
+
+  const handleUpdateHostel = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingHostel || !editHostelName.trim()) return;
+    updateHostelMutation.mutate({
+      hostelId: editingHostel.id,
+      data: {
+        name: editHostelName.trim(),
+        warden_user_id: editWardenId || null,
+        capacity: parseInt(editCapacity) || 100,
+        status: editStatus,
+      },
     });
   };
 
@@ -253,18 +312,42 @@ export function HostelManagement() {
       id: 'actions',
       header: 'Actions',
       cell: (_, row) => (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-8 text-xs gap-1.5 text-primary"
-          onClick={() => {
-            setSelectedHostelId(row.id);
-            setActiveTab('rooms');
-          }}
-        >
-          <Bed className="w-3.5 h-3.5" /> View Rooms
-        </Button>
+        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 text-xs gap-1.5 text-primary hover:bg-primary/10"
+            onClick={() => {
+              setSelectedHostelId(row.id);
+              setActiveTab('rooms');
+            }}
+          >
+            <Bed className="w-3.5 h-3.5" /> Rooms
+          </Button>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            onClick={() => openEditHostel(row)}
+            title="Edit Building Details"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+            onClick={() => setHostelToDelete(row)}
+            title="Delete Hostel Building"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       ),
+      align: 'right',
+      width: '180px',
     },
   ];
 
@@ -351,66 +434,65 @@ export function HostelManagement() {
               </div>
             </CardHeader>
 
-            <CardContent className="p-6">
-              {loadingRooms ? (
-                <div className="py-12 text-center text-muted-foreground">
-                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
-                  <p className="text-xs">Loading room matrix...</p>
+            <CardContent className="pt-6">
+              {!selectedHostelId ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  Please select a hostel building above to view room occupancy.
+                </div>
+              ) : loadingRooms ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 </div>
               ) : rooms.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground space-y-2">
-                  <Home className="w-8 h-8 mx-auto opacity-50" />
-                  <p className="text-sm font-semibold text-foreground">No Rooms Created Yet</p>
-                  <p className="text-xs">Add rooms to this hostel building to enable student allocations.</p>
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  No rooms created in this building yet. Click &quot;Add Room&quot; to create rooms.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {rooms.map((room) => {
                     const isFull = room.current_occupancy >= room.capacity;
-                    const percent = Math.min(100, Math.round((room.current_occupancy / room.capacity) * 100));
+                    const isEmpty = room.current_occupancy === 0;
 
                     return (
-                      <div
-                        key={room.id}
-                        className="p-4 rounded-xl border border-border bg-card hover:bg-accent/40 transition-colors space-y-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="p-2 rounded-lg bg-primary/10 text-primary font-bold text-xs">
-                              R-{room.room_number}
+                      <Card key={room.id} className="border border-border/80 bg-background/50 hover:bg-background transition-all shadow-2xs">
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Bed className="w-4 h-4 text-primary" />
+                              <span className="font-bold text-sm font-mono">Room {room.room_number}</span>
                             </div>
-                            <span className="font-bold text-foreground text-sm">Room {room.room_number}</span>
+                            <Badge
+                              variant="outline"
+                              className={
+                                isFull
+                                  ? 'bg-rose-500/10 text-rose-600 border-rose-500/20 text-[10px]'
+                                  : isEmpty
+                                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]'
+                                  : 'bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]'
+                              }
+                            >
+                              {isFull ? 'Full' : isEmpty ? 'Vacant' : 'Partial'}
+                            </Badge>
                           </div>
-                          <Badge
-                            variant="outline"
-                            className={
-                              isFull
-                                ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
-                                : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
-                            }
-                          >
-                            {isFull ? 'Full' : 'Available'}
-                          </Badge>
-                        </div>
 
-                        {/* Occupancy Progress Bar */}
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Occupancy</span>
-                            <span className="font-mono font-semibold text-foreground">
-                              {room.current_occupancy} / {room.capacity} Beds
-                            </span>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>Occupancy</span>
+                              <span className="font-semibold text-foreground">
+                                {room.current_occupancy} / {room.capacity} Beds
+                              </span>
+                            </div>
+                            <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  isFull ? 'bg-rose-500' : isEmpty ? 'bg-emerald-500' : 'bg-amber-500'
+                                }`}
+                                style={{ width: `${Math.min(100, (room.current_occupancy / room.capacity) * 100)}%` }}
+                              />
+                            </div>
                           </div>
-                          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                            <div
-                              className={`h-full transition-all duration-300 ${
-                                isFull ? 'bg-rose-500' : percent > 50 ? 'bg-amber-500' : 'bg-emerald-500'
-                              }`}
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
+                        </CardContent>
+                      </Card>
                     );
                   })}
                 </div>
@@ -419,84 +501,62 @@ export function HostelManagement() {
           </Card>
         </TabsContent>
 
-        {/* TAB 3: ROOM ALLOCATION DESK */}
+        {/* TAB 3: ROOM ALLOCATION */}
         <TabsContent value="allocate" className="space-y-6">
-          <Card className="shadow-card border-border bg-card max-w-2xl mx-auto">
+          <Card className="max-w-xl mx-auto shadow-card border-border">
             <CardHeader className="border-b border-border pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-primary/10 text-primary">
-                  <UserPlus className="w-6 h-6" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-bold">Allocate Room to Student</CardTitle>
-                  <CardDescription>Assign an enrolled student to an active hostel building and room.</CardDescription>
-                </div>
-              </div>
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-primary" /> Allocate Student to Room
+              </CardTitle>
+              <CardDescription>Assign or transfer a student to a specific hostel room.</CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
+
+            <CardContent className="pt-6">
               <form onSubmit={handleAllocate} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">
-                    Select Student <span className="text-destructive">*</span>
-                  </Label>
+                  <Label className="text-xs font-semibold">Select Student *</Label>
                   <Select value={allocStudentId} onValueChange={setAllocStudentId}>
                     <SelectTrigger className="h-10 text-sm">
-                      <SelectValue placeholder="Choose student account..." />
+                      <SelectValue placeholder="Search student..." />
                     </SelectTrigger>
                     <SelectContent>
                       {students.map((s: any) => (
                         <SelectItem key={s.id} value={s.id}>
-                          {s.name} ({s.email})
+                          {s.name} ({s.email}) {s.registration_no ? `- Reg: ${s.registration_no}` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-foreground">
-                      Hostel Building <span className="text-destructive">*</span>
-                    </Label>
-                    <Select
-                      value={allocHostelId}
-                      onValueChange={(val) => {
-                        setAllocHostelId(val);
-                        setSelectedHostelId(val);
-                      }}
-                    >
-                      <SelectTrigger className="h-10 text-sm">
-                        <SelectValue placeholder="Choose hostel..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {hostels.map((h) => (
-                          <SelectItem key={h.id} value={h.id}>
-                            {h.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-foreground">
-                      Room Number <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      placeholder="e.g. 101 or 204"
-                      value={allocRoomNo}
-                      onChange={(e) => setAllocRoomNo(e.target.value)}
-                      required
-                      className="h-10 text-sm"
-                    />
-                  </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Select Hostel Building *</Label>
+                  <Select value={allocHostelId} onValueChange={setAllocHostelId}>
+                    <SelectTrigger className="h-10 text-sm">
+                      <SelectValue placeholder="Select hostel..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hostels.map((h) => (
+                        <SelectItem key={h.id} value={h.id}>
+                          {h.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="pt-4 border-t border-border flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    <span>Automatically updates room occupancy count.</span>
-                  </p>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Room Number *</Label>
+                  <Input
+                    placeholder="e.g. 101, 102"
+                    value={allocRoomNo}
+                    onChange={(e) => setAllocRoomNo(e.target.value)}
+                    required
+                    className="h-10 text-sm"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end">
                   <Button type="submit" disabled={allocateMutation.isPending} className="gap-2 px-6">
                     {allocateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
                     Allocate Room
@@ -567,6 +627,118 @@ export function HostelManagement() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL: EDIT HOSTEL BUILDING */}
+      <Dialog open={!!editingHostel} onOpenChange={(open) => !open && setEditingHostel(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-primary" /> Edit Hostel Building
+            </DialogTitle>
+            <DialogDescription>Update details for {editingHostel?.name}.</DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleUpdateHostel} className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Building Name *</Label>
+              <Input
+                placeholder="Building Name"
+                value={editHostelName}
+                onChange={(e) => setEditHostelName(e.target.value)}
+                required
+                className="h-10 text-sm"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Assigned Warden</Label>
+              <Select value={editWardenId} onValueChange={setEditWardenId}>
+                <SelectTrigger className="h-10 text-sm">
+                  <SelectValue placeholder="Select warden user..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {wardens.map((w: any) => (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.name} ({w.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Total Bed Capacity</Label>
+              <Input
+                type="number"
+                value={editCapacity}
+                onChange={(e) => setEditCapacity(e.target.value)}
+                className="h-10 text-sm"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Operational Status</Label>
+              <Select value={editStatus ? 'operational' : 'maintenance'} onValueChange={(val) => setEditStatus(val === 'operational')}>
+                <SelectTrigger className="h-10 text-sm">
+                  <SelectValue placeholder="Select status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="operational">Operational</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DialogFooter className="pt-3 border-t border-border">
+              <Button type="button" variant="outline" size="sm" onClick={() => setEditingHostel(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" disabled={updateHostelMutation.isPending} className="gap-2">
+                {updateHostelMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update Building'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL: DELETE HOSTEL CONFIRMATION */}
+      <Dialog open={!!hostelToDelete} onOpenChange={(open) => !open && setHostelToDelete(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5 text-destructive" /> Delete Hostel Building
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong className="text-foreground">{hostelToDelete?.name}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-xs text-destructive space-y-1">
+            <p className="font-semibold flex items-center gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5" /> Side Effect Warning:
+            </p>
+            <p className="leading-relaxed">
+              This action will remove the hostel building and its rooms. If any students are currently residing in this building, deletion will be blocked until students are reallocated.
+            </p>
+          </div>
+
+          <DialogFooter className="pt-3 border-t border-border">
+            <Button type="button" variant="outline" size="sm" onClick={() => setHostelToDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={deleteHostelMutation.isPending}
+              onClick={() => hostelToDelete && deleteHostelMutation.mutate(hostelToDelete.id)}
+              className="gap-2"
+            >
+              {deleteHostelMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Delete Building
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

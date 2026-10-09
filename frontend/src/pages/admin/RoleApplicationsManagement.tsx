@@ -81,6 +81,10 @@ export function RoleApplicationsManagement() {
     onSuccess: () => {
       toast.success('Role application approved successfully');
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.APPLICATIONS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_USERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FACULTY] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMINS] });
       setIsDetailsOpen(false);
       setSelectedApp(null);
       setNotes('');
@@ -96,6 +100,10 @@ export function RoleApplicationsManagement() {
     onSuccess: () => {
       toast.info('Role application rejected');
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.APPLICATIONS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_USERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STUDENTS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FACULTY] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMINS] });
       setIsDetailsOpen(false);
       setSelectedApp(null);
       setNotes('');

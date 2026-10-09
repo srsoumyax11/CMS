@@ -198,6 +198,28 @@ class UserManagementItemResponse(BaseModel):
     status_note: Optional[str] = None
     phone: Optional[str] = None
 
+    # Student fields
+    registration_no: Optional[str] = None
+    roll_no: Optional[str] = None
+    department_id: Optional[UUID] = None
+    department_name: Optional[str] = None
+    academic_status: Optional[str] = None
+
+    # Faculty & Staff fields
+    employee_id: Optional[str] = None
+    designation: Optional[str] = None
+    employment_status: Optional[str] = None
+    join_year: Optional[int] = None
+    is_hod: Optional[bool] = False
+
+    # Parent fields
+    associated_student_id: Optional[UUID] = None
+    associated_student_name: Optional[str] = None
+    associated_student_reg_no: Optional[str] = None
+    relationship_type: Optional[str] = None
+    emergency_name: Optional[str] = None
+    emergency_phone: Optional[str] = None
+
     model_config = ConfigDict(from_attributes=True)
 
 class UserManagementUpdateRequest(BaseModel):

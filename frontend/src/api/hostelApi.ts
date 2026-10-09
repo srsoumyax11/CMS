@@ -50,14 +50,24 @@ export interface RoomAllocationResult {
 
 export const hostelApi = {
   listHostels: async (skip = 0, limit = 100) => {
-    const res = await client.get<APIResponse<{ total: number; items: HostelData[] }>>('/api/hostels/', {
+    const res = await client.get<APIResponse<{ total: number; items: HostelData[] }>>('/api/hostels', {
       params: { skip, limit },
     });
     return res.data;
   },
 
   createHostel: async (data: { name: string; warden_user_id?: string | null; capacity?: number | null }) => {
-    const res = await client.post<APIResponse<HostelData>>('/api/hostels/', data);
+    const res = await client.post<APIResponse<HostelData>>('/api/hostels', data);
+    return res.data;
+  },
+
+  updateHostel: async (hostelId: string, data: { name?: string; warden_user_id?: string | null; capacity?: number | null; status?: boolean }) => {
+    const res = await client.patch<APIResponse<HostelData>>(`/api/hostels/${hostelId}`, data);
+    return res.data;
+  },
+
+  deleteHostel: async (hostelId: string) => {
+    const res = await client.delete<APIResponse<{ message: string }>>(`/api/hostels/${hostelId}`);
     return res.data;
   },
 

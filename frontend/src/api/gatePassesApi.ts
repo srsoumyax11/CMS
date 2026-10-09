@@ -56,7 +56,7 @@ export interface GatePassCreatePayload {
 
 export const gatePassesApi = {
   request: async (payload: GatePassCreatePayload) => {
-    const res = await client.post<APIResponse<GatePassData>>('/api/gate-passes/', payload);
+    const res = await client.post<APIResponse<GatePassData>>('/api/gate-passes', payload);
     return res.data;
   },
 
@@ -69,7 +69,7 @@ export const gatePassesApi = {
 
   listAllGatePasses: async (status_filter?: string, skip = 0, limit = 50) => {
     const params = status_filter ? { status_filter, skip, limit } : { skip, limit };
-    const res = await client.get<APIResponse<{ total: number; items: GatePassData[] }>>('/api/gate-passes/', { params });
+    const res = await client.get<APIResponse<{ total: number; items: GatePassData[] }>>('/api/gate-passes', { params });
     return res.data;
   },
 

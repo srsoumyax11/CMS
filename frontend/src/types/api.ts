@@ -345,6 +345,7 @@ export interface StudentItemResponse {
   roll_no?: string | null;
   name: string;
   email: string;
+  photo_url?: string | null;
   course_id?: string | null;
   course_name: string;
   department_id?: string | null;
@@ -374,6 +375,7 @@ export interface AdminItemResponse {
   user_id: string;
   name: string;
   email: string;
+  photo_url?: string | null;
   account_status: AccountStatus;
   status_note?: string | null;
 }
@@ -391,6 +393,45 @@ export interface FacultyItemResponse {
   account_status: AccountStatus;
   employment_status: EmploymentStatus;
   status_note?: string | null;
+}
+
+export interface UserManagementItem {
+  id: string;
+  email_notifications: boolean;
+  in_app_alerts: boolean;
+  is_2fa_enabled: boolean;
+  target_role?: string | null;
+  name?: string | null;
+  email: string;
+  photo_url?: string | null;
+  user_type: UserType;
+  account_status: AccountStatus;
+  role_id?: string | null;
+  created_at: string;
+  status_note?: string | null;
+  phone?: string | null;
+
+  // Student fields
+  registration_no?: string | null;
+  roll_no?: string | null;
+  department_id?: string | null;
+  department_name?: string | null;
+  academic_status?: AcademicStatus | string | null;
+
+  // Faculty & Staff fields
+  employee_id?: string | null;
+  designation?: string | null;
+  employment_status?: EmploymentStatus | string | null;
+  join_year?: number | null;
+  is_hod?: boolean;
+
+  // Parent fields
+  associated_student_id?: string | null;
+  associated_student_name?: string | null;
+  associated_student_reg_no?: string | null;
+  relationship_type?: string | null;
+  emergency_name?: string | null;
+  emergency_phone?: string | null;
 }
 
 export interface FacultyCreateRequest {

@@ -154,6 +154,7 @@ Routes are heavily guarded by `require_permission` capabilities and explicit row
 """,
     version="1.0.0",
     lifespan=lifespan,
+    redirect_slashes=False,
     contact={
         "name": "Backend Team",
         "email": "admin@cms.com",
@@ -195,19 +196,34 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             )
             raise e
 
-class TrailingSlashNormalizerMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        path = request.scope.get("path", "")
-        if path and path.startswith("/api/"):
-            routes = {r.path for r in request.app.routes if hasattr(r, "path")}
-            if path not in routes:
-                if not path.endswith("/") and (path + "/") in routes:
-                    request.scope["path"] = path + "/"
-                elif path.endswith("/") and path[:-1] in routes:
-                    request.scope["path"] = path[:-1]
-        return await call_next(request)
+class TrailingSlashNormalizerASGIMiddleware:
+    def __init__(self, app):
+        self.app = app
+        self._route_paths: set[str] = set()
 
-app.add_middleware(TrailingSlashNormalizerMiddleware)
+    def _get_routes(self, scope) -> set[str]:
+        if not self._route_paths:
+            fastapi_app = scope.get("app")
+            if fastapi_app and hasattr(fastapi_app, "routes"):
+                self._route_paths = {
+                    r.path for r in fastapi_app.routes if hasattr(r, "path")
+                }
+        return self._route_paths
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http":
+            path = scope.get("path", "")
+            if path and path.startswith("/api/"):
+                routes = self._get_routes(scope)
+                if routes and path not in routes:
+                    if not path.endswith("/") and (path + "/") in routes:
+                        scope["path"] = path + "/"
+                    elif path.endswith("/") and path.rstrip("/") in routes:
+                        scope["path"] = path.rstrip("/")
+
+        await self.app(scope, receive, send)
+
+app.add_middleware(TrailingSlashNormalizerASGIMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 
 

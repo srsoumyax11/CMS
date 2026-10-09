@@ -60,8 +60,8 @@ export const adminApi = {
 
   uploadUserPhoto: (id: string, file: File) => {
     const formData = new FormData();
-    formData.append('photo', file);
-    return client.post<APIResponse<{ photo_url: string }>>(`/api/admin/users/${id}/photo`, formData, {
+    formData.append('file', file);
+    return client.put<APIResponse<{ photo_url: string }>>(`/api/admin/users/${id}/photo`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
