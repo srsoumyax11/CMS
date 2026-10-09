@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { metadataApi } from '@/api/metadataApi';
 import { adminApi } from '@/api/adminApi';
 import { QUERY_KEYS } from '@/lib/constants';
+import { extractItems } from '@/lib/utils';
 import { PageHeader } from '@/components/shared/page-header/PageHeader';
 import { ProTable, type ProColumn, type TableFilterDef } from '@/components/shared/pro-table';
 import { EntityViewEditDialog, type EntityField } from '@/components/shared/entity-dialog';
@@ -49,15 +50,8 @@ export function StudentManagement() {
     queryFn: () => metadataApi.getDepartments(),
   });
 
-  const rawCourses = coursesResponse?.data?.data;
-  const courses: Course[] = Array.isArray(rawCourses)
-    ? rawCourses
-    : (rawCourses as any)?.items ?? [];
-
-  const rawDepts = deptsResponse?.data?.data;
-  const departments: Department[] = Array.isArray(rawDepts)
-    ? rawDepts
-    : (rawDepts as any)?.items ?? [];
+  const courses: Course[] = extractItems(coursesResponse);
+  const departments: Department[] = extractItems(deptsResponse);
 
   const { createMutation, updateStatusMutation, editMutation } = useStudentMutations();
 
