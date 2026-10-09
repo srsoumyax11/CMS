@@ -34,6 +34,22 @@ class DocumentRequestRepository(GenericRepository[DocumentRequest]):
         result = await self.db.execute(stmt.offset(skip).limit(limit))
         return list(result.scalars().all()), count or 0
 
+    async def list_all_requests(
+        self, status: Optional[DocumentRequestStatus] = None, skip: int = 0, limit: int = 100
+    ) -> Tuple[List[DocumentRequest], int]:
+        stmt = select(DocumentRequest)
+        if status:
+            stmt = stmt.where(DocumentRequest.status == status)
+        stmt = stmt.order_by(DocumentRequest.created_at.desc())
+        
+        count_stmt = select(func.count()).select_from(DocumentRequest)
+        if status:
+            count_stmt = count_stmt.where(DocumentRequest.status == status)
+        count = await self.db.scalar(count_stmt)
+
+        result = await self.db.execute(stmt.offset(skip).limit(limit))
+        return list(result.scalars().all()), count or 0
+
 class DocumentApprovalRepository(GenericRepository[DocumentApproval]):
     def __init__(self, db: AsyncSession):
         super().__init__(db, DocumentApproval)

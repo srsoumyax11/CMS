@@ -6,11 +6,15 @@ from datetime import datetime, timezone
 
 from app.core.uow import UnitOfWork
 from app.models.documents import DocumentType, DocumentRequest, DocumentApproval, DocumentRequestStatus
+from sqlalchemy import select
+from app.models.profiles import StudentProfile
 from app.schemas.document import (
     DocumentTypeCreate,
     DocumentTypeUpdate,
     DocumentRequestCreate,
+    DocumentRequestResponse,
     DocumentApprovalSubmit,
+    DocumentApprovalResponse,
     DocumentVerifyResponse
 )
 
@@ -22,6 +26,58 @@ def generate_verify_code(prefix: str = "DOC") -> str:
 class DocumentService:
     def __init__(self, uow: UnitOfWork):
         self.uow = uow
+
+    async def _to_request_response(self, u: UnitOfWork, doc_req: DocumentRequest) -> DocumentRequestResponse:
+        student = await u.users.get_by_id(doc_req.user_id)
+        student_name = student.name if student else "Student"
+        student_email = student.email if student else "N/A"
+
+        stmt = select(StudentProfile).where(StudentProfile.user_id == doc_req.user_id)
+        res = await u.db.execute(stmt)
+        prof = res.scalar_one_or_none()
+        roll_number = prof.registration_no if prof else None
+
+        doc_type = await u.document_types.get_by_id(doc_req.type_id)
+        doc_type_name = doc_type.name if doc_type else "Document"
+        doc_type_code = doc_type.code if doc_type else "DOC"
+
+        approvals_raw = await u.document_approvals.get_request_approvals(doc_req.id)
+        approvals_list = []
+        for appr in approvals_raw:
+            appr_user = await u.users.get_by_id(appr.approver_user_id)
+            approver_name = appr_user.name if appr_user else "Approver"
+            approvals_list.append(
+                DocumentApprovalResponse(
+                    id=appr.id,
+                    request_id=appr.request_id,
+                    step_no=appr.step_no,
+                    approver_user_id=appr.approver_user_id,
+                    approver_name=approver_name,
+                    decision=appr.decision,
+                    note=appr.note,
+                    decided_at=appr.decided_at
+                )
+            )
+
+        return DocumentRequestResponse(
+            id=doc_req.id,
+            type_id=doc_req.type_id,
+            user_id=doc_req.user_id,
+            student_name=student_name,
+            student_email=student_email,
+            roll_number=roll_number,
+            document_type_name=doc_type_name,
+            document_type_code=doc_type_code,
+            form_data=doc_req.form_data,
+            status=doc_req.status,
+            current_step=doc_req.current_step,
+            issued_file_url=doc_req.issued_file_url,
+            verify_code=doc_req.verify_code,
+            issued_at=doc_req.issued_at,
+            approvals=approvals_list,
+            created_at=doc_req.created_at,
+            updated_at=doc_req.updated_at
+        )
 
     async def create_document_type(self, type_in: DocumentTypeCreate) -> DocumentType:
         async with self.uow.transaction() as u:
@@ -57,7 +113,7 @@ class DocumentService:
         async with self.uow.transaction() as u:
             return await u.document_types.list(filters=filters, skip=skip, limit=limit)
 
-    async def apply_for_document(self, user_id: UUID, req_in: DocumentRequestCreate) -> DocumentRequest:
+    async def apply_for_document(self, user_id: UUID, req_in: DocumentRequestCreate) -> DocumentRequestResponse:
         async with self.uow.transaction() as u:
             doc_type = await u.document_types.get_by_id(req_in.type_id)
             if not doc_type or not doc_type.status:
@@ -70,9 +126,10 @@ class DocumentService:
                 status=DocumentRequestStatus.submitted,
                 current_step=1
             )
-            return await u.document_requests.create(doc_req)
+            doc_req = await u.document_requests.create(doc_req)
+            return await self._to_request_response(u, doc_req)
 
-    async def review_approval(self, approver_id: UUID, request_id: UUID, submit_in: DocumentApprovalSubmit) -> DocumentRequest:
+    async def review_approval(self, approver_id: UUID, request_id: UUID, submit_in: DocumentApprovalSubmit) -> DocumentRequestResponse:
         decision_clean = submit_in.decision.upper()
         if decision_clean not in ["APPROVED", "REJECTED", "REVISION"]:
             raise ValueError("Decision must be APPROVED, REJECTED, or REVISION.")
@@ -99,6 +156,9 @@ class DocumentService:
             )
             await u.document_approvals.create(approval_entry)
 
+            if submit_in.issued_file_url:
+                doc_req.issued_file_url = submit_in.issued_file_url
+
             # Update request status based on decision
             if decision_clean == "REJECTED":
                 doc_req.status = DocumentRequestStatus.rejected
@@ -116,7 +176,7 @@ class DocumentService:
                     doc_req.issued_at = datetime.now(timezone.utc)
 
             await u.document_requests.update(doc_req, {})
-            return doc_req
+            return await self._to_request_response(u, doc_req)
 
     async def verify_document(self, verify_code: str) -> DocumentVerifyResponse:
         async with self.uow.transaction() as u:
@@ -138,6 +198,30 @@ class DocumentService:
                 verify_code=doc_req.verify_code
             )
 
-    async def get_user_requests(self, user_id: UUID, skip: int = 0, limit: int = 100) -> Tuple[List[DocumentRequest], int]:
+    async def get_user_requests(self, user_id: UUID, skip: int = 0, limit: int = 100) -> Tuple[List[DocumentRequestResponse], int]:
         async with self.uow.transaction() as u:
-            return await u.document_requests.get_user_requests(user_id, skip=skip, limit=limit)
+            raw_items, total = await u.document_requests.get_user_requests(user_id, skip=skip, limit=limit)
+            items = []
+            for item in raw_items:
+                resp = await self._to_request_response(u, item)
+                items.append(resp)
+            return items, total
+
+    async def list_all_requests(
+        self, status: Optional[str] = None, skip: int = 0, limit: int = 100
+    ) -> Tuple[List[DocumentRequestResponse], int]:
+        async with self.uow.transaction() as u:
+            st_enum = None
+            if status:
+                st_clean = status.strip().lower()
+                for member in DocumentRequestStatus:
+                    if member.name.lower() == st_clean or member.value.lower() == st_clean:
+                        st_enum = member
+                        break
+
+            raw_items, total = await u.document_requests.list_all_requests(status=st_enum, skip=skip, limit=limit)
+            items = []
+            for item in raw_items:
+                resp = await self._to_request_response(u, item)
+                items.append(resp)
+            return items, total

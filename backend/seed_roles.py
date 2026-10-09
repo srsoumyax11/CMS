@@ -7,6 +7,7 @@ from app.core.config import settings
 from seed_settings import seed_settings
 from seed_permissions import seed_permissions
 from seed_academic import seed_academic
+from seed_documents import seed_documents
 
 async def seed_roles():
     async with AsyncSessionLocal() as db:
@@ -65,6 +66,9 @@ async def seed_roles():
 
     # Run academic infrastructure seeder
     await seed_academic()
+
+    # Run document types seeder
+    await seed_documents()
 
 if __name__ == "__main__":
     asyncio.run(seed_roles())

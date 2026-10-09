@@ -72,9 +72,26 @@ async def apply_for_document(
     service = DocumentService(uow)
     try:
         doc_req = await service.apply_for_document(current_user.id, req)
-        return APIResponse(success=True, data=DocumentRequestResponse.model_validate(doc_req))
+        return APIResponse(success=True, data=doc_req)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get(
+    "/requests",
+    summary="List All Document Requests",
+    description="Lists document requests for approvers. **Requires:** `document:approve`",
+    response_model=APIResponse[DocumentRequestListResponse]
+)
+async def list_all_document_requests(
+    status: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(require_permission(Perms.DOCUMENT_APPROVE))
+):
+    service = DocumentService(uow)
+    items, total = await service.list_all_requests(status=status, skip=skip, limit=limit)
+    return APIResponse(success=True, data=DocumentRequestListResponse(total=total, items=items))
 
 @router.get(
     "/requests/mine",
@@ -89,8 +106,7 @@ async def get_my_document_requests(
     current_user: User = Depends(get_current_user)
 ):
     service = DocumentService(uow)
-    items_raw, total = await service.get_user_requests(current_user.id, skip=skip, limit=limit)
-    items = [DocumentRequestResponse.model_validate(item) for item in items_raw]
+    items, total = await service.get_user_requests(current_user.id, skip=skip, limit=limit)
     return APIResponse(success=True, data=DocumentRequestListResponse(total=total, items=items))
 
 @router.post(
@@ -108,7 +124,7 @@ async def review_document_approval(
     service = DocumentService(uow)
     try:
         doc_req = await service.review_approval(current_user.id, request_id, req)
-        return APIResponse(success=True, data=DocumentRequestResponse.model_validate(doc_req))
+        return APIResponse(success=True, data=doc_req)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

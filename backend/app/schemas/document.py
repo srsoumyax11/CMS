@@ -49,12 +49,14 @@ class DocumentRequestCreate(BaseModel):
 class DocumentApprovalSubmit(BaseModel):
     decision: str = Field(..., description="APPROVED, REJECTED, or REVISION")
     note: Optional[str] = Field(None, max_length=1000)
+    issued_file_url: Optional[str] = None
 
 class DocumentApprovalResponse(BaseModel):
     id: UUID
     request_id: UUID
     step_no: int
     approver_user_id: UUID
+    approver_name: Optional[str] = None
     decision: str
     note: Optional[str] = None
     decided_at: datetime
@@ -65,12 +67,18 @@ class DocumentRequestResponse(BaseModel):
     id: UUID
     type_id: UUID
     user_id: UUID
+    student_name: Optional[str] = None
+    student_email: Optional[str] = None
+    roll_number: Optional[str] = None
+    document_type_name: Optional[str] = None
+    document_type_code: Optional[str] = None
     form_data: Optional[Dict[str, Any]] = None
     status: DocumentRequestStatus
     current_step: int
     issued_file_url: Optional[str] = None
     verify_code: Optional[str] = None
     issued_at: Optional[datetime] = None
+    approvals: List[DocumentApprovalResponse] = []
     created_at: datetime
     updated_at: datetime
 
