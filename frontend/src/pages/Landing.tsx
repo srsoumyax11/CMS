@@ -68,9 +68,7 @@ export function Landing() {
           
           {/* Institution Logo / Crest */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-foreground text-background font-serif font-bold text-xl tracking-tighter transition-transform group-hover:scale-105">
-              B
-            </div>
+            <img src="/apple-touch-icon.png" alt="BPUT Logo" className="h-10 w-10 object-contain rounded-lg transition-transform group-hover:scale-105 shadow-2xs" />
             <div className="flex flex-col">
               <span className="font-serif text-lg tracking-wider font-semibold text-foreground leading-none">
                 BPUT
@@ -728,9 +726,7 @@ export function Landing() {
           
           <div className="space-y-4 max-w-sm">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-foreground text-background font-serif font-bold text-base">
-                B
-              </div>
+              <img src="/apple-touch-icon.png" alt="BPUT Logo" className="h-8 w-8 object-contain rounded-md" />
               <span className="font-serif text-lg tracking-wider font-semibold text-foreground">
                 BPUT CAMPUS MANAGEMENT SYSTEM
               </span>
