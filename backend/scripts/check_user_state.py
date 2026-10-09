@@ -6,7 +6,7 @@ from app.core.config import settings
 async def test():
     engine = create_async_engine(settings.DATABASE_URL)
     async with engine.begin() as conn:
-        res = await conn.execute(text("SELECT id, user_type, account_status FROM users WHERE email='arjun.mehta_1791457142182_9@bput.ac.in'"))
+        res = await conn.execute(text("SELECT id, user_type, account_status FROM users WHERE email='arjun.mehta_1791457142182_9@campusone.edu'"))
         user = res.fetchone()
         if user:
             print("User:", dict(user._mapping))

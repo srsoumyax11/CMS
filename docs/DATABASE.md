@@ -1,6 +1,6 @@
 # Database Schema
 
-The BPUT CMS uses PostgreSQL. All tables, relationships, and migrations are managed programmatically via **SQLAlchemy** and **Alembic**.
+The CampusOne uses PostgreSQL. All tables, relationships, and migrations are managed programmatically via **SQLAlchemy** and **Alembic**.
 
 ## Entity Relationship Diagram
 

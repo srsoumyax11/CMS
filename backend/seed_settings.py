@@ -17,7 +17,7 @@ DEFAULT_SYSTEM_SETTINGS: List[SystemSettingDict] = [
     # ── General ────────────────────────────────────────────────────────
     {
         "key": "college_name",
-        "value": "BPUT Campus Management System",
+        "value": "CampusOne",
         "category": "General",
         "data_type": "string",
         "description": "Official name of the university / college institution.",
@@ -25,7 +25,7 @@ DEFAULT_SYSTEM_SETTINGS: List[SystemSettingDict] = [
     },
     {
         "key": "college_code",
-        "value": "BPUT",
+        "value": "CampusOne",
         "category": "General",
         "data_type": "string",
         "description": "Official institution code used for registration & documents.",
@@ -33,7 +33,7 @@ DEFAULT_SYSTEM_SETTINGS: List[SystemSettingDict] = [
     },
     {
         "key": "support_email",
-        "value": "support@bput.ac.in",
+        "value": "support@campusone.edu",
         "category": "General",
         "data_type": "string",
         "description": "Primary support & helpdesk email address.",

@@ -155,7 +155,7 @@ export function ProTable<T>({
     if (filters && filters.length > 0) {
       filters.forEach((filter) => {
         const activeVal = activeFilters[filter.id];
-        if (activeVal !== undefined && activeVal !== 'all') {
+        if (activeVal !== undefined && activeVal !== null && activeVal !== '' && activeVal !== 'all') {
           if (filter.filterFn) {
             result = result.filter((row) => filter.filterFn!(row, activeVal));
           } else {

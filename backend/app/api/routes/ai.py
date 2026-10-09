@@ -17,7 +17,7 @@ router = APIRouter(tags=["AI Assistant"])
 @router.post(
     "/conversations",
     summary="Start New AI Chat Session",
-    description="Creates a new conversation context with BPUT Campus AI Assistant.",
+    description="Creates a new conversation context with CampusOne AI Assistant.",
     response_model=APIResponse[AIConversationResponse]
 )
 async def create_conversation(

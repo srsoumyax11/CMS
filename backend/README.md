@@ -1,6 +1,6 @@
-# Campus Management Platform - Backend Phase 1
+# CampusOne Platform - Backend Phase 1
 
-This is the FastAPI backend skeleton for the campus management platform.
+This is the FastAPI backend skeleton for the CampusOne platform.
 
 ## Setup Instructions
 

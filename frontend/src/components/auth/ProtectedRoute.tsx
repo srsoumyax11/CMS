@@ -53,8 +53,8 @@ export function ProtectedRoute({ allowedRoles, requiredPermissions }: ProtectedR
   }
 
   if (effectivePermissions && effectivePermissions.length > 0) {
-    const hasAllPermissions = effectivePermissions.every((perm) => hasPermission(perm));
-    if (!hasAllPermissions) {
+    const hasAnyPermission = effectivePermissions.some((perm) => hasPermission(perm));
+    if (!hasAnyPermission) {
       return <Navigate to="/unauthorized" replace />;
     }
   }

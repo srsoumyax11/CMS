@@ -102,7 +102,7 @@ class AuthService:
             send_email_background(
                 background_tasks=background_tasks,
                 to_email=new_user.email,
-                subject="Welcome to BPUT CMS — Email Verified",
+                subject="Welcome to CampusOne — Email Verified",
                 template_name="welcome.html",
                 context={
                     "name": new_user.name or "User",

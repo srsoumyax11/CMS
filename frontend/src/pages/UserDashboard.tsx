@@ -12,7 +12,7 @@ export function UserDashboard() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <PageHeader
-        title={`Welcome to BPUT CMS, ${user.name?.split(' ')[0] || 'User'}`}
+        title={`Welcome to CampusOne, ${user.name?.split(' ')[0] || 'User'}`}
         description="Your account is active. Please select your official campus role below to submit a verification request."
         icon={LayoutDashboard}
       />

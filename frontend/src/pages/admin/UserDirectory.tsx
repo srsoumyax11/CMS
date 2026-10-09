@@ -28,7 +28,7 @@ export function UserDirectory() {
     <div className="space-y-6">
       <PageHeader
         title="User & Identity Directory"
-        description="Unified management portal for student profiles, teaching faculty, administrative staff, and platform user accounts across BPUT."
+        description="Unified management portal for student profiles, teaching faculty, administrative staff, and platform user accounts across CampusOne."
       />
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">

@@ -1,6 +1,6 @@
 <div align="center">
   
-  # 🚀 BPUT CMS
+  # 🚀 CampusOne
   
   ### A modern, role-based university Content Management System.
 
@@ -11,10 +11,10 @@
   <br />
   
   <!-- Add a stunning dashboard screenshot here later -->
-  <!-- <img src="./docs/assets/dashboard.png" width="900" alt="BPUT CMS Dashboard"> -->
+  <!-- <img src="./docs/assets/dashboard.png" width="900" alt="CampusOne Dashboard"> -->
   
   <p>
-    <strong>BPUT CMS</strong> is a full-stack enterprise application built with React, FastAPI, PostgreSQL, and Supabase to streamline university operations, complaint tracking, and student outpasses.
+    <strong>CampusOne</strong> is a full-stack enterprise application built with React, FastAPI, PostgreSQL, and Supabase to streamline university operations, complaint tracking, and student outpasses.
   </p>
 
   [Live Demo](https://your-demo-link.com) · [Documentation](./docs) · [Report Bug](https://github.com/srsoumyax11/CMS/issues)

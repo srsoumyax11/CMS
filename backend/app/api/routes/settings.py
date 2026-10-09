@@ -117,7 +117,7 @@ async def send_test_email(
     send_email_background(
         background_tasks=background_tasks,
         to_email=current_user.email,
-        subject="[BPUT CMS] SMTP Configuration Test Email",
+        subject="[CampusOne] SMTP Configuration Test Email",
         template_name="test_email.html",
         context=context
     )

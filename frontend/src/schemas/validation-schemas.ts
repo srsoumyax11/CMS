@@ -4,7 +4,7 @@ export const studentCreateSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  registration_no: z.string().regex(/^\d{10}$/, 'BPUT Registration Number must be exactly 10 digits'),
+  registration_no: z.string().regex(/^\d{10}$/, 'CampusOne Registration Number must be exactly 10 digits'),
   roll_no: z.string().optional(),
   department_id: z.string().min(1, 'Department is required'),
   course_id: z.string().min(1, 'Course is required'),
@@ -16,7 +16,7 @@ export const studentCreateSchema = z.object({
 
 export const studentUpdateSchema = z.object({
   name: z.string().min(2, 'Name is required').optional(),
-  registration_no: z.string().regex(/^\d{10}$/, 'BPUT Registration Number must be exactly 10 digits').optional(),
+  registration_no: z.string().regex(/^\d{10}$/, 'CampusOne Registration Number must be exactly 10 digits').optional(),
   roll_no: z.string().optional(),
   department_id: z.string().optional(),
   course_id: z.string().optional(),

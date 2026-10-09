@@ -162,7 +162,7 @@ export function Register() {
 
       const tokenData = res.data.data;
       if (tokenData?.access_token && tokenData?.refresh_token) {
-        toast.success('Account created! Welcome to BPUT CMS 🎉');
+        toast.success('Account created! Welcome to CampusOne 🎉');
         setStep(3); // Switch to celebration & countdown step!
         await finishLogin(tokenData.access_token, tokenData.refresh_token);
       } else {
@@ -185,14 +185,14 @@ export function Register() {
                 <PartyPopper className="w-7 h-7" />
               </div>
             ) : (
-              <img src="/android-chrome-192x192.png" alt="BPUT Logo" className="w-full h-full rounded-2xl object-contain" />
+              <img src="/android-chrome-192x192.png" alt="CampusOne Logo" className="w-full h-full rounded-2xl object-contain" />
             )}
           </div>
           <CardTitle className="text-2xl font-bold font-editorial tracking-tight text-foreground">
             {step === 3 ? 'Welcome Aboard! 🎉' : 'Create Account'}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            {step === 1 && 'Enter your details to sign up for BPUT CMS'}
+            {step === 1 && 'Enter your details to sign up for CampusOne'}
             {step === 2 && 'Email verification required'}
             {step === 3 && 'Your account has been successfully created'}
           </CardDescription>
@@ -345,7 +345,7 @@ export function Register() {
                   Account Verified! 🎉
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Welcome to Synergy CMS, <strong className="text-foreground">{name || email}</strong>!
+                  Welcome to CampusOne, <strong className="text-foreground">{name || email}</strong>!
                 </p>
               </div>
 

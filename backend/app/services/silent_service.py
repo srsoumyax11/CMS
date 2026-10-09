@@ -107,7 +107,7 @@ class SilentService:
         lines = [
             "BEGIN:VCALENDAR",
             "VERSION:2.0",
-            "PRODID:-//BPUT CMS//Silent Mode Calendar Feed//EN",
+            "PRODID:-//CampusOne//Silent Mode Calendar Feed//EN",
             "CALSCALE:GREGORIAN",
             "METHOD:PUBLISH",
             "X-WR-CALNAME:Campus Class Schedule"
@@ -119,7 +119,7 @@ class SilentService:
             for slot in slots_raw:
                 lines.extend([
                     "BEGIN:VEVENT",
-                    f"UID:slot-{slot.id}@cms.bput",
+                    f"UID:slot-{slot.id}@campusone.edu",
                     f"SUMMARY:Academic Lecture",
                     f"DESCRIPTION:Class lecture schedule for Day {slot.day_of_week.value}",
                     f"DTSTART:20261001T{slot.start_time.strftime('%H%M%S')}",

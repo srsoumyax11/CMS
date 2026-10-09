@@ -116,7 +116,7 @@ export function FacultyCreateModal({ isOpen, onClose, onSubmit, isPending, depar
               <Input
                 id="f-email"
                 type="email"
-                placeholder="e.g. ananya.sharma@cms.edu"
+                placeholder="e.g. ananya.sharma@campusone.edu"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 className={emailError ? "border-destructive pr-10" : "pr-10"}

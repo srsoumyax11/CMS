@@ -14,7 +14,7 @@ export const MaintenanceOverlay: React.FC = () => {
       const customEv = e as CustomEvent<{ message?: string }>;
       setMaintenance({
         active: true,
-        message: customEv.detail?.message || 'The BPUT Campus Portal is currently under scheduled maintenance.',
+        message: customEv.detail?.message || 'The CampusOne Portal is currently under scheduled maintenance.',
       });
     };
 

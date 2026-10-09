@@ -5,7 +5,7 @@ from datetime import datetime
 from app.models.user import AccountStatus
 
 class StudentApplicationPayload(BaseModel):
-    registration_no: Optional[str] = Field(None, description="10-digit BPUT Registration Number or Roll Number")
+    registration_no: Optional[str] = Field(None, description="10-digit CampusOne Registration Number or Roll Number")
     roll_no: Optional[str] = Field(None, description="Class Roll Number e.g. 23/CSE/042")
     course_id: uuid.UUID
     department_id: uuid.UUID

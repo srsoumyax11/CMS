@@ -97,12 +97,12 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
       <Card className="w-full max-w-md shadow-card bg-card text-card-foreground border-border rounded-2xl">
         <CardHeader className="text-center space-y-2 pb-6 border-b border-border">
-          <img src="/android-chrome-192x192.png" alt="BPUT Logo" className="mx-auto w-12 h-12 rounded-2xl object-contain shadow-md" />
+          <img src="/android-chrome-192x192.png" alt="CampusOne Logo" className="mx-auto w-12 h-12 rounded-2xl object-contain shadow-md" />
           <CardTitle className="text-2xl font-bold font-editorial tracking-tight text-foreground">
             {requires2FA ? 'Two-Factor Authentication' : 'Welcome Back'}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            {requires2FA ? 'Enter the 6-digit code sent to your email' : 'Sign in to access your BPUT CMS Dashboard'}
+            {requires2FA ? 'Enter the 6-digit code sent to your email' : 'Sign in to access your CampusOne Dashboard'}
           </CardDescription>
         </CardHeader>
 

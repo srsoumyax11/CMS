@@ -1,7 +1,7 @@
 Viewed permissions.ts:1-97
 Listed directory models
 
-Here is a comprehensive breakdown of all **Assets & Domain Entities** configured in the **BPUT Campus Management System (CMS)**, categorized by domain:
+Here is a comprehensive breakdown of all **Assets & Domain Entities** configured in the **CampusOne (CMS)**, categorized by domain:
 
 ---
 

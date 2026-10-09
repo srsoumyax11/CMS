@@ -1,4 +1,4 @@
-# BPUT CMS — Feature-Wise API Mapping Specification
+# CampusOne — Feature-Wise API Mapping Specification
 
 Version 1.0 | October 2026 | Status: Complete API Architecture Specification
 
@@ -23,7 +23,7 @@ Version 1.0 | October 2026 | Status: Complete API Architecture Specification
 13. [Feature 13: Hostel Management & Student Room Allocation](#feature-13-hostel-management--student-room-allocation)
 14. [Feature 14: Personal Silent Mode & iCal Calendar Feed](#feature-14-personal-silent-mode--ical-calendar-feed)
 15. [Feature 15: Campus Map & Dijkstra Shortest Path Navigation](#feature-15-campus-map--dijkstra-shortest-path-navigation)
-16. [Feature 16: BPUT Campus AI Assistant Chat Drawer](#feature-16-bput-campus-ai-assistant-chat-drawer)
+16. [Feature 16: CampusOne AI Assistant Chat Drawer](#feature-16-campusone-ai-assistant-chat-drawer)
 17. [Feature 17: SuperAdmin Governance, RBAC Matrix & Maintenance Control](#feature-17-superadmin-governance-rbac-matrix--maintenance-control) ✅
 
 ---
@@ -326,7 +326,7 @@ Interactive campus directory (buildings, classrooms, labs, hostels). Calculates 
 
 ---
 
-## Feature 16: BPUT Campus AI Assistant Chat Drawer
+## Feature 16: CampusOne AI Assistant Chat Drawer
 
 ### Overview & UI Views
 Floating chat panel available on all pages. Answers questions regarding schedule, campus locations, notices, and gate pass status using backend tool calling.

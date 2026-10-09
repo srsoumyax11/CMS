@@ -61,8 +61,7 @@ async def create_notice(
         target_department_id=target_department_id,
         target_year=target_year,
         target_hostel_id=target_hostel_id,
-        target_user_types=target_user_types,
-        target_audience_group_id=target_audience_group_id
+        target_user_types=target_user_types
     )
 
     

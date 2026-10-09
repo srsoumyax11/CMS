@@ -169,7 +169,7 @@ export function UserManagement() {
     userId: string;
     userData: any;
     profileData?: any;
-    profileType?: 'student' | 'faculty';
+    profileType?: 'student' | 'faculty' | 'staff' | 'parent';
   }) => {
     setIsSavingUser(true);
     try {
@@ -179,7 +179,7 @@ export function UserManagement() {
       // 2. Update specific profile if provided
       if (payload.profileType === 'student' && payload.profileData) {
         await adminApi.updateStudentDetails(payload.userId, payload.profileData);
-      } else if (payload.profileType === 'faculty' && payload.profileData) {
+      } else if ((payload.profileType === 'faculty' || payload.profileType === 'staff') && payload.profileData) {
         await adminApi.updateFaculty(payload.userId, payload.profileData);
       }
 

@@ -233,7 +233,7 @@ export const RoleElevationWidget: React.FC = () => {
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
-                  You hold full administrative system governance over BPUT CMS. Role elevation requests are unnecessary and restricted for administrator accounts.
+                  You hold full administrative system governance over CampusOne. Role elevation requests are unnecessary and restricted for administrator accounts.
                 </p>
               </div>
             </div>
@@ -682,7 +682,7 @@ export const RoleElevationWidget: React.FC = () => {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-semibold text-foreground">
-                      BPUT Registration No. / Roll Number <span className="text-destructive">*</span>
+                      CampusOne Registration No. / Roll Number <span className="text-destructive">*</span>
                     </Label>
                     {idChecking && (
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -777,7 +777,7 @@ export const RoleElevationWidget: React.FC = () => {
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-foreground">
-                    Child Student ID / BPUT Roll Number <span className="text-destructive">*</span>
+                    Child Student ID / CampusOne Roll Number <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     placeholder="Enter student roll number or institutional email"

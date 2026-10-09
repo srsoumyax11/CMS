@@ -15,7 +15,7 @@ from app.models.user import User, UserType
 
 async def run_all_e2e_tests():
     print("=================================================================")
-    print("🚀 BPUT CMS BACKEND END-TO-END USER JOURNEY TEST SUITE")
+    print("🚀 CampusOne BACKEND END-TO-END USER JOURNEY TEST SUITE")
     print("=================================================================\n")
 
     transport = ASGITransport(app=app)
@@ -157,7 +157,7 @@ async def run_all_e2e_tests():
         print(f"   ✅ PASSED: Campus Map Location Tree, Path Edges & Dijkstra Navigation (Route: {r_route.json()['data']['steps'][0]['name']} -> {r_route.json()['data']['steps'][1]['name']}, Dist: 18.5m).\n")
 
         # TEST 4: Campus AI Assistant Query & Context Trajectory
-        print("🔹 Test 4: BPUT Campus AI Assistant Chat & Context Query...")
+        print("🔹 Test 4: CampusOne AI Assistant Chat & Context Query...")
         r_conv = await client.post(
             "/api/ai/conversations",
             headers=student_headers,

@@ -144,9 +144,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="BPUT Campus Management System API",
+    title="CampusOne API",
     description="""
-A robust, asynchronous REST API powering the BPUT Campus Management System (BPUT CMS).
+A robust, asynchronous REST API powering the CampusOne (CampusOne).
 
 ## Security & RBAC
 This API uses a strict Role-Based Access Control (RBAC) engine. 

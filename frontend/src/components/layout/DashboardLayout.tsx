@@ -65,12 +65,12 @@ export function DashboardLayout() {
         onClick={onToggle}
       >
         <div className={cn("flex items-center gap-3", collapsed && !isMobile && "transition-opacity group-hover:opacity-0")}>
-          <img src="/apple-touch-icon.png" alt="BPUT Logo" className="h-9 w-9 shrink-0 object-contain rounded-lg shadow-2xs" />
+          <img src="/apple-touch-icon.png" alt="CampusOne Logo" className="h-9 w-9 shrink-0 object-contain rounded-lg shadow-2xs" />
           <span className={cn(
             "text-lg font-bold text-foreground whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out",
             collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
           )}>
-            BPUT CMS
+            CampusOne
           </span>
         </div>
         

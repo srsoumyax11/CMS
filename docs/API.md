@@ -1,6 +1,6 @@
 # API Documentation
 
-The BPUT CMS backend exposes a RESTful API powered by FastAPI.
+The CampusOne backend exposes a RESTful API powered by FastAPI.
 
 **Base URL (Local):** `http://localhost:8000/api`
 

@@ -34,7 +34,7 @@ async def create_user_account():
             last_name = random.choice(INDIAN_LAST_NAMES)
             name = f"{first_name} {last_name}"
             # ensure uniqueness with timestamp and loop index
-            email = f"{first_name.lower()}.{last_name.lower()}_{int(time.time()*1000)}_{i}@bput.ac.in"
+            email = f"{first_name.lower()}.{last_name.lower()}_{int(time.time()*1000)}_{i}@campusone.edu"
             
             new_user = User(
                 id=uuid.uuid4(),

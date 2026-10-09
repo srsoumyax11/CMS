@@ -1,1 +1,1 @@
-# BPUT CMS Backend Tests Package
+# CampusOne Backend Tests Package

@@ -22,7 +22,7 @@ class AIService:
             sys_msg = AIMessage(
                 conversation_id=created_conv.id,
                 role=AIMessageRole.system,
-                content="You are BPUT Campus Assistant AI, helpful, friendly, and knowledgeable about academic schedules, notices, complaints, hostels, and campus navigation."
+                content="You are CampusOne AI Assistant, helpful, friendly, and knowledgeable about academic schedules, notices, complaints, hostels, and campus navigation."
             )
             await u.ai_messages.create(sys_msg)
             return created_conv
@@ -72,7 +72,7 @@ class AIService:
                 h_names = [str(h.name) for h in hostels] if hostels else ["Boys Hostel 1", "Girls Hostel 1"]
                 response_text = f"Hostel Infrastructure: Campus hostels include {', '.join(h_names)}. For room allocations or gate passes, visit your Hostel Portal."
             else:
-                response_text = f"I am your BPUT Campus Assistant. How can I assist you with your academic schedule, hostel allocation, gate pass requests, digital notices, or campus map navigation?"
+                response_text = f"I am your CampusOne AI Assistant. How can I assist you with your academic schedule, hostel allocation, gate pass requests, digital notices, or campus map navigation?"
 
             # 3. Save Assistant Message
             assistant_msg = AIMessage(

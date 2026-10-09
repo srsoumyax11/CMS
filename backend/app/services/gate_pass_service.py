@@ -34,8 +34,8 @@ class GatePassService:
         prof = res.scalar_one_or_none()
 
         roll_number = prof.registration_no if prof else None
-        hostel_name = None
-        room_number = prof.room_number if prof else None
+        hostel_name = "Day Scholar / Unallocated"
+        room_number = prof.room_number if (prof and prof.room_number) else "N/A"
 
         if prof and prof.hostel_id:
             h = await u.hostels.get_by_id(prof.hostel_id)
@@ -81,14 +81,12 @@ class GatePassService:
 
     async def request_gate_pass(self, student_id: UUID, data: dict) -> GatePassResponse:
         async with self.uow.transaction() as u:
-            # 1. Verify student profile and hostel allocation
+            # 1. Verify student profile
             stmt = select(StudentProfile).where(StudentProfile.user_id == student_id)
             res = await u.db.execute(stmt)
             prof = res.scalar_one_or_none()
             if not prof:
                 raise ValueError("Only registered students can request gate passes.")
-            if not prof.hostel_id or not prof.room_number:
-                raise ValueError("You must be allocated to a hostel room before requesting a gate pass.")
 
             # 2. Check active passes
             filters = {"student_user_id": student_id}

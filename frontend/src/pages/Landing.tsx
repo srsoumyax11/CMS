@@ -68,13 +68,13 @@ export function Landing() {
           
           {/* Institution Logo / Crest */}
           <Link to="/" className="flex items-center gap-3 group">
-            <img src="/apple-touch-icon.png" alt="BPUT Logo" className="h-10 w-10 object-contain rounded-lg transition-transform group-hover:scale-105 shadow-2xs" />
+            <img src="/apple-touch-icon.png" alt="CampusOne Logo" className="h-10 w-10 object-contain rounded-lg transition-transform group-hover:scale-105 shadow-2xs" />
             <div className="flex flex-col">
               <span className="font-serif text-lg tracking-wider font-semibold text-foreground leading-none">
-                BPUT
+                CampusOne
               </span>
               <span className="text-[10px] tracking-[0.15em] font-medium text-muted-foreground uppercase mt-1">
-                Campus Management System • Odisha
+                CampusOne • Odisha
               </span>
             </div>
           </Link>
@@ -704,7 +704,7 @@ export function Landing() {
                 <div className="space-y-3">
                   <span className="text-xs font-mono text-muted-foreground">AUGUST 2026 • CLASSICAL STUDIES</span>
                   <h3 className="font-serif text-xl font-normal text-foreground leading-snug">
-                    BPUT Archaeological & Historical Expedition Discovers Hellenistic Archive
+                    CampusOne Archaeological & Historical Expedition Discovers Hellenistic Archive
                   </h3>
                   <p className="text-muted-foreground text-xs leading-relaxed font-light">
                     Excavations in Asia Minor unearth 400 intact clay tablets detailing civic trade law from the 3rd century BCE.
@@ -726,13 +726,13 @@ export function Landing() {
           
           <div className="space-y-4 max-w-sm">
             <div className="flex items-center gap-3">
-              <img src="/apple-touch-icon.png" alt="BPUT Logo" className="h-8 w-8 object-contain rounded-md" />
+              <img src="/apple-touch-icon.png" alt="CampusOne Logo" className="h-8 w-8 object-contain rounded-md" />
               <span className="font-serif text-lg tracking-wider font-semibold text-foreground">
-                BPUT CAMPUS MANAGEMENT SYSTEM
+                CampusOne
               </span>
             </div>
             <p className="text-xs font-light leading-relaxed">
-              Biju Patnaik University of Technology (BPUT) <br />
+              CampusOne <br />
               Main Campus, Chhend, Rourkela, Odisha 769015
             </p>
             <p className="text-xs text-muted-foreground/70">
@@ -775,8 +775,8 @@ export function Landing() {
         </div>
 
         <div className="container max-w-screen-xl mx-auto pt-12 mt-12 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between text-xs font-light text-muted-foreground/70">
-          <p>&copy; {new Date().getFullYear()} Biju Patnaik University of Technology (BPUT). All rights reserved.</p>
-          <p className="mt-2 sm:mt-0 font-mono text-[10px]">BPUT CMS Platform Integrated</p>
+          <p>&copy; {new Date().getFullYear()} CampusOne. All rights reserved.</p>
+          <p className="mt-2 sm:mt-0 font-mono text-[10px]">CampusOne Platform Integrated</p>
         </div>
       </footer>
 

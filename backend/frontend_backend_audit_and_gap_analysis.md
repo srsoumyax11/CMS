@@ -1,6 +1,6 @@
 # Frontend vs. Backend Audit & Gap Analysis
 
-Version 1.0 | October 2026 | BPUT Campus Management System
+Version 1.0 | October 2026 | CampusOne
 
 ---
 

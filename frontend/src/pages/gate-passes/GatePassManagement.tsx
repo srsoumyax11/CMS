@@ -52,12 +52,13 @@ export function GatePassManagement() {
   const { user, hasPermission } = useAuth();
   const queryClient = useQueryClient();
 
-  const isStudent = user?.user_type === 'student';
+  const isStudent = user?.user_type === 'student' || user?.user_type === 'user' || user?.target_role === 'student';
   const isAdmin = user?.user_type === 'admin';
   const isFaculty = user?.user_type === 'faculty';
   const isStaff = user?.user_type === 'staff';
+  const isParent = user?.user_type === 'parent';
 
-  const canRequestPass = isStudent || hasPermission('gatepass:create');
+  const canRequestPass = isStudent || isAdmin || isParent || hasPermission('gatepass:create');
   const canReviewPass = isAdmin || isStaff || isFaculty || hasPermission('gatepass:review');
   const canScanPass = isAdmin || isStaff || isFaculty || hasPermission('gatepass:scan');
 
@@ -92,7 +93,7 @@ export function GatePassManagement() {
   const { data: myPassesRes, isLoading: loadingMyPasses, refetch: refetchMyPasses } = useQuery({
     queryKey: [QUERY_KEYS.MY_GATE_PASSES],
     queryFn: () => gatePassesApi.getMyGatePasses(),
-    enabled: canRequestPass && isStudent,
+    enabled: canRequestPass,
   });
 
   const myPasses = Array.isArray(myPassesRes?.data?.items) ? myPassesRes.data.items : [];
@@ -107,6 +108,10 @@ export function GatePassManagement() {
   });
 
   const allPasses = Array.isArray(allPassesRes?.data?.items) ? allPassesRes.data.items : [];
+  const pendingReviewCount = useMemo(
+    () => allPasses.filter((p) => p.status === 'REQUESTED').length,
+    [allPasses]
+  );
 
   // 2. Mutations
   const requestMutation = useMutation({
@@ -341,6 +346,11 @@ export function GatePassManagement() {
             {visibleTabs.map((tab) => (
               <TabsTrigger key={tab.id} value={tab.id} className="gap-2 text-xs">
                 <tab.icon className="w-4 h-4" /> {tab.label}
+                {tab.id === 'review-desk' && pendingReviewCount > 0 && (
+                  <Badge className="ml-1 h-5 px-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] rounded-full">
+                    {pendingReviewCount}
+                  </Badge>
+                )}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -577,7 +587,10 @@ export function GatePassManagement() {
                     </div>
                     <div>
                       <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Hostel & Room</span>
-                      <span className="font-semibold text-foreground">{scanResult.hostel_name || 'Hostel'} - R{scanResult.room_number || '101'}</span>
+                      <span className="font-semibold text-foreground">
+                        {scanResult.hostel_name || 'Day Scholar / Unallocated'}
+                        {scanResult.room_number && scanResult.room_number !== 'N/A' ? ` - R${scanResult.room_number}` : ''}
+                      </span>
                     </div>
                   </div>
                 </div>

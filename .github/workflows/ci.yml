@@ -1,4 +1,4 @@
-name: BPUT CMS CI
+name: CampusOne CI
 
 on:
   push:

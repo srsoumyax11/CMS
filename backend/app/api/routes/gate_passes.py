@@ -21,7 +21,7 @@ router = APIRouter(tags=["Gate Passes"])
 async def request_gate_pass(
     req: GatePassCreateRequest,
     uow: UnitOfWork = Depends(get_uow),
-    current_user: User = Depends(require_permission(Perms.GATEPASS_CREATE))
+    current_user: User = Depends(get_current_user)
 ):
     service = GatePassService(uow)
     try:

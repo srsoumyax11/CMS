@@ -28,7 +28,7 @@ export function NoticeCreate() {
   const [targetCourseId, setTargetCourseId] = useState<string>('all');
   const [targetUserTypes, setTargetUserTypes] = useState<string>('all');
   const [targetHostel, setTargetHostel] = useState('');
-  const [targetYear, setTargetYear] = useState('');
+  const [targetYear, setTargetYear] = useState('all');
   const { role } = useAuth();
 
   // Fetch departments & courses for targeting filters
@@ -63,7 +63,7 @@ export function NoticeCreate() {
       target_course_id: targetCourseId !== 'all' ? targetCourseId : null,
       target_user_types: targetUserTypes !== 'all' ? targetUserTypes : null,
       target_hostel: targetHostel.trim() || null,
-      target_year: targetYear ? parseInt(targetYear, 10) : null,
+      target_year: targetYear && targetYear !== 'all' ? parseInt(targetYear, 10) : null,
       file: file,
     });
   };
@@ -168,7 +168,7 @@ export function NoticeCreate() {
                       <SelectValue placeholder="All Academic Years" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Academic Years</SelectItem>
+                      <SelectItem value="all">All Academic Years</SelectItem>
                       <SelectItem value="1">1st Year</SelectItem>
                       <SelectItem value="2">2nd Year</SelectItem>
                       <SelectItem value="3">3rd Year</SelectItem>

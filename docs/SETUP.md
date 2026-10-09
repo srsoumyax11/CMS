@@ -1,6 +1,6 @@
 # Local Development Setup Guide
 
-Follow this guide to set up the BPUT CMS project on your local machine for development from scratch.
+Follow this guide to set up the CampusOne project on your local machine for development from scratch.
 
 ### 1. Prerequisites
 

@@ -1,6 +1,6 @@
 # Production Deployment Guide
 
-Welcome to the BPUT CMS! If you have purchased this software and want to deploy it to the internet so real users can access it, this guide will walk you through deploying to **Supabase** (Database), **Render** (Backend API), and **Vercel** (Frontend UI).
+Welcome to the CampusOne! If you have purchased this software and want to deploy it to the internet so real users can access it, this guide will walk you through deploying to **Supabase** (Database), **Render** (Backend API), and **Vercel** (Frontend UI).
 
 ---
 
@@ -20,7 +20,7 @@ cd CMS
 We use Supabase for the PostgreSQL database and file storage.
 
 1. Go to [Supabase.com](https://supabase.com) and create an account/organization.
-2. Click **New Project**, name it (e.g., `BPUT-CMS-PROD`), and generate a secure Database Password.
+2. Click **New Project**, name it (e.g., `CAMPUSONE-PROD`), and generate a secure Database Password.
 4. **Get Database Credentials**: 
    - In Supabase, go to the "Connect to your project" wizard.
    - Choose **ORM** to get the Direct Connection String.

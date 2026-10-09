@@ -1,6 +1,6 @@
-# Contributing to BPUT CMS
+# Contributing to CampusOne
 
-First off, thank you for considering contributing to BPUT CMS! It's people like you that make this tool such a great platform.
+First off, thank you for considering contributing to CampusOne! It's people like you that make this tool such a great platform.
 
 ## Where do I go from here?
 

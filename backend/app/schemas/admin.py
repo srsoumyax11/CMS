@@ -33,7 +33,7 @@ class StudentCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     password: str = Field(..., min_length=8)
-    registration_no: str = Field(..., pattern=r"^\d{10}$", description="10-digit BPUT Registration Number")
+    registration_no: str = Field(..., pattern=r"^\d{10}$", description="10-digit CampusOne Registration Number")
     roll_no: Optional[str] = Field(None, description="Class Roll Number e.g. 23/CSE/042")
     course_id: UUID
     department_id: UUID
