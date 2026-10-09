@@ -256,7 +256,10 @@ export const RoleElevationWidget: React.FC = () => {
   }
 
   // Active Pending Application State
-  if (appStatus && appStatus.status === 'pending') {
+  const normalizedStatus = (appStatus?.status || '').toLowerCase();
+  const isPendingStatus = normalizedStatus === 'pending' || normalizedStatus === 'submitted';
+
+  if (appStatus && isPendingStatus) {
     return (
       <Card className="shadow-sm border-border bg-card">
         <CardHeader>
