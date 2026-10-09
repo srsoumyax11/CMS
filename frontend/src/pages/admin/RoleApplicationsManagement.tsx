@@ -30,6 +30,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useMetadata } from '@/hooks/useMetadata';
+
 export function RoleApplicationsManagement() {
   const queryClient = useQueryClient();
   const [selectedApp, setSelectedApp] = useState<RoleApplicationData | null>(null);
@@ -50,41 +52,27 @@ export function RoleApplicationsManagement() {
   const applications = Array.isArray(response?.data) ? response.data : [];
 
   // 2. Fetch Metadata for Department & Course Name Resolution
-  const { data: deptRes } = useQuery({
-    queryKey: [QUERY_KEYS.DEPARTMENTS],
-    queryFn: () => metadataApi.getDepartments(),
-  });
-
-  const { data: courseRes } = useQuery({
-    queryKey: [QUERY_KEYS.COURSES],
-    queryFn: () => metadataApi.getCourses(),
-  });
+  const { courses, departments } = useMetadata();
 
   const departmentMap = useMemo(() => {
     const map = new Map<string, string>();
-    const depts = Array.isArray(deptRes?.data?.data)
-      ? deptRes.data.data
-      : Array.isArray(deptRes?.data)
-      ? (deptRes.data as any)
-      : [];
-    depts.forEach((d: any) => {
-      if (d?.id && d?.name) map.set(d.id, d.name);
+    departments.forEach((d: any) => {
+      if (d?.id && d?.name) {
+        map.set(String(d.id), d.code ? `${d.code} - ${d.name}` : d.name);
+      }
     });
     return map;
-  }, [deptRes]);
+  }, [departments]);
 
   const courseMap = useMemo(() => {
     const map = new Map<string, string>();
-    const courses = Array.isArray(courseRes?.data?.data)
-      ? courseRes.data.data
-      : Array.isArray(courseRes?.data)
-      ? (courseRes.data as any)
-      : [];
     courses.forEach((c: any) => {
-      if (c?.id) map.set(c.id, c.code ? `${c.code} - ${c.name}` : c.name);
+      if (c?.id) {
+        map.set(String(c.id), c.code ? `${c.code} - ${c.name}` : c.name);
+      }
     });
     return map;
-  }, [courseRes]);
+  }, [courses]);
 
   // 3. Mutations for Approve & Reject
   const approveMutation = useMutation({
@@ -138,12 +126,12 @@ export function RoleApplicationsManagement() {
   const formatValue = (key: string, val: any) => {
     if (val === null || val === undefined) return 'N/A';
     if (typeof val === 'object') return JSON.stringify(val);
-    const strVal = String(val);
-    if (key.includes('department_id') && departmentMap.has(strVal)) {
-      return departmentMap.get(strVal);
+    const strVal = String(val).trim();
+    if (departmentMap.has(strVal)) {
+      return departmentMap.get(strVal)!;
     }
-    if (key.includes('course_id') && courseMap.has(strVal)) {
-      return courseMap.get(strVal);
+    if (courseMap.has(strVal)) {
+      return courseMap.get(strVal)!;
     }
     return strVal;
   };
@@ -160,6 +148,15 @@ export function RoleApplicationsManagement() {
         { label: 'Rejected', value: 'rejected' },
         { label: 'All Statuses', value: '' },
       ],
+      filterFn: (row, activeVal) => {
+        if (!activeVal) return true;
+        const rowStatus = String(row.status || '').toLowerCase();
+        const filterVal = String(activeVal).toLowerCase();
+        if (filterVal === 'pending') {
+          return rowStatus === 'pending' || rowStatus === 'submitted';
+        }
+        return rowStatus === filterVal;
+      },
     },
     {
       id: 'target_role',
@@ -172,6 +169,10 @@ export function RoleApplicationsManagement() {
         { label: 'Staff', value: 'STAFF' },
         { label: 'Parent', value: 'PARENT' },
       ],
+      filterFn: (row, activeVal) => {
+        if (!activeVal) return true;
+        return String(row.target_role || '').toUpperCase() === String(activeVal).toUpperCase();
+      },
     },
   ];
 
@@ -252,7 +253,7 @@ export function RoleApplicationsManagement() {
             <Eye className="h-3.5 w-3.5" /> View / Audit
           </Button>
 
-          {row.status === 'pending' && (
+          {(row.status === 'pending' || row.status === 'submitted') && (
             <>
               <Button
                 size="sm"
@@ -399,7 +400,7 @@ export function RoleApplicationsManagement() {
               </div>
 
               {/* Quick Preset Notes Chips */}
-              {selectedApp.status === 'pending' && (
+              {(selectedApp.status === 'pending' || selectedApp.status === 'submitted') && (
                 <div className="space-y-2">
                   <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                     <Sparkles className="h-3.5 w-3.5 text-amber-500" /> Quick Review Presets
@@ -428,7 +429,7 @@ export function RoleApplicationsManagement() {
                   id="notes"
                   placeholder="Enter audit notes or rejection rationale (notified to applicant)..."
                   value={notes}
-                  disabled={selectedApp.status !== 'pending'}
+                  disabled={selectedApp.status !== 'pending' && selectedApp.status !== 'submitted'}
                   onChange={(e) => setNotes(e.target.value)}
                   className="min-h-[90px] text-xs bg-background"
                 />
@@ -441,7 +442,7 @@ export function RoleApplicationsManagement() {
               Cancel
             </Button>
 
-            {selectedApp?.status === 'pending' && (
+            {(selectedApp?.status === 'pending' || selectedApp?.status === 'submitted') && (
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"

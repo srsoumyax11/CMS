@@ -101,21 +101,38 @@ class ApplicationService:
         async with self.uow.transaction() as u:
             kwargs = {}
             if status:
-                kwargs["status"] = status
+                upper_status = status.upper()
+                if upper_status in ApplicationStatus.__members__:
+                    kwargs["status"] = ApplicationStatus[upper_status]
+                elif status.lower() in ["pending", "submitted"]:
+                    kwargs["status"] = ApplicationStatus.submitted
             apps, total = await u.role_applications.list(filters=kwargs, skip=skip, limit=limit)
 
-            return [
-                RoleApplicationResponse(
-                    id=app.id,
-                    user_id=app.user_id,
-                    target_role="UNKNOWN",
-                    status=app.status.value,
-                    application_data=app.form_data or {},
-                    admin_notes=app.review_note,
-                    created_at=app.submitted_at,
-                    updated_at=app.reviewed_at or app.submitted_at
-                ) for app in apps
-            ]
+            res: List[RoleApplicationResponse] = []
+            for app in apps:
+                role = await u.roles.get_by_id(app.role_id)
+                applicant = await u.users.get_by_id(app.user_id)
+                target_role = role.code if role else "UNKNOWN"
+                
+                status_str = app.status.value.lower()
+                if status_str == "submitted":
+                    status_str = "pending"
+
+                res.append(
+                    RoleApplicationResponse(
+                        id=app.id,
+                        user_id=app.user_id,
+                        applicant_name=applicant.name if applicant else "Unknown Applicant",
+                        applicant_email=applicant.email if applicant else "N/A",
+                        target_role=target_role,
+                        status=status_str,
+                        application_data=app.form_data or {},
+                        admin_notes=app.review_note,
+                        created_at=app.submitted_at,
+                        updated_at=app.reviewed_at or app.submitted_at
+                    )
+                )
+            return res
 
     async def check_identifier(self, role_code: str, value: str) -> bool:
         from sqlalchemy import select
