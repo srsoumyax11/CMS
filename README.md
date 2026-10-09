@@ -1,6 +1,6 @@
 <div align="center">
+<img width="1365" height="372" alt="image" src="https://github.com/user-attachments/assets/4287d77d-c2e7-4e6f-9c96-30d55f1029fd" />
 
-  # 🚀 CampusOne
   
   ### A Modern, Enterprise-Grade University Content Management System & ERP.
 
