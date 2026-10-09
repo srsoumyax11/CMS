@@ -52,8 +52,19 @@ class StaffApplicationPayload(BaseModel):
     designation: str
 
 class RoleApplicationCreateRequest(BaseModel):
-    target_role: str = Field(..., description="Target role: student, parent, faculty, staff")
-    data: Dict[str, Any]
+    target_role: Optional[str] = Field(None, description="Target role code: student, parent, faculty, staff")
+    role_id: Optional[uuid.UUID] = Field(None, description="Target role UUID if available")
+    data: Optional[Dict[str, Any]] = Field(None, description="Form data object")
+    application_data: Optional[Dict[str, Any]] = Field(None, description="Form data object alias")
+
+    @model_validator(mode="before")
+    @classmethod
+    def sanitize_fields(cls, values: Any) -> Any:
+        if isinstance(values, dict):
+            app_data = values.get("application_data") or values.get("data") or {}
+            values["data"] = app_data
+            values["application_data"] = app_data
+        return values
 
 class RoleApplicationResponse(BaseModel):
     id: uuid.UUID

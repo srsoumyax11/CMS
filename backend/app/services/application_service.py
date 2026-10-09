@@ -28,14 +28,24 @@ class ApplicationService:
             if db_user.account_status == AccountStatus.active and db_user.user_type != UserType.user:
                 raise ValueError("Your account is already active with a profile.")
 
-            role = await u.roles.get_by_id(req.role_id)
-            if not role or not role.is_assignable:
-                raise ValueError("Role is invalid or not assignable.")
+            role = None
+            if req.role_id:
+                role = await u.roles.get_by_id(req.role_id)
+            elif req.target_role:
+                target_code = req.target_role.lower()
+                roles, _ = await u.roles.list(filters={"code": target_code})
+                role = roles[0] if roles else None
+
+            if not role:
+                target_name = req.target_role or (str(req.role_id) if req.role_id else "unknown")
+                raise ValueError(f"Role '{target_name}' is invalid or not found.")
+
+            form_data = req.application_data or req.data or {}
 
             app = RoleApplication(
                 user_id=db_user.id,
                 role_id=role.id,
-                form_data=req.form_data,
+                form_data=form_data,
                 status=ApplicationStatus.submitted
             )
             app = await u.role_applications.create(app)
